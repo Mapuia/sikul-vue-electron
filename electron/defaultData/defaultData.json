@@ -1,0 +1,46 @@
+{
+    "classes": [
+      "KG", "I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X"
+    ],
+    "sections": ["A", "B"],
+    "subjects": [
+        { "SubjectName": "MATHEMATICS", "SubjectCategory": "Major" },
+        { "SubjectName": "ENGLISH", "SubjectCategory": "Major" },
+        { "SubjectName": "ENGLISH - I", "SubjectCategory": "Major" },
+        { "SubjectName": "ENGLISH - II", "SubjectCategory": "Major" },
+        { "SubjectName": "LANGUAGE", "SubjectCategory": "Major" },
+        { "SubjectName": "SCIENCE", "SubjectCategory": "Major" },
+        { "SubjectName": "SOCIAL SCIENCE", "SubjectCategory": "Major" },
+
+        { "SubjectName": "EVS", "SubjectCategory": "Minor" },
+        { "SubjectName": "GENERAL KNOWLEDGE", "SubjectCategory": "Minor" },
+        { "SubjectName": "MORAL SCIENCE", "SubjectCategory": "Minor" },
+        { "SubjectName": "COMPUTER", "SubjectCategory": "Minor" },
+        { "SubjectName": "ART EDUCATION", "SubjectCategory": "Minor" },
+        { "SubjectName": "CONVERSATION", "SubjectCategory": "Minor" },
+        { "SubjectName": "RHYMES", "SubjectCategory": "Minor" },
+
+        { "SubjectName": "SUPW", "SubjectCategory": "Co-Scholastic" },
+        { "SubjectName": "CCA", "SubjectCategory": "Co-Scholastic" },
+        { "SubjectName": "Games and sports", "SubjectCategory": "Co-Scholastic" },
+        { "SubjectName": "Cleanliness", "SubjectCategory": "Co-Scholastic" },
+        { "SubjectName": "Punctuality", "SubjectCategory": "Co-Scholastic" },
+        { "SubjectName": "Obedience", "SubjectCategory": "Co-Scholastic" }
+    ],
+    "ClassSubjectMapping": {
+      "KG-I": ["MATHEMATICS", "ENGLISH", "EVS", "GENERAL KNOWLEDGE", "CONVERSATION", "RHYMES"],
+      "KG-II": ["MATHEMATICS", "ENGLISH", "EVS", "GENERAL KNOWLEDGE", "CONVERSATION", "RHYMES"],
+      "I": ["MATHEMATICS", "EVS", "GENERAL KNOWLEDGE", "MORAL SCIENCE", "ENGLISH", "LANGUAGE", "ART EDUCATION"],
+      "II": ["MATHEMATICS", "EVS", "GENERAL KNOWLEDGE", "MORAL SCIENCE", "ENGLISH", "LANGUAGE", "ART EDUCATION"],
+      "III": ["MATHEMATICS", "LANGUAGE", "ENGLISH - I", "ENGLISH - II", "MORAL SCIENCE", "SCIENCE", "EVS", "GENERAL KNOWLEDGE", "ART EDUCATION"],
+      "IV": ["MATHEMATICS", "LANGUAGE", "ENGLISH - I", "ENGLISH - II", "MORAL SCIENCE", "SCIENCE", "EVS", "GENERAL KNOWLEDGE", "ART EDUCATION", "COMPUTER"],
+      "V": ["MATHEMATICS", "LANGUAGE", "ENGLISH - I", "ENGLISH - II", "MORAL SCIENCE", "SCIENCE", "EVS", "GENERAL KNOWLEDGE", "ART EDUCATION", "COMPUTER"],
+      "VI": ["MATHEMATICS", "LANGUAGE", "ENGLISH - I", "ENGLISH - II", "MORAL SCIENCE", "SCIENCE", "SOCIAL SCIENCE", "COMPUTER"],
+      "VII": ["MATHEMATICS", "LANGUAGE", "ENGLISH - I", "ENGLISH - II", "MORAL SCIENCE", "SCIENCE", "SOCIAL SCIENCE", "COMPUTER"],
+      "VIII": ["MATHEMATICS", "LANGUAGE", "ENGLISH - I", "ENGLISH - II", "MORAL SCIENCE", "SCIENCE", "SOCIAL SCIENCE", "COMPUTER"],
+      "IX": ["MATHEMATICS", "LANGUAGE", "ENGLISH", "EVS", "SCIENCE", "SOCIAL SCIENCE"],
+     
+    }
+   
+  }
+  

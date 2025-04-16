@@ -1,0 +1,11 @@
+// Override Bulma variables before importing
+$primary: #1a73e8; // Google Blue (API Setu-like)
+$body-background-color: #f9f9f9;
+$navbar-background-color: #ffffff;
+$navbar-item-color: #333;
+$navbar-item-hover-color: $primary;
+$navbar-item-hover-background-color: #f5f5f5;
+$family-sans-serif: 'Segoe UI', 'Roboto', sans-serif;
+$body-font-size: 16px;
+
+@import 'bulma';

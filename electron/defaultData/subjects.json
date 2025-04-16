@@ -1,0 +1,22 @@
+[
+    { "SubjectName": "MATHEMATICS", "SubjectCategory": "Major" },
+    { "SubjectName": "ENGLISH", "SubjectCategory": "Major" },
+    { "SubjectName": "ENGLISH - I", "SubjectCategory": "Major" },
+    { "SubjectName": "ENGLISH - II", "SubjectCategory": "Major" },
+    { "SubjectName": "LANGUAGE", "SubjectCategory": "Major" },
+    { "SubjectName": "SCIENCE", "SubjectCategory": "Major" },
+    { "SubjectName": "SOCIAL SCIENCE", "SubjectCategory": "Major" },
+    { "SubjectName": "EVS", "SubjectCategory": "Minor" },
+    { "SubjectName": "GENERAL KNOWLEDGE", "SubjectCategory": "Minor" },
+    { "SubjectName": "MORAL SCIENCE", "SubjectCategory": "Minor" },
+    { "SubjectName": "COMPUTER", "SubjectCategory": "Minor" },
+    { "SubjectName": "ART EDUCATION", "SubjectCategory": "Minor" },
+    { "SubjectName": "CONVERSATION", "SubjectCategory": "Minor" },
+    { "SubjectName": "RHYMES", "SubjectCategory": "Minor" },
+    { "SubjectName": "SUPW", "SubjectCategory": "Co-Scholastic" },
+    { "SubjectName": "CCA", "SubjectCategory": "Co-Scholastic" },
+    { "SubjectName": "Games and sports", "SubjectCategory": "Co-Scholastic" },
+    { "SubjectName": "Cleanliness", "SubjectCategory": "Co-Scholastic" },
+    { "SubjectName": "Punctuality", "SubjectCategory": "Co-Scholastic" },
+    { "SubjectName": "Obedience", "SubjectCategory": "Co-Scholastic" }
+]
