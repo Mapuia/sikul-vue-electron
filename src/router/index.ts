@@ -8,7 +8,7 @@ import CreateExam from '../views/Manage/createExams.vue'
 import Result from '../views/Results/createResults.vue'
 import resultCriteria from '../views/Manage/resultCriteria.vue'
 import Report from '../views/Results/reportCard.vue'
-import marksStudent from '../views/Marks/marksStudent.vue'
+import marksEntry from '../views/Marks/marksEntry.vue'
 import marksSubject from '../views/Marks/marksSubject.vue'
 import marksViewEdit from '../views/Marks/marksViewEdit.vue'
 import Mapping from '../views/Manage/mapClassSubject.vue'
@@ -85,8 +85,8 @@ const routes = [
   },
   {
     path: '/marks/student-marks-entry',
-    name: 'marksStudent',
-    component: marksStudent
+    name: 'marksEntry',
+    component: marksEntry
   },
   {
     path: '/class/master',
