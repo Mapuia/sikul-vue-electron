@@ -13,9 +13,9 @@ function initializeDatabase() {
   try {
     let isNewDatabase = !fs.existsSync(dbFilePath); // Check if new database
 
-    // Connect to the database (better-sqlite3 does not use `new`)
+    // Connect to the database 
     db = Database(dbFilePath);
-    console.log(isNewDatabase ? 'Database created successfully.' : 'Database connected.');
+    console.log(isNewDatabase ? 'Database created successfully.' : 'Database connected....');
 
     // If it's a new database, execute the schema
     if (isNewDatabase) {
@@ -62,42 +62,12 @@ function closeDatabase() {
   }
 };
 
-//Add Academic Year
-function addAcademicYear(year, startDate, endDate) {
-  const tableExists = db.prepare(`
-    SELECT name FROM sqlite_master WHERE type='table' AND name='AcademicYears'
-  `).get();
-
-  if (!tableExists) {
-    throw new Error("AcademicYears table does not exist. Cannot insert academic year.");
-  }
-
-  try {
-    const transaction = db.transaction((year, startDate, endDate) => {
-      db.prepare(`UPDATE academicYears SET isActive = 0 WHERE isActive = 1`).run();
-
-      db.prepare(`
-        INSERT INTO academicYears (year, startDate, endDate, isActive)
-        VALUES (?, ?, ?, 1)
-      `).run(year, startDate, endDate);
-    });
-
-    transaction(year, startDate, endDate);
-  } catch (err) {
-    console.error('Failed to add academic year:', err);
-    throw err; // Ensure upstream can catch and respond
-  }
-}
-
-
-
 // Export the functions
 module.exports = {
   initializeDatabase,
   getDatabase,
   closeDatabase,
-  addAcademicYear,
-
+  
 };
 
 

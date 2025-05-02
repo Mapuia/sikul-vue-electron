@@ -1,98 +1,107 @@
-const { app, BrowserWindow, ipcMain } = require('electron')
-const path = require('path')
+// main.cjs
+const { app, BrowserWindow, ipcMain, dialog } = require('electron');
+const path = require('path');
 
-//get Academic Year
-const { addAcademicYear,
-  initializeDatabase,
-  getDatabase, 
-  closeDatabase 
-} = require('./database.cjs');
+// Import database and handlers
+const db = require('./database.cjs');
+require('./ipcHandlers/AcademicYearHandler.cjs');
+require('./ipcHandlers/ClassesHandler.cjs');
+require('./ipcHandlers/SectionsHandler.cjs');
+require('./ipcHandlers/SubjectsHandler.cjs');
+require('./ipcHandlers/ExamsHandler.cjs');
+require('./ipcHandlers/ClassSubjectsMappingHandler.cjs');
+require('./ipcHandlers/ClassSectionsMappingHandler.cjs');
 
-//Get current Academic Year// App will be loaded for Current Academic Year
-ipcMain.handle('get-current-academic-year', async () => {
-  try {
-      db = getDatabase();
-      const stmt = db.prepare('SELECT Year FROM academicYears WHERE isActive = 1');
-      const row = stmt.get();
-      console.log(row);
-      return row || null;
-  } catch (err) {
-      console.error("DB error:", err);
-      return null;
-  }
-  
-});
+let mainWindow;
+let splash;
 
-//Add Academic Year
-ipcMain.handle('add-academic-year', async (event, { year, startDate, endDate }) => {
-  //console.log("IPC Handler 'add-academic-year' called with:", year, startDate, endDate);
-  try {
-    addAcademicYear(year, startDate, endDate);
-    return { success: true };
-  } 
-  catch (err) {
-    console.error("Error in add-academic-year:", err);
-    const isDuplicate = err.code === 'SQLITE_CONSTRAINT_UNIQUE';
-    return {
-      success: false,
-      message: isDuplicate ? 'Academic year already exists.' : 'Error adding year.'
-    };
-  }
-});
-
-ipcMain.on('academic-year-added', (event) => {
-  const webContents = BrowserWindow.getAllWindows()[0].webContents;
-  webContents.send('refresh-academic-year');
-});
-
-//open the main Window
-app.whenReady().then(() => {
-  try {
-    initializeDatabase();
-    createWindow();
-  } catch (err) {
-    console.error("Database initialization failed:", err);
-    app.quit(); // Exit app if DB init fails
-  }
-});
-
-function createWindow() {
-  const win = new BrowserWindow({
-    width: 1200,
-    height: 800,
+function createSplashWindow() {
+  splash = new BrowserWindow({
+    width: 400,
+    height: 300,
+    transparent: true,
+    frame: false,
+    alwaysOnTop: true,
+    resizable: false,
+    hasShadow: false,
+    show: false,
     webPreferences: {
-      preload: path.join(__dirname, 'preload.cjs'),
-      contextIsolation: true
+      nodeIntegration: false,
+      contextIsolation: true,
+      preload: path.join(__dirname, 'preload.cjs')
     }
-  })
+  });
 
-  const devUrl = process.env.VITE_DEV_SERVER_URL
-  if (devUrl) {
-    win.loadURL(devUrl)
-   // win.webContents.openDevTools()
-  } else {
-    win.loadFile(path.join(__dirname, '../dist/index.html'))
-  }
+  splash.loadFile(path.join(__dirname, 'splash.html'));
+  splash.once('ready-to-show', () => splash.show());
 }
 
-app.whenReady().then(createWindow)
+function createMainWindow() {
+  mainWindow = new BrowserWindow({
+    width: 1200,
+    height: 800,
+    show: false, // wait until content is ready
+    webPreferences: {
+      preload: path.join(__dirname, 'preload.cjs'),
+      contextIsolation: true,
+      nodeIntegration: false
+    }
+  });
 
-//Implementation of Logout in the main process.
-//Function to close the Application Instance (or Main Window).
-let isSafeToQuit = false;
+  const devUrl = process.env.VITE_DEV_SERVER_URL;
+  if (devUrl) {
+    mainWindow.loadURL(devUrl);
+    // mainWindow.webContents.openDevTools();
+  } else {
+    mainWindow.loadFile(path.join(__dirname, '../dist/index.html'));
+  }
 
-ipcMain.on('logout', () => {
-  console.log("Logout requested via IPC");
-  app.quit(); // Trigger before-quit
+  mainWindow.webContents.on('did-finish-load', () => {
+    if (splash && !splash.isDestroyed()) {
+      splash.close();
+    }
+    mainWindow.show();
+  });
+}
+
+app.whenReady().then(() => {
+  try {    
+    createSplashWindow();
+    createMainWindow();
+  } catch (err) {
+    console.error("Database initialization failed:", err);
+    app.quit();
+  }
 });
+
+// IPC: Notify UI of new Academic Year
+ipcMain.on('academic-year-added', () => {
+  const [win] = BrowserWindow.getAllWindows();
+  if (win) win.webContents.send('refresh-academic-year');
+});
+
+// IPC: Show confirmation dialog
+ipcMain.handle('show-confirmation-dialog', async (event, message) => {
+  const result = await dialog.showMessageBox(mainWindow, {
+    type: 'question',
+    buttons: ['Yes', 'No'],
+    defaultId: 1,
+    title: 'Confirmation',
+    message
+  });
+  return result.response === 0;
+});
+
+// IPC: Logout and quit
+let isSafeToQuit = false;
+ipcMain.on('logout', () => app.quit());
 
 app.on('before-quit', (event) => {
   if (!isSafeToQuit) {
     event.preventDefault();
     performCleanup().then(() => {
       isSafeToQuit = true;
-      console.log("Application is safely closed...")
-      app.quit(); // Try quitting again after cleanup
+      app.quit();
     }).catch((err) => {
       console.error("Cleanup failed. App not quitting:", err);
     });
@@ -102,7 +111,7 @@ app.on('before-quit', (event) => {
 async function performCleanup() {
   try {
     console.log("Performing cleanup...");
-    closeDatabase(); // This is synchronous in better-sqlite3
+    await db.closeDatabase(); // sync in better-sqlite3
     console.log("Cleanup done.");
   } catch (err) {
     console.error("Error during DB cleanup:", err);
@@ -110,13 +119,11 @@ async function performCleanup() {
 }
 
 app.on('activate', () => {
-    if (BrowserWindow.getAllWindows().length === 0) {
-        createWindow();
-    }
-})
+  if (BrowserWindow.getAllWindows().length === 0) {
+    createMainWindow();
+  }
+});
+
 app.on('window-all-closed', () => {
-    if (process.platform !== 'darwin') {
-        //clearCache();
-        app.quit();
-    }
+  if (process.platform !== 'darwin') app.quit();
 });

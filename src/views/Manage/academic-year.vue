@@ -67,7 +67,7 @@
 import { ref } from 'vue';
 import { useAcademicYear } from '../../composables/useAcademicYear'
 
-const { currentYear, loadAcademicYear } = useAcademicYear()
+const { currentYear } = useAcademicYear()
 
 let concluded = ref(false);
 let resultout = ref(true);
@@ -86,16 +86,16 @@ function formatYear() {
   let value = year.value.replace(/\D/g, '');
   if (value.length >= 4) {
     const startYear = value.slice(0, 4);
-    const endYearShort = ((parseInt(startYear) + 1) % 100).toString().padStart(2, '0');
-    year.value = `${startYear}-${endYearShort}`;
+    const endYear = (parseInt(startYear) + 1).toString().padStart(4, '0');
+    year.value = `${startYear}-${endYear}`;
   }
 }
 
 function autoFillDates() {
-  const pattern = /^\d{4}-\d{2}$/;
+  const pattern = /^\d{4}-\d{4}$/;
   const value = year.value.trim();
   if (!pattern.test(value)) {
-    showMessage("Invalid format. Please enter in the format: 2025-26", 'is-danger');
+    showMessage("Invalid format. Please enter in the format: 2025-2026", 'is-danger');
     return;
   }
 

@@ -1,0 +1,48 @@
+<!-- electron/splash.html -->
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Loading...</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: transparent;
+    }
+
+    .splash-container {
+      width: 100vw;
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      backdrop-filter: blur(6px); /* Optional glass effect */
+      background: transparent;
+    }
+
+    img.logo {
+      width: 150px; /* Adjust size as needed */
+      animation: pulse 1.5s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(1.05); opacity: 0.9; }
+    }
+
+    .loading-text {
+      margin-top: 20px;
+      font-family: sans-serif;
+      font-size: 18px;
+      color: #f9eedd;
+    }
+  </style>
+</head>
+<body>
+  <div class="splash-container">
+    <img class="logo" src="../src/assets/sikul_logo.png" alt="Sikul Logo" />
+    <div class="loading-text">Launching Sikul...</div>
+  </div>
+</body>
+</html>

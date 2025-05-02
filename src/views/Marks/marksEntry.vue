@@ -1,63 +1,74 @@
 <template>
   <div class="form-container full">
-    <h1 class="title has-text-centered">Marks Entry - Half Yearly Exam</h1>
+    <h1 class="title has-text-centered">Marks Entry - {{ActiveExam}}</h1>
     <hr class="thin-line" />
 
     <div class="marks-entry-container">
-      <!-- Vertical Tabs -->
       <aside class="vertical-tabs">
         <div class="tab-heading has-text-weight-bold has-text-centered py-2 is-primary">Class</div>
         <ul>
           <li
             v-for="cls in classes"
-            :key="cls"
-            :class="{ 'is-active': cls === selectedClass }"
-            @click="selectClass(cls)"
+            :key="cls.ClassName"
+            :class="{ 'is-active': cls.ClassName === selectedClass }"
+            @click="selectClass(cls.ClassName)"
           >
-            Class - {{ cls }}
+            Class - {{ cls.Id }}
           </li>
         </ul>
       </aside>
 
-      <!-- Main Content -->
       <div class="main-content">
         <div v-if="selectedClass" class="mb-2">
           <h1 class="title is-4">Class: {{ selectedClass }}</h1>
-        </div>  
-        <!-- Section Selector -->
+        </div>
+
         <div v-if="selectedClass" class="mb-4 is-flex is-align-items-center">
           <label class="label mr-2">Section:</label>
           <div class="buttons">
-            <label class="button is-small" v-for="sec in sections" :key="sec">
-              <input class="is-horizontal" type="radio" name="section" v-model="selectedSection" :value="sec" /> &nbsp;{{ sec }}
+            <label class="button is-small" v-for="sec in sections" :key="sec.SectionName">
+              <input class="is-horizontal" type="radio" name="section" v-model="selectedSection" :value="sec.SectionName" /> &nbsp;{{ sec.SectionName }}
             </label>
           </div>
         </div>
 
-        <!-- Students + Marks Entry Table -->
-        <div v-if="selectedSection">
+        <div v-if="selectedSection" class="mb-4">
+          <label class="label mr-2">Subject:</label>
+          <div class="control">
+            <div class="select">
+              <select v-model="selectedSubject" @change="loadStudentsAndInitializeMarks">
+                <option value="" disabled>Select Subject</option>
+                <option v-for="sub in subjects" :key="sub.Id" :value="sub.Id">
+                  {{ sub.SubjectName }}
+                </option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div v-if="selectedSubject && students.length > 0">
           <div class="table-container-scroll">
             <table class="table is-bordered is-striped is-fullwidth marks-entry-table">
               <thead>
                 <tr>
-                  <th style="background-color: #201f1f; " class="sticky-col left-col">Roll No.</th>
-                  <th style="background-color: #201f1f; ;" class="sticky-col">Student Name</th>
-                  <th v-for="subject in subjects" :key="subject">{{ subject }}</th>
+                  <th style="background-color: #201f1f;" class="sticky-col left-col">Roll No.</th>
+                  <th style="background-color: #201f1f;" class="sticky-col">Student Name</th>
+                  <th>{{ selectedSubject }}</th>
                 </tr>
               </thead>
               <tbody>
                 <tr v-for="(student, sIndex) in students" :key="student.id">
                   <td style="background-color: #201f1f; text-align:end;" class="sticky-col left-col">{{ sIndex + 1 }}</td>
                   <td style="background-color: #201f1f;" class="sticky-col">{{ student.name }}</td>
-                  <td v-for="(subject, subIndex) in subjects" :key="subIndex">
+                  <td>
                     <input
                       class="input is-small"
                       type="number"
                       min="0"
                       max="100"
-                      v-model.number="marks[sIndex][subject]"
-                      :ref="el => setInputRef(sIndex, subject, el)"
-                      @keydown.enter.prevent="focusNext(sIndex, subject)"
+                      v-model.number="marks[sIndex]"
+                      :ref="el => setInputRef(sIndex, el)"
+                      @keydown.enter.prevent="focusNext(sIndex)"
                     />
                   </td>
                 </tr>
@@ -65,125 +76,202 @@
             </table>
           </div>
 
-
-          <!-- Submit Button -->
           <div class="field is-grouped mt-4">
             <div class="control">
               <button class="button is-primary" @click="submitMarks">Submit Marks</button>
             </div>
           </div>
 
-          <!-- Messages -->
           <div v-if="successMessage" class="notification is-success mt-4">
             {{ successMessage }}
           </div>
+        </div>
+        <div v-else-if="selectedSection && !selectedSubject">
+          <div class="notification is-info">Please select a subject.</div>
+        </div>
+        <div v-else-if="selectedSection && selectedSubject && students.length === 0">
+          <div class="notification is-warning">No students found for the selected class and section.</div>
         </div>
       </div>
     </div>
   </div>
 </template>
 
-
 <script setup>
-import { ref, watch } from 'vue'
+import { ref, onMounted, watch } from 'vue';
 
-const inputRefs = ref({})
+const inputRefs = ref({});
 
-function setInputRef(row, subject, el) {
-  if (!inputRefs.value[subject]) {
-    inputRefs.value[subject] = []
-  }
-  inputRefs.value[subject][row] = el
+function setInputRef(row, el) {
+  inputRefs.value[row] = el;
 }
 
-function focusNext(currentRow, subject) {
-  const subjectRefs = inputRefs.value[subject]
-  if (subjectRefs && subjectRefs[currentRow + 1]) {
-    subjectRefs[currentRow + 1].focus()
+function focusNext(currentRow) {
+  if (inputRefs.value[currentRow + 1]) {
+    inputRefs.value[currentRow + 1].focus();
   }
 }
 
+const ActiveExam = ref();
+const classes = ref([]);
+const sections = ref([]);
+const subjects = ref([]);
 
-const classes = [
-  'KG - I', 'KG - II', 'I', 'II', 'III', 'IV', 'V',
-  'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII'
-]
-const sections = ['A', 'B', 'C']
-const subjects = ['English', 
-    'Math', 
-    'Science',
-    'Social Science',
-    'EVS',
-    'Language',
-    'Social Science',
-    'EVS',
-    'Language',
-    'Social Science',
-    'EVS',
-    'Language',
-    'Social Science',
-    'EVS',
-    'Language',
-    'Social Science',
-    'EVS',
-    'Language',
-    'English - I',
-    'English - II'
-    
-  ]
+const selectedClass = ref('');
+const selectedSection = ref('');
+const selectedSubject = ref('');
+const students = ref([]);
+const marks = ref([]);
+const successMessage = ref('');
+const loadingSubjects = ref(false);
 
-const selectedClass = ref('')
-const selectedSection = ref('')
-const students = ref([])
-const marks = ref([])
-const successMessage = ref('')
+async function fetchSubjects() {
+  loadingSubjects.value = true;
+  try {
+    const response = await window.electronAPI.getSubjects();
+    if (response.success) {
+      subjects.value = response.subjects;
+    } else {
+      errorMessage.value = response.message || 'Failed to fetch subjects.';
+    }
+  } catch (err) {
+    errorMessage.value = err.message;
+  } finally {
+    loadingSubjects.value = false;
+  }
+}
+
+async function fetchActiveExam(){
+  try {
+    const response = await window.electronAPI.getActiveExam();
+    if (response && response.success) {
+      ActiveExam.value = response.ActiveExam;
+    } else {
+      console.error('No Active Exam', response?.message);
+    }
+  } catch (error) {
+    console.error('Error fetching exam:', error);
+  }
+}
+
+
+async function fetchClasses() {
+  try {
+    const response = await window.electronAPI.getClasses();
+    if (response && response.success) {
+      classes.value = response.classes;
+    } else {
+      console.error('Failed to fetch classes:', response?.message);
+    }
+  } catch (error) {
+    console.error('Error fetching classes:', error);
+  }
+}
+
+async function fetchSections() {
+  try {
+    const response = await window.electronAPI.getSections();
+    if (response.success) {
+      sections.value = response.sections;
+    } else {
+      errorMessage.value = response.message || 'Failed to fetch sections.';
+    }
+  } catch (err) {
+    errorMessage.value = err.message;
+  } 
+}
+
+
+
+async function loadStudentsAndInitializeMarks() {
+  if (!selectedClass.value || !selectedSection.value || !selectedSubject.value) {
+    students.value = [];
+    marks.value = [];
+    return;
+  }
+  try {
+    const response = await window.electronAPI.getStudentsByClassAndSection(selectedClass.value, selectedSection.value); // Implement this
+    if (response && response.success && response.students) {
+      students.value = response.students;
+      marks.value = students.value.map(() => null); // Initialize marks for the selected subject
+      successMessage.value = '';
+    } else {
+      console.error('Failed to fetch students:', response?.message);
+      students.value = [];
+      marks.value = [];
+    }
+  } catch (error) {
+    console.error('Error fetching students:', error);
+    students.value = [];
+    marks.value = [];
+  }
+}
 
 function selectClass(cls) {
-  selectedClass.value = cls
-  selectedSection.value = ''
-  students.value = []
-  marks.value = []
-  successMessage.value = ''
+  selectedClass.value = cls;
+  selectedSection.value = '';
+  selectedSubject.value = '';
+  students.value = [];
+  marks.value = [];
+  successMessage.value = '';
+  fetchSections();
+  fetchSubjects(cls);
 }
 
-// Watch for section selection and load dummy students
 watch(selectedSection, () => {
-  students.value = [
-    { id: 1, name: 'Alice' },
-    { id: 2, name: 'Bob' },
-    { id: 3, name: 'Charlie' },
-    { id: 3, name: 'Vanlalawmpuia' },
-    { id: 3, name: 'Vanlalchhanhima' },
-    { id: 3, name: 'Vanlalchhuanawma Khiangte' }
-  ]
+  selectedSubject.value = ''; // Reset subject when section changes
+  students.value = [];
+  marks.value = [];
+  successMessage.value = '';
+  if (selectedSection.value && selectedClass.value && selectedSubject.value) {
+    loadStudentsAndInitializeMarks();
+  }
+});
 
-  marks.value = students.value.map(() => {
-    const markEntry = {}
-    subjects.forEach(sub => (markEntry[sub] = null))
-    return markEntry
-  })
-})
+async function submitMarks() {
+  if (!selectedClass.value || !selectedSection.value || !selectedSubject.value || students.length === 0) {
+    // Handle cases where necessary data is missing
+    return;
+  }
 
-function submitMarks() {
-  const submitted = students.value.map((student, i) => ({
-    studentId: student.id,
+  const submittedMarks = students.value.map((student, index) => ({
+    studentId: student.id, // Assuming your student objects have an 'id'
     studentName: student.name,
     class: selectedClass.value,
     section: selectedSection.value,
-    marks: marks.value[i]
-  }))
+    subject: selectedSubject.value,
+    marks: marks.value[index],
+  }));
 
-  console.log('Submitted Marks:', submitted)
-  successMessage.value = 'Marks submitted successfully.'
+  console.log('Submitted Marks:', submittedMarks);
+
+  try {
+    const response = await window.electronAPI.saveMarks(submittedMarks); // Implement this in your backend
+    if (response && response.success) {
+      successMessage.value = 'Marks submitted successfully.';
+      // Optionally reset the form or clear marks.value
+    } else {
+      console.error('Failed to save marks:', response?.message);
+      // Optionally display an error message to the user
+    }
+  } catch (error) {
+    console.error('Error saving marks:', error);
+    // Optionally display an error message to the user
+  }
 }
+
+onMounted(() => {
+  fetchClasses();
+  fetchSubjects();
+  fetchActiveExam();
+});
 </script>
 
 <style scoped>
-.marks-entry-layout {
+/* Your existing styles remain the same */
+.marks-entry-container {
   display: flex;
   gap: 1.5rem;
-  padding-left: -2rem;
-  
 }
 
 .vertical-tabs {
@@ -191,7 +279,7 @@ function submitMarks() {
   border: 1px solid #ddd;
 }
 
-.tab-heading{
+.tab-heading {
   color: black;
   background-color: #00d1b2;
 }
@@ -215,7 +303,17 @@ function submitMarks() {
 
 .thin-line {
   border: none;
-  border-top: 1px solid #3c3b3b; 
+  border-top: 1px solid #3c3b3b;
   margin-bottom: -0.5rem;
+}
+
+.table-container-scroll {
+  overflow-x: auto;
+}
+
+.sticky-col {
+  position: sticky;
+  left: 0;
+  z-index: 1;
 }
 </style>

@@ -1,4 +1,5 @@
 import { createRouter, createWebHashHistory } from 'vue-router'
+import LandingPage from '../views/index.vue'
 import NewAdmission from '../views/Admission/new-admission.vue'
 import ReAdmission from '../views/Admission/re-admission.vue'
 import Transfer from '../views/Admission/transfer.vue'
@@ -8,10 +9,10 @@ import CreateExam from '../views/Manage/createExams.vue'
 import Result from '../views/Results/createResults.vue'
 import resultCriteria from '../views/Manage/resultCriteria.vue'
 import Report from '../views/Results/reportCard.vue'
-import marksEntry from '../views/Marks/marksEntry.vue'
-import marksSubject from '../views/Marks/marksSubject.vue'
+import marksEntry from '@/views/Marks/marksEntry.vue'
 import marksViewEdit from '../views/Marks/marksViewEdit.vue'
-import Mapping from '../views/Manage/mapClassSubject.vue'
+import ClassSubjectMapping from '../views/Manage/mapClassSubject.vue'
+import ClassSectionMapping from '../views/Manage/mapClassSection.vue'
 import MasterClass from '../views/Master/MasterClass.vue'
 import MasterSection from '../views/Master/MasterSection.vue'
 import MasterSubject from '../views/Master/MasterSubject.vue'
@@ -20,12 +21,18 @@ import MasterExam from '../views/Master/MasterExam.vue'
 const routes = [
   {
     path: '/',
-    redirect: '/home'
+    name: 'Landing',
+    component: LandingPage
   },
   {
     path: '/class-subject/mapping',
-    name: 'Mapping',
-    component: Mapping
+    name: 'ClassSubjectMapping',
+    component: ClassSubjectMapping
+  },
+  {
+    path: '/class-section/mapping',
+    name: 'ClassSectionMapping',
+    component: ClassSectionMapping
   },
   {
     path: '/admission/new',
@@ -78,11 +85,7 @@ const routes = [
     name: 'marksViewEdit',
     component: marksViewEdit
   },
-  {
-    path: '/marks/subject-marks-entry',
-    name: 'marksSubject',
-    component: marksSubject
-  },
+ 
   {
     path: '/marks/student-marks-entry',
     name: 'marksEntry',

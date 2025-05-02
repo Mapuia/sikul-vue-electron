@@ -3,8 +3,12 @@
       <div class="navbar-container">
         <!-- Brand on the left -->
         <div class="navbar-brand">
-          <a class="navbar-item title is-4" href="#"> Calvary High School</a>
-        </div>
+        <a class="navbar-item" href="#">
+          <img src="../assets/sikul_logo.png" alt="School Logo"  />
+          <h1 class="navbar-item title is-4 ml-1">Calvary High School</h1>
+        </a>
+      </div>
+        
         <div>
           <h1 class="subtitle">{{ currentYear || 'Not Set' }}</h1>
   
@@ -27,8 +31,8 @@
               <a class="navbar-link is-arrowless">Marks</a>
               <div class="navbar-dropdown">
                 <a>
-                  <router-link class="navbar-item" to="/marks/student-marks-entry">Marks Entry (Student-Wise)</router-link>
-                  <router-link class="navbar-item" to="/marks/subject-marks-entry">Marks Entry (Subject-Wise)</router-link>
+                  <router-link class="navbar-item" to="/marks/student-marks-entry">Enter Marks</router-link>
+             
                   <router-link class="navbar-item" to="/marks/view-edit-marks">View and Update Marks</router-link>
                 </a>
               </div>
@@ -50,8 +54,7 @@
                 <a>
                   <router-link class="navbar-item" to="/academic-year/create">Set Academic Year</router-link>   
                   <router-link class="navbar-item" to="/student/update">Update Student</router-link>
-                  <router-link class="navbar-item" to="/exam/create">Create Exams</router-link>
-                  <router-link class="navbar-item" to="/class-subject/mapping">Class - Subject Mapping</router-link>
+                  <router-link class="navbar-item" to="/exam/create">Create Exams</router-link>                  
                   <router-link class="navbar-item" to="/result-criteria/set">Set Result Criteria</router-link>                 
                 </a>
               </div>
@@ -63,7 +66,9 @@
                   <router-link class="navbar-item" to="/class/master">Class Master Entry</router-link>
                   <router-link class="navbar-item" to="/section/master">Section Master Entry</router-link>
                   <router-link class="navbar-item" to="/subject/master">Subjects Master Entry</router-link>
-                  <router-link class="navbar-item" to="/exam/master">Exams Master Entry</router-link>                  
+                  <router-link class="navbar-item" to="/exam/master">Exams Master Entry</router-link>
+                  <router-link class="navbar-item" to="/class-subject/mapping">Class - Subject Mapping</router-link>                
+                  <router-link class="navbar-item" to="/class-section/mapping">Class - Section Mapping</router-link>                
                 </a>
               </div>
             </div>
@@ -80,11 +85,10 @@
     </nav>
   </template>
   
-  <script setup lang="ts">
+<script setup lang="ts">
 
 import { onMounted } from 'vue'
 import { useAcademicYear } from '../composables/useAcademicYear'
-
 const { currentYear, loadAcademicYear } = useAcademicYear()
 
 function logoutButton() {
@@ -92,7 +96,6 @@ function logoutButton() {
 }
 
 onMounted(() => {
-  console.log("Navbar is loaded")
   loadAcademicYear()
 })
 
@@ -100,11 +103,10 @@ window.electronAPI.onAcademicYearChanged(() => {
   loadAcademicYear()
 })
    
- 
-  </script>
+</script>
   
-  <style scoped>
-  .navbar{
+<style scoped>
+.navbar{
   width: 100%;
   box-shadow: 0 4px 4px -2px rgba(107, 107, 107, 0.2);
 }
@@ -115,7 +117,6 @@ window.electronAPI.onAcademicYearChanged(() => {
   align-items: center; /* aligns brand and menu vertically */
   justify-content: space-between;
   min-height: 3.25rem; /* same as Bulma's default navbar height */
- 
 }
 
 .navbar-item.title {
@@ -137,4 +138,4 @@ color: white;
 .navbar-item.router-link-exact-active {
   background-color: rgba(255, 255, 255, 0.885);
 }
-  </style>
+</style>
