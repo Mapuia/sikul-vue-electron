@@ -9,8 +9,10 @@ require('./ipcHandlers/ClassesHandler.cjs');
 require('./ipcHandlers/SectionsHandler.cjs');
 require('./ipcHandlers/SubjectsHandler.cjs');
 require('./ipcHandlers/ExamsHandler.cjs');
+require('./ipcHandlers/ActiveExamsHandler.cjs');
 require('./ipcHandlers/ClassSubjectsMappingHandler.cjs');
 require('./ipcHandlers/ClassSectionsMappingHandler.cjs');
+require('./ipcHandlers/AdmissionHandler.cjs');
 
 let mainWindow;
 let splash;

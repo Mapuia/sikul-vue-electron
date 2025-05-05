@@ -63,12 +63,12 @@
               <a class="navbar-link is-arrowless">Master</a>
               <div class="navbar-dropdown">
                 <a>                          
-                  <router-link class="navbar-item" to="/class/master">Class Master Entry</router-link>
-                  <router-link class="navbar-item" to="/section/master">Section Master Entry</router-link>
-                  <router-link class="navbar-item" to="/subject/master">Subjects Master Entry</router-link>
-                  <router-link class="navbar-item" to="/exam/master">Exams Master Entry</router-link>
-                  <router-link class="navbar-item" to="/class-subject/mapping">Class - Subject Mapping</router-link>                
-                  <router-link class="navbar-item" to="/class-section/mapping">Class - Section Mapping</router-link>                
+                  <router-link class="navbar-item" to="/class/master">Master: Class</router-link>
+                  <router-link class="navbar-item" to="/section/master">Master: Section</router-link>
+                  <router-link class="navbar-item" to="/subject/master">Master: Subjects</router-link>
+                  <router-link class="navbar-item" to="/exam/master">Master: Exams</router-link>
+                  <router-link class="navbar-item" to="/class-subject/mapping">Mapping: Class - Subjects</router-link>                
+                  <router-link class="navbar-item" to="/class-section/mapping">Mapping: Class - Sections</router-link>                
                 </a>
               </div>
             </div>

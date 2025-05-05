@@ -5,14 +5,6 @@ const { contextBridge, ipcRenderer } = require("electron");
     /////////////////////////////////////////////////////////////////////////////SIMPLE DATA FETCHING
     getCurrentAcademicYear: () => ipcRenderer.invoke('get-current-academic-year'),
     
-    
-    
-    
-    getActiveExams: () => ipcRenderer.invoke('get-active-exams'),
-    
-    insertActiveExam: (data) => ipcRenderer.invoke('insert-active-exam', data),
-    deactivateAllActiveExams: (yearId) => ipcRenderer.invoke('deactivate-active-exams', yearId),
-
       //Main API
       logout: () => ipcRenderer.send('logout'),
             
@@ -45,8 +37,12 @@ const { contextBridge, ipcRenderer } = require("electron");
       updateExam: (id, examName, description) => ipcRenderer.invoke('update-exam', id, examName, description),
       deleteExam: (examId) => ipcRenderer.invoke('delete-exam', examId),
       
-      getActiveExam: () => ipcRenderer.invoke('get-active-exam'),
-      
+      //Active Exams
+      getActiveExams: (academicYearId) => ipcRenderer.invoke('get-active-exams', academicYearId),
+      insertActiveExam: (examData) => ipcRenderer.invoke('insert-active-exam', examData),
+      updateActiveExam: (examData) => ipcRenderer.invoke('update-active-exam', examData),
+      deleteActiveExam: (examId) => ipcRenderer.invoke('delete-active-exam', examId),
+      deactivateAllActiveExams: (academicYearId) => ipcRenderer.invoke('deactivate-all-active-exams', academicYearId),
 
       //
       //getSubjectsByClass: (className) => ipcRenderer.invoke('getSubjectsByClass', className),
@@ -60,5 +56,7 @@ const { contextBridge, ipcRenderer } = require("electron");
       getClassSectionMappings: () => ipcRenderer.invoke('get-class-section-mappings'),
       saveClassSectionMappings: (mappings) => ipcRenderer.invoke('save-class-section-mappings', mappings),
       deleteClassSectionMapping: (classId) => ipcRenderer.invoke('delete-class-section-mapping', classId),
+
+      getSectionsByClass:(ClassId) => ipcRenderer.invoke('get-sections-by-class', ClassId)
      
 });

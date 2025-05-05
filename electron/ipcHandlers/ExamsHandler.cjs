@@ -56,30 +56,3 @@ ipcMain.handle('delete-exam', async (event, examId) => {
   }
 });
 
-//ACTIVE EXAMS
-//////////////////////////////////////////////////////////////////////////////             GET ACTIVE EXAM
-ipcMain.handle('get-active-exams', async () => {
-  try {
-      const stmt = db.prepare('SELECT * FROM ActiveExam');
-      stmt.get();
-      return {success: true};
-    } catch (error) {
-      console.error('Failed to get active exam:', error);
-      throw error;
-    }
-  }
-);
-
-//////////////////////////////////////////////////////////////////////////////             CREATE ACTIVE EXAM
-ipcMain.handle('insert-active-exams', async () => {
-   try {
-      const stmt = db.prepare(
-        'INSERT INTO ActiveExam (currentYearId, examName, MajMax, MinorMax, CosMax, isActive) VALUES (?, ?, ?, ?, ?, ?)'
-      );
-      stmt.run(currentYearId, examName, MajMax, MinorMax, CosMax, isActive);
-      return {success: true};
-    } catch (error) {
-      console.error('Failed to insert exam:', error);
-      throw error;
-    }
-});
