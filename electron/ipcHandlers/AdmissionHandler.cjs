@@ -1,6 +1,6 @@
 const { ipcMain } = require('electron');
-const { getDatabase } = require('../database.cjs');
-const db = getDatabase()
+const { db } = require('../database.cjs');
+
 
 //////////////////////////////////////////////////////////////////////////////////////                  GET
 ipcMain.handle('get-sections-by-class', async (event, ClassId) => {
@@ -22,25 +22,9 @@ ipcMain.handle('get-sections-by-class', async (event, ClassId) => {
 });
 
 ///////////////////////////////////////////////////////////////////////////////////////                CREATE
-ipcMain.handle('insert-student-admission', async (event, form) => {
-  try {
-      const stmt = db.prepare(
-        'INSERT INTO Exams (ExamName, Description) VALUES (?, ?)'
-      );
-      stmt.run(examName, description);
-      return {success: true};
-    } catch (error) {
-      console.error('Failed to insert exam:', error);
-      throw error;
-    }
-});
 
 //Insert Student and Admission
-// In your main process or preload (e.g., `main.js` or `preload.js`)
-const { ipcMain } = require('electron');
-const db = require('./path/to/database'); // better-sqlite3 instance
-
-ipcMain.handle('insertStudentAndAdmission', (event, form) => {
+ipcMain.handle('insert-student-admission', (event, form) => {
   const insertStudent = db.prepare(`
     INSERT INTO Students (
       Name, Gender, fathersName, mothersName, DOB, Aadhaar, APAR, PEN, Contact, Address,
@@ -94,12 +78,14 @@ ipcMain.handle('insertStudentAndAdmission', (event, form) => {
     });
 
     return {
+      success: true,
       studentId,
       admissionId: admissionResult.lastInsertRowid
     };
   });
 
   try {
+   
     return transaction(form);
   } catch (err) {
     console.error('Transaction failed:', err.message);

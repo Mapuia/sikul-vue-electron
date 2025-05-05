@@ -2,18 +2,18 @@
   <div class="form-container full">
     <h1 class="title is-4 has-text-centered">Class-Subject Mapping</h1>
 
-    <div v-if="errorMessage" class="notification is-danger">{{ errorMessage }}</div>
-    <div v-if="successMessage" class="notification is-success">{{ successMessage }}</div>
+    <div v-if="errorMessage" class="notification is-danger fixed-notification">{{ errorMessage }}</div>
+    <div v-if="successMessage" class="notification is-success fixed-notification">{{ successMessage }}</div>
 
     <div class="box">
       <!-- Select Class -->
       <div class="field">
         <label class="label">Select Class</label>
         <div class="control">
-          <div class="select">
+          <div class="select is-fullwidth"> <!-- Add is-fullwidth for better control -->
             <select v-model="selectedClass" required>
               <option value="">-- Select Class --</option>
-              <option v-for="cls in classes" :key="cls.Id" :value="cls.Id" :disabled="isClassMapped(cls.Id)">
+              <option v-for="cls in classes" :key="cls.Id" :value="cls.Id" >
                 {{ cls.ClassName }}
               </option>
             </select>
@@ -209,9 +209,9 @@ async function handleSubmitMapping({
 }) {
   if (!selectedClass.value || selectedSubjects.value.length === 0) return
 
-  isSubmitting.value = true
-  errorMessage.value = ''
-  successMessage.value = ''
+      isSubmitting.value = true
+      errorMessage.value = ''
+      successMessage.value = ''
 
   try {
     const mappings = selectedSubjects.value.map(subject => ({

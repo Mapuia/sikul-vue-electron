@@ -34,16 +34,16 @@
           </div>
         </div>
 
-        <div v-if="addErrorMessage" class="notification is-danger mt-4">
+        <div v-if="addErrorMessage" class="notification is-danger fixed-notification">
           {{ addErrorMessage }}
         </div>
       </form>
     </div>
 
-    <div v-if="errorMessage" class="notification is-danger mt-4">
+    <div v-if="errorMessage" class="notification is-danger fixed-notification">
       {{ errorMessage }}
     </div>
-    <div v-if="successMessage" class="notification is-success mt-4">
+    <div v-if="successMessage" class="notification is-successfixed-notification">
       {{ successMessage }}
     </div>
 
@@ -85,34 +85,40 @@
               <td class="has-text-right">
                 <div class="buttons is-grouped is-justify-content-end">
                   <button
-                    class="button is-small is-info"
+                    class="button is-small is-info no-padding is-icon"
                     @click="editClass(classItem)"
                     v-if="editingClass !== classItem.Id"
+                    title="Edit"
                   >
-                    Edit
+                    <i class="fas fa-pen"></i>
                   </button>
+
+                  
                   <button
-                    class="button is-small is-success"
+                    class="button is-small is-success no-padding"
                     @click="saveEdit(classItem)"
+                    title="Save"
                     v-else
                   >
                     <span class="icon is-small">
-                      <i class="fas fa-check"></i>
+                      <i class="fas fa-save"></i>
                     </span>
-                    <span>Save</span>
+                   
                   </button>
                   <button
-                    class="button is-small is-warning"
+                    class="button is-small is-warning no-padding"
                     @click="cancelEdit()"
                     v-if="editingClass === classItem.Id"
-                  >
-                    <span class="icon is-small">
+                    title="Cancel">
+                    
                       <i class="fas fa-times"></i>
-                    </span>
-                    <span>Cancel</span>
+                   
                   </button>
-                  <button class="button is-small is-danger" @click="deleteClass(classItem)">
-                    Delete
+                  <button 
+                    class="button is-small is-danger no-padding" 
+                    @click="deleteClass(classItem)"
+                    title="Delete">
+                    <i class="fas fa-trash-alt"></i>
                   </button>
                 </div>
               </td>

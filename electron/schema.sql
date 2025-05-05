@@ -100,7 +100,7 @@ CREATE TABLE IF NOT EXISTS Students (
     PEN TEXT UNIQUE,
     Contact TEXT CHECK(length(Contact) = 10 AND Contact GLOB '[0-9]*'),
     Address TEXT,
-    FirstAdmissionDate DATE,
+    FirstAdmissionDate DEFAULT CURRENT_TIMESTAMP,
     Status TEXT NOT NULL CHECK(Status IN ('Admitted', 'Transferred', 'Terminated', 'Retained')) DEFAULT 'Admitted',
     Caste TEXT,
     Religion TEXT,

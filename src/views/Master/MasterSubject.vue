@@ -57,10 +57,10 @@
       </form>
     </div>
 
-    <div v-if="errorMessage" class="notification is-danger mt-4">
+    <div v-if="errorMessage" class="notification is-danger fixed-notification">
       {{ errorMessage }}
     </div>
-    <div v-if="successMessage" class="notification is-success mt-4">
+    <div v-if="successMessage" class="notification is-success fixed-notification">
       {{ successMessage }}
     </div>
 

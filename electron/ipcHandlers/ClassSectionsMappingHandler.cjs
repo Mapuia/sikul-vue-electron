@@ -1,6 +1,5 @@
 const { ipcMain } = require('electron');
-const { getDatabase } = require('../database.cjs');
-const db = getDatabase();
+const { db } = require('../database.cjs');
 
   ///////////////////////////////////////////////////////////////////////////////////////Class Section mapping  Handle
 // Get class-section mappings
@@ -20,6 +19,7 @@ ipcMain.handle('get-class-section-mappings', async () => {
       JOIN Classes c ON m.ClassId = c.Id
       JOIN Sections s ON m.SectionId = s.Id
       GROUP BY c.Id
+      ORDER BY c.Id DESC
     `)
     
     const results = stmt.all()

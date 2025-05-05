@@ -13,6 +13,7 @@ require('./ipcHandlers/ActiveExamsHandler.cjs');
 require('./ipcHandlers/ClassSubjectsMappingHandler.cjs');
 require('./ipcHandlers/ClassSectionsMappingHandler.cjs');
 require('./ipcHandlers/AdmissionHandler.cjs');
+require('./ipcHandlers/StudentsHandler.cjs');
 
 let mainWindow;
 let splash;

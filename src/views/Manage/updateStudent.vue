@@ -212,7 +212,7 @@
   import { useAcademicYear } from '../../composables/useAcademicYear'
   
   import { useAdmissionForm } from '../../composables/useAdmissionForm'
-  const { currentYear, loadAcademicYear } = useAcademicYear()
+  const { currentYear } = useAcademicYear()
   
   const {
     form,

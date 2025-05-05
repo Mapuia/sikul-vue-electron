@@ -1,9 +1,8 @@
 const { ipcMain } = require('electron');
-const { getDatabase } = require('../database.cjs');
-const db = getDatabase();
+const { db } = require('../database.cjs');
 console.log("Mapping Handler");
 ////////////////////////////////////////////////////////////////////////////////Select Subjects based on Class
-ipcMain.handle('getSubjectsByClass', async (event, className) => {
+ipcMain.handle('get-subjects-by-class', async (event, className) => {
   try {
    // Get the database connection
     const query = `
@@ -78,17 +77,23 @@ ipcMain.handle('get-class-subject-mappings', () => {
 ///////////////////////////////////////////////////////////////////////////////////////
 ipcMain.handle('save-class-subject-mappings', async (event, mappings) => {
   try {
-    const stmt = db.prepare('INSERT INTO ClassSubjectMapping (ClassId, SubjectId) VALUES (?, ?)')
+    const idToDelete = mappings[0].ClassId;
+    const delstmt = db.prepare('DELETE FROM ClassSubjectMapping WHERE ClassId = ?').run(idToDelete);
+    if(delstmt){
+      const stmt = db.prepare('INSERT OR REPLACE INTO ClassSubjectMapping (ClassId, SubjectId) VALUES (?, ?)')
 
-    const insert = db.transaction(() => {
-      for (const mapping of mappings) {
-        stmt.run(mapping.ClassId, mapping.SubjectId)
-      }
-    })
-
-    insert()
-
-    return { success: true }
+      const insert = db.transaction(() => {
+        for (const mapping of mappings) {
+          stmt.run(mapping.ClassId, mapping.SubjectId)
+        }
+      })
+      insert()
+      return { success: true }
+    }
+    else{
+      console.error('Error saving mappings:', err)
+      return { success: false, message: "Failed to remove existing Mapping" }
+    }  
   } catch (err) {
     console.error('Error saving mappings:', err)
     return { success: false, message: err.message }

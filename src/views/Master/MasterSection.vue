@@ -32,7 +32,7 @@
           </div>
         </div>
 
-        <div v-if="addSectionErrorMessage" class="notification is-danger mt-4">
+        <div v-if="addSectionErrorMessage" class="notification is-danger fixed-notification">
           {{ addSectionErrorMessage }}
         </div>
       </form>
@@ -105,10 +105,10 @@
         No sections found.
       </div>
     </div>
-        <div v-if="errorMessage" class="notification is-danger mt-4">
+        <div v-if="errorMessage" class="notification is-danger fixed-notification">
       {{ errorMessage }}
     </div>
-    <div v-if="successMessage" class="notification is-success mt-4">
+    <div v-if="successMessage" class="notification is-success fixed-notification">
       {{ successMessage }}
     </div>
   </div>

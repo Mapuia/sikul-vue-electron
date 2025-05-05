@@ -1,6 +1,5 @@
 const { ipcMain } = require('electron');
-const { getDatabase } = require('../database.cjs');
-const db = getDatabase()
+const { db } = require('../database.cjs');
 
 //////////////////////////////////////////////////////////////////////////////////////                  GET
 ipcMain.handle('get-subjects', async () => {

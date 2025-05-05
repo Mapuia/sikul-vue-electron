@@ -1,6 +1,6 @@
 const { ipcMain } = require('electron');
-const { getDatabase } = require('../database.cjs');
-const db = getDatabase();
+const { db } = require('../database.cjs');
+
 console.log("Class Handler");
 //////////////////////////////////////////////////////////////////////////////////////READ/GET
 ipcMain.handle('get-classes', () => {

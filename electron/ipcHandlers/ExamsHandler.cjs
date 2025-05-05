@@ -1,6 +1,5 @@
 const { ipcMain } = require('electron');
-const { getDatabase } = require('../database.cjs');
-const db = getDatabase();
+const { db } = require('../database.cjs');
 
 // New IPC Handlers for Exams
 //////////////////////////////////////////////////////////////////////////////             GET

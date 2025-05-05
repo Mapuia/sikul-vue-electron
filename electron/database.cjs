@@ -6,68 +6,71 @@ const fs = require('fs');
 const dbFilePath = path.join(__dirname, 'sikuldb.db');
 const schemaFilePath = path.join(__dirname, 'schema.sql');
 
-// Database object
-let db;
+// Database instance
+let db = null;
 
 function initializeDatabase() {
   try {
-    let isNewDatabase = !fs.existsSync(dbFilePath); // Check if new database
+    // Check if database file exists
+    const isNewDatabase = !fs.existsSync(dbFilePath);
+    
+    // Connect to the database
+    db = new Database(dbFilePath);
+    console.log(isNewDatabase ? 'Database created successfully.' : 'Database connected successfully.');
 
-    // Connect to the database 
-    db = Database(dbFilePath);
-    console.log(isNewDatabase ? 'Database created successfully.' : 'Database connected....');
+    // Enable WAL mode for better performance
+    db.pragma('journal_mode = WAL');
+    
+    // Enable foreign key constraints
+    db.pragma('foreign_keys = ON');
 
-    // If it's a new database, execute the schema
-    if (isNewDatabase) {
-      runSchema();
+    // If new database, execute schema
+    if (isNewDatabase && fs.existsSync(schemaFilePath)) {
+      const schemaSQL = fs.readFileSync(schemaFilePath, 'utf-8');
+      db.exec(schemaSQL);
+      console.log('Schema executed successfully.');
     }
 
+    // Verify connection
+    db.prepare('SELECT 1').get();
+    
+    return db;
   } catch (error) {
-    console.error('Error initializing database:', error);
-    throw error; // Re-throw to prevent the app from running without a DB.
-  }
-
-  return db;
-};
-
-function runSchema() {
-  try {
-    if (!fs.existsSync(schemaFilePath)) {
-      throw new Error('No Schema File Found');
-    }
-
-    const schemaSQL = fs.readFileSync(schemaFilePath, 'utf-8');
-    db.exec(schemaSQL);
-    console.log('Schema executed successfully.');
-  } catch (error) {
-    console.error('Error executing schema.sql:', error);
+    console.error('Database initialization failed:', error);
     throw error;
   }
-};
+}
 
-// Function to get the database connection
 function getDatabase() {
   if (!db) {
-    db = initializeDatabase();
+    throw new Error('Database not initialized. Call initializeDatabase() first.');
   }
   return db;
-};
+}
 
-// Function to close the database connection
 function closeDatabase() {
   if (db) {
-    db.close();
-    console.log('Database connection closed.');
-    db = null;
+    try {
+      db.close();
+      console.log('Database connection closed.');
+    } catch (error) {
+      console.error('Error closing database:', error);
+    } finally {
+      db = null;
+    }
   }
-};
+}
 
-// Export the functions
+// Initialize database immediately when this module is loaded
+initializeDatabase();
+
+// Cleanup on process exit
+process.on('exit', closeDatabase);
+process.on('SIGINT', () => process.exit());
+process.on('SIGTERM', () => process.exit());
+
 module.exports = {
-  initializeDatabase,
   getDatabase,
   closeDatabase,
-  
+  db // Export for direct access if needed
 };
-
-

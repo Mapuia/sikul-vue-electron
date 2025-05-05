@@ -1,7 +1,7 @@
 <template>
   <div class="form-container wide">
     <h1 class="title has-text-centered">New Admission {{ currentYear }}</h1>
-    <div v-if="message" class="notification is-primary">{{ message }}</div>
+    <div v-if="message" class="notification is-primary fixed-notification">{{ message }}</div>
 
     <!-- Personal Info -->
     <div class="box">
@@ -10,7 +10,7 @@
 
         <div class="field">
           <label class="label">Full Name</label>
-          <input class="input" type="text" v-model="form.fullName" required />
+          <input class="input" type="text" v-model="form.name" required />
         </div>
 
         <div class="field is-horizontal">
@@ -20,8 +20,8 @@
               <div class="select is-fullwidth">
                 <select v-model="form.gender" required>
                   <option value="">Select Gender</option>
-                  <option value="male">Male</option>
-                  <option value="female">Female</option>
+                  <option value="Male">Male</option>
+                  <option value="Female">Female</option>
                 </select>
               </div>
             </div>
@@ -31,7 +31,7 @@
             </div>
             <div class="field">
               <label class="label">Contact Number</label>
-              <input class="input" type="tel" v-model="form.contactNumber" maxlength="10" />
+              <input class="input" type="tel" v-model="form.contact" maxlength="10" />
             </div>
           </div>
         </div>
@@ -51,7 +51,7 @@
 
         <div class="field">
           <label class="label">Address</label>
-          <input class="input" v-model="form.address" />
+          <input class="input" placeholder="H.No, Street, Village, City, District, State" v-model="form.address" />
         </div>
       </fieldset>
     </div>
@@ -162,17 +162,15 @@
             </div>
             <div class="field">
               <label class="label">Section</label>
-                <div class="select is-fullwidth">
-                  <select v-model.number="form.sectionId" :disabled="!form.classId" @change="displaysection">
-                    <option disabled value="">Select Section</option>
-                    <option v-for="sec in sectionOptions" :key="sec.Id" :value="sec.Id">
-                      {{ sec.SectionName }}
-                    </option>
-                  </select>
+              <div class="select is-fullwidth">
+                <select v-model.number="form.sectionId" :disabled="!form.classId">
+                  <option disabled value="">Select Section</option>
+                  <option v-for="sec in sectionOptions" :key="sec.Id" :value="sec.Id">
+                    {{ sec.SectionName }}
+                  </option>
+                </select>
               </div>
             </div>
-  
-
             <div class="field">
               <label class="label">Assign Roll No</label>
               <input class="input" v-model="form.rollNo" />
@@ -197,48 +195,18 @@ import { ref, reactive, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAcademicYear } from '../../composables/useAcademicYear';
 
-const { currentYear } = useAcademicYear();
+const { currentYear, currentYearId } = useAcademicYear();
 const router = useRouter();
 
-interface Class {
-  id: number;
-  ClassName: string;
-}
-
-interface Section {
-  id: number;
-  SectionName: string;
-}
-
-interface Form {
-  fullName: string;
-  gender: string;
-  dob: string;
-  contactNumber: string;
-  fathersName: string;
-  mothersName: string;
-  address: string;
-  apar: string;
-  aadhaar: string;
-  pen: string;
-  rollNo: string;
-  caste: string;
-  religion: string;
-  height: number | null;
-  weight: number | null;
-  bloodGroup: string;
-  classId: number | null;
-  sectionId: number | null;
-}
-
-const classes = ref<Class[]>([]);
-const sectionOptions = ref<Section[]>([]);
 const message = ref('');
-const form = reactive<Form>({
-  fullName: '',
+const classes = ref([]);
+const sectionOptions = ref([]);
+
+const form = reactive({
+  name: '',
   gender: '',
   dob: '',
-  contactNumber: '',
+  contact: '',
   fathersName: '',
   mothersName: '',
   address: '',
@@ -253,92 +221,62 @@ const form = reactive<Form>({
   bloodGroup: '',
   classId: null,
   sectionId: null,
+  academicYearId: currentYearId,
+  admissionType: 'New'
 });
 
 async function fetchClasses() {
-  try {
-    const response = await window.electronAPI.getClasses();
-    if (response.success) {
-      classes.value = response.classes;
-    } else {
-      message.value = response.message || 'Failed to fetch classes.';
-    }
-  } catch (err: any) {
-    message.value = err.message;
+  const response = await window.electronAPI.getClasses();
+  if (response.success) {
+    classes.value = response.classes;
+  } else {
+    message.value = response.message || 'Failed to fetch classes.';
   }
 }
 
-const displaysection = async () => {
-  console.log('Selected SectionId:', form.sectionId);////////////////////////////////////////////
-}
-const updateSectionOptions = async () => {
-  console.log('Selected classId:', form.classId);////////////////////////////////////////////////
+async function updateSectionOptions() {
   if (!form.classId) {
     sectionOptions.value = [];
-    form.sectionId = null;
     return;
   }
+  const response = await window.electronAPI.getSectionsByClass(form.classId);
+  if (response.success) {
+    sectionOptions.value = response.sections;
+  } else {
+    message.value = response.message || 'Failed to fetch sections.';
+  }
+}
+
+async function handleSubmit() {
+  console.log('Submitting form', form);
 
   try {
-    const response = await window.electronAPI.getSectionsByClass(form.classId);
+    const plainForm = JSON.parse(JSON.stringify(form));
+    console.log('Sanitized Form:', plainForm);
+
+    const response = await window.electronAPI.insertStudentAndAdmission(plainForm);
+    console.log('Response:', response);
+
     if (response.success) {
-      sectionOptions.value = response.sections;
-      form.sectionId = null;
-    } else {
-      message.value = response.message || 'Failed to fetch sections.';
-    }
-  } catch (err: any) {
-    message.value = err.message;
-  }
-};
-
-const handleSubmit = async () => {
-  if (
-    !form.fullName || !form.gender || !form.dob ||
-    !form.fathersName || !form.classId || !form.sectionId
-  ) {
-    message.value = 'Please fill in all required fields.';
-    return;
-  }
-  if (form.contactNumber && form.contactNumber.length !== 10) {
-    message.value = 'Contact number must be 10 digits long.';
-    return;
-  }
-
-  try {
-    const result = await window.electronAPI.insertStudentAndAdmission(form);
-    if (result.success) {
-      message.value = 'Student and Admission information added successfully!';
-      Object.assign(form, {
-        fullName: '',
-        gender: '',
-        dob: '',
-        contactNumber: '',
-        fathersName: '',
-        mothersName: '',
-        address: '',
-        apar: '',
-        aadhaar: '',
-        pen: '',
-        rollNo: '',
-        caste: '',
-        religion: '',
-        height: null,
-        weight: null,
-        bloodGroup: '',
-        classId: null,
-        sectionId: null,
+      router.push({
+        name: 'admission-success',
+        query: {
+          admissionId: response.admissionId,
+          studentName: form.name,
+          className: classes.value.find(c => c.Id === form.classId)?.ClassName || '',
+          sectionName: sectionOptions.value.find(s => s.Id === form.sectionId)?.SectionName || '',
+          rollNo: form.rollNo,
+          academicYear: currentYear.value
+        }
       });
-      
     } else {
-      message.value = result.message || 'Failed to add student.';
+      message.value = response.message || 'Failed to admit student.';
     }
   } catch (err: any) {
-    message.value = err.message || 'An unexpected error occurred.';
+    console.error('Submission error:', err);
+    message.value = err.message || 'Unexpected error.';
   }
-};
+}
 
-onMounted(() => {
-  fetchClasses();
-});
+onMounted(fetchClasses);
 </script>

@@ -51,7 +51,7 @@
       
       </div>
 
-      <div id="message" class="notification" v-if="message.text" :class="message.type">
+      <div id="message" class="notification fixed-notification" v-if="message.text" :class="message.type">
         {{ message.text }}
       </div>
     </form>  

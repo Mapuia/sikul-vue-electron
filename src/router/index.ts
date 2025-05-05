@@ -3,7 +3,7 @@ import LandingPage from '../views/index.vue'
 import NewAdmission from '../views/Admission/new-admission.vue'
 import ReAdmission from '../views/Admission/re-admission.vue'
 import Transfer from '../views/Admission/transfer.vue'
-import StudentUpdate from '../views/Manage/updateStudent.vue'
+import ManageStudent from '../views/Manage/students.vue'
 import AcademicYear from '../views/Manage/academic-year.vue'
 import CreateExam from '../views/Manage/createExams.vue'
 import Result from '../views/Results/createResults.vue'
@@ -17,6 +17,7 @@ import MasterClass from '../views/Master/MasterClass.vue'
 import MasterSection from '../views/Master/MasterSection.vue'
 import MasterSubject from '../views/Master/MasterSubject.vue'
 import MasterExam from '../views/Master/MasterExam.vue'
+import AdmissionSuccess from '../views/Admission/AdmissionSuccess.vue'
 
 const routes = [
   {
@@ -50,9 +51,9 @@ const routes = [
     component: Transfer
   },
   {
-    path: '/student/update',
-    name: 'StudentUpdate',
-    component: StudentUpdate
+    path: '/manage/student',
+    name: 'ManageStudent',
+    component: ManageStudent,
   },
   {
     path: '/exam/create',
@@ -111,7 +112,12 @@ const routes = [
     name: 'MasterExam',
     component: MasterExam
   },
-  // Add other routes similarly
+  {
+    path: '/admission/success',
+    name: 'admission-success',
+    component: AdmissionSuccess,
+    props: true // This allows passing route params as props
+  }
 ]
 
 const router = createRouter({

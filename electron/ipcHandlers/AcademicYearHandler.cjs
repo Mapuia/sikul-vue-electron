@@ -1,9 +1,8 @@
 const { ipcMain } = require('electron');
-console.log("Academic Year");
-const { getDatabase } = require('../database.cjs');
-const db = getDatabase();
+const { db } = require('../database.cjs');
 
 
+console.log("Academic Year is loaded.");
 //////////////////////////////////////////////////////////////////////////////////////////////Load Current Year
 ipcMain.handle('get-current-academic-year', () => {
   try {

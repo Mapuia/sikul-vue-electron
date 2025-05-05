@@ -61,7 +61,10 @@ button:focus,
 button:focus-visible {
   outline: 4px auto -webkit-focus-ring-color;
 }
-
+.select {
+  position: relative;
+  z-index: 2; /* Ensure dropdown appears above other elements */
+}
 .marks-entry-container {
   display: flex;
   align-items: flex-start;
@@ -131,3 +134,24 @@ button:focus-visible {
   z-index: 2;
 }
 
+.fixed-notification {
+  position: fixed;
+  top: 5rem;
+  right: 1rem;
+  z-index: 9999;
+  width: auto;
+  max-width: 300px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+.is-square {
+  width: 1.75rem;
+  height: 1.75rem;
+  padding: 0;
+  max-width: 20px;
+}
+.no-padding {
+  padding: 0 !important;
+  width: 24px;
+  min-width: 40px;
+  height: 24px;
+}

@@ -70,8 +70,8 @@
     </div>
 
     <!-- Notifications -->
-    <div v-if="successMessage" class="notification is-success mt-4">{{ successMessage }}</div>
-    <div v-if="errorMessage" class="notification is-danger mt-4">{{ errorMessage }}</div>
+    <div v-if="successMessage" class="notification is-success fixed-notification">{{ successMessage }}</div>
+    <div v-if="errorMessage" class="notification is-danger fixed-notification">{{ errorMessage }}</div>
 
     <!-- Active Exams Table -->
     <div class="box mt-4">
