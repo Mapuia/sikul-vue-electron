@@ -1,103 +1,123 @@
 <template>
-    <div class="form-container full">
-      <h1 class="title has-text-centered">Marks Entry - Half Yearly Exam</h1>
-  <div class="marks-entry-container">
-    <div class="vertical-tabs">
-      <h1 >Subjects</h1>
-      <div
-        v-for="subject in subjects"
-        :key="subject"
-        @click="selectSubject(subject)"
-        :class="['tab-item', selectedSubject === subject ? 'active' : '']"
-      >
-        {{ subject }}
-      </div>
-    </div>
+  <div class="form-container full">
+    <h1 class="title has-text-centered">Marks Entry - Half Yearly Exam</h1>
 
-    <div class="main-content">
-      <div v-if="selectedSubject">
-        <h2 class="title is-4">{{ selectedSubject }} - Marks Entry</h2>
-
-        <div class="filters is-flex is-align-items-center mb-4">
-          <div class="mr-4">
-            <label class="label">Class</label>
-            <div class="select">
-              <select v-model="selectedClass">
-                <option disabled value="">--Select Class--</option>
-                <option v-for="cls in classes" :key="cls">{{ cls }}</option>
-              </select>
-            </div>
-          </div>
-
-          <div class="mr-4">
-            <label class="label">Section</label>
-            <div class="select">
-              <select v-model="selectedSection">
-                <option disabled value="">--Select Section--</option>
-                <option v-for="sec in sections" :key="sec">{{ sec }}</option>
-              </select>
-            </div>
-          </div>
+    <div class="marks-entry-container">
+      <!-- Vertical Class Menu -->
+      <div class="vertical-tabs">
+        <h1>Class</h1>
+        <div
+          v-for="cls in classes"
+          :key="cls.Id"
+          @click="selectClass(cls.Id)"
+          :class="['tab-item', selectedClassId === cls.Id ? 'active' : '']"
+        >
+          Class {{ cls.ClassName }}
         </div>
 
-        <!-- Only show student table when both class and section are selected -->
-        <div v-if="selectedClass && selectedSection">
-          <table class="table is-fullwidth is-striped">
-            <thead>
-              <tr>
-                <th>Student Name</th>
-                <th>Mark</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="student in students" :key="student.id">
-                <td>{{ student.name }}</td>
-                <td>
-                  <input
-                    class="input"
-                    type="number"
-                    min="0"
-                    max="100"
-                    v-model="marks[student.id]"
-                    placeholder="Enter mark"
-                  />
-                </td>
-              </tr>
-            </tbody>
-          </table>
+        <!-- Section appears only if a class is selected -->
+        <template v-if="sections.length > 0">
+          <h1 style="margin-top: 1rem;">Section</h1>
+          <div
+            v-for="sec in sections"
+            :key="sec.Id"
+            @click="selectSection(sec.Id)"
+            :class="['tab-item', selectedSectionId === sec.Id ? 'active' : '']"
+          >
+            Section {{ sec.SectionName }}
+          </div>
+        </template>
+      </div>
+
+      <div class="main-content">
+        <div v-if="selectedClassId && selectedSectionId">
+          <h2 class="title is-4">
+            Class {{ getClassName(selectedClassId) }} - Section {{ getSectionName(selectedSectionId) }}
+          </h2>
+
+          <!-- Your actual student mark entry table can go here -->
         </div>
       </div>
     </div>
-  </div>
   </div>
 </template>
-
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 
-const subjects = ["English", "Math", "Science", "Social Science", "Hindi"]
-const classes = ["KG", "I", "II", "III", "IV", "V"]
-const sections = ["A", "B"]
+const classes = ref([])
+const sections = ref([])
 
-const selectedSubject = ref('')
-const selectedClass = ref('')
-const selectedSection = ref('')
-const marks = ref({})
+const selectedClassId = ref(null)
+const selectedSectionId = ref(null)
 
-const students = [
-  { id: 1, name: "John Doe" },
-  { id: 2, name: "Jane Smith" },
-  { id: 3, name: "Alice Johnson" }
-]
-
-function selectSubject(subject) {
-  selectedSubject.value = subject
-  selectedClass.value = ''
-  selectedSection.value = ''
-  marks.value = {}
+async function fetchClasses() {
+  const response = await window.electronAPI.getClasses()
+  if (response.success) {
+    classes.value = response.classes
+  }
 }
+
+async function fetchSectionsForClass(classId) {
+  const response = await window.electronAPI.getClassSectionMappings(classId)
+  if (response.success) {
+    sections.value = response.sections
+  } else {
+    sections.value = []
+  }
+}
+
+function selectClass(classId) {
+  selectedClassId.value = classId
+  selectedSectionId.value = null
+  fetchSectionsForClass(classId)
+}
+
+function selectSection(sectionId) {
+  selectedSectionId.value = sectionId
+}
+
+// Optional helpers
+function getClassName(id) {
+  return classes.value.find(c => c.Id === id)?.ClassName || ''
+}
+function getSectionName(id) {
+  return sections.value.find(s => s.Id === id)?.SectionName || ''
+}
+
+onMounted(() => {
+  fetchClasses()
+})
 </script>
-
 <style scoped>
+.marks-entry-container {
+  display: flex;
+  gap: 2rem;
+}
 
+.vertical-tabs {
+  width: 200px;
+  border-right: 1px solid #ddd;
+}
+
+.tab-item {
+  padding: 0.75rem 1rem;
+  cursor: pointer;
+  border-left: 4px solid transparent;
+  transition: background-color 0.2s;
+}
+
+.tab-item:hover {
+  background-color: #f5f5f5;
+}
+
+.tab-item.active {
+  background-color: #3273dc;
+  color: white;
+  border-left: 4px solid #2759a5;
+  font-weight: bold;
+}
+
+.main-content {
+  flex-grow: 1;
+}
 </style>

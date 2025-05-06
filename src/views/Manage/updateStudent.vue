@@ -210,17 +210,10 @@
   
   <script setup lang="ts">
   import { useAcademicYear } from '../../composables/useAcademicYear'
-  
-  import { useAdmissionForm } from '../../composables/useAdmissionForm'
+
   const { currentYear } = useAcademicYear()
   
-  const {
-    form,
-    classOptions,
-    sectionOptions,
-    message,
-    handleSubmit
-  } = useAdmissionForm()
+
   
   </script>
   

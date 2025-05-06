@@ -27,7 +27,7 @@ ipcMain.handle('get-class-section-mappings', async () => {
       ...row,
       Sections: JSON.parse(row.Sections)
     }))
-    
+    console.log("ClassSectionsHandler:", data)
     return { success: true, data }
   } catch (err) {
     return { success: false, message: err.message }
@@ -78,3 +78,5 @@ ipcMain.handle('delete-class-section-mapping', async (event, classId) => {
     return { success: false, message: err.message }
   }
 })
+
+//

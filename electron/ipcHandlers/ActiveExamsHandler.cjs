@@ -1,7 +1,7 @@
 const { ipcMain } = require('electron');
 const { db } = require('../database.cjs');
 
-
+console.log("Active Exams Handler is loaded.");
 //ACTIVE EXAMS
 //////////////////////////////////////////////////////////////////////////////             GET ACTIVE EXAM
 // Get all active exams for a specific academic year
@@ -18,6 +18,25 @@ ipcMain.handle('get-active-exams', async (event, academicYearId) => {
     return { success: false, message: err.message };
   }
 });
+
+//get current Exam
+ipcMain.handle('get-current-exam', async (event, CurrentYearId) => {
+  console.log("iPC Handle:", CurrentYearId);
+  try {
+    const stmt = db.prepare(`
+      SELECT * FROM ActiveExam 
+      WHERE IsActive = 1
+      AND AcademicYearId = ?
+    `);
+    const data = stmt.get(CurrentYearId);
+    console.log(data);
+    return stmt.get(CurrentYearId);
+    
+  } catch (err) {
+    return { message: err.message };
+  }
+});
+
 
 //insert Avtive exam
 ipcMain.handle('insert-active-exam', async (event, examData) => {

@@ -54,7 +54,7 @@
                 <a>
                   <router-link class="navbar-item" to="/academic-year/create">Set Academic Year</router-link>   
                   <router-link class="navbar-item" to="/manage/student">Manage: Student</router-link>
-                  <router-link class="navbar-item" to="/exam/create">Create Exams</router-link>                  
+                  <router-link class="navbar-item" to="/exam/create">Manage: Exams</router-link>                  
                   <router-link class="navbar-item" to="/result-criteria/set">Set Result Criteria</router-link>                 
                 </a>
               </div>

@@ -44,8 +44,10 @@ const { contextBridge, ipcRenderer } = require("electron");
       deleteActiveExam: (examId) => ipcRenderer.invoke('delete-active-exam', examId),
       deactivateAllActiveExams: (academicYearId) => ipcRenderer.invoke('deactivate-all-active-exams', academicYearId),
 
+      getCurrentExam: (CurrentYearId) => ipcRenderer.invoke('get-current-exam', CurrentYearId),
+
       //
-      getSubjectsByClass: (className) => ipcRenderer.invoke('get-subjects-by-class', className),
+      //getSubjectsByClass: (className) => ipcRenderer.invoke('get-subjects-by-class', className),
       insertStudentAndAdmission: (form) => ipcRenderer.invoke('insert-student-admission', form),
       
       //Class Subject Mapping
@@ -57,6 +59,8 @@ const { contextBridge, ipcRenderer } = require("electron");
       saveClassSectionMappings: (mappings) => ipcRenderer.invoke('save-class-section-mappings', mappings),
       deleteClassSectionMapping: (classId) => ipcRenderer.invoke('delete-class-section-mapping', classId),
       getSectionsByClass:(ClassId) => ipcRenderer.invoke('get-sections-by-class', ClassId),
+
+      getSubjectssByClassId:(ClassId) => ipcRenderer.invoke('get-subjects-by-classId', ClassId),
       
       // Student Management
       getAllStudents: () => ipcRenderer.invoke('get-all-students'),
@@ -68,5 +72,8 @@ const { contextBridge, ipcRenderer } = require("electron");
       openEditStudentWindow: (studentId) => ipcRenderer.send('open-edit-student-window', studentId),
       
       // Error handling
-      onError: (callback) => ipcRenderer.on('error', callback)
+      onError: (callback) => ipcRenderer.on('error', callback),
+
+      getStudentsByClassAndSection: (data) => ipcRenderer.invoke('get-students-by-class-and-section', data),
+      saveMarks: (data) => ipcRenderer.invoke('save-marks', data),
 });

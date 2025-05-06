@@ -1,6 +1,6 @@
 <template>
   <div class="form-container full">
-    <h1 class="title has-text-centered">Active Exam Setup</h1>
+    <h1 class="title has-text-centered">Active Exams</h1>
     <h2 class="subtitle has-text-centered">Academic Year: {{ currentYear }}</h2>
 
     <div class="buttons mt-4">
@@ -81,9 +81,9 @@
       </div>
       <div v-else-if="activeExams.length > 0">
         <table class="table is-fullwidth is-striped">
-          <thead>
+          <thead class="has-text-centered">
             <tr>
-              <th>Exam Name</th>
+              <th>Name of Exams</th>
               <th>Major Marks</th>
               <th>Minor Marks</th>
               <th>Co-Scholastic</th>
@@ -130,7 +130,6 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import { useAcademicYear } from '../../composables/useAcademicYear';
-
 const { currentYearId, currentYear } = useAcademicYear();
 
 const activeExams = ref([]);

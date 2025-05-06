@@ -101,7 +101,7 @@ CREATE TABLE IF NOT EXISTS Students (
     Contact TEXT CHECK(length(Contact) = 10 AND Contact GLOB '[0-9]*'),
     Address TEXT,
     FirstAdmissionDate DEFAULT CURRENT_TIMESTAMP,
-    Status TEXT NOT NULL CHECK(Status IN ('Admitted', 'Transferred', 'Terminated', 'Retained')) DEFAULT 'Admitted',
+    Status TEXT NOT NULL DEFAULT 'Admitted',
     Caste TEXT,
     Religion TEXT,
     Height INTEGER CHECK(Height > 0 AND Height < 250),

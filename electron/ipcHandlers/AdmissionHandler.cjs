@@ -5,6 +5,7 @@ const { db } = require('../database.cjs');
 //////////////////////////////////////////////////////////////////////////////////////                  GET
 ipcMain.handle('get-sections-by-class', async (event, ClassId) => {
   try {
+    console.log("Handler ClassId:", ClassId)
     const stmt = db.prepare(`SELECT 
       s.Id, s.SectionName FROM Sections AS s
       JOIN
@@ -14,6 +15,7 @@ ipcMain.handle('get-sections-by-class', async (event, ClassId) => {
       WHERE
       m.ClassId = ?`);
     const sections = stmt.all(ClassId);
+    console.log("Handler Sections:", sections)
     return { success: true, sections };
   } catch (err) {
     console.error('Failed to get subjects:', err);

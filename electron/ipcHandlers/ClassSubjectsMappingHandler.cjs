@@ -14,10 +14,30 @@ ipcMain.handle('get-subjects-by-class', async (event, className) => {
     `;
     const params = [className];
     const subjects = await db.all(query, params);
-    await dba.close();
+    
     return { success: true, subjects };
   } catch (error) {
     console.error('Error fetching subjects by class:', error);
+    return { success: false, message: 'Failed to fetch subjects.' };
+  }
+});
+ipcMain.handle('get-subjects-by-classId', async (event, ClassId) => {
+  try {
+   // Get the database connection
+    const stmt = db.prepare(`
+      SELECT s.Id, s.SubjectName, s.SubjectCategory
+      FROM Subjects s
+      JOIN ClassSubjectMapping csm ON s.Id = csm.SubjectId
+      JOIN Classes c ON csm.ClassId = c.Id
+      WHERE c.Id = ?
+    `);
+   
+    const subjects = stmt.all(ClassId);
+    console.log('Subjects at Handler:', subjects);
+  
+    return { success: true, subjects };
+  } catch (error) {
+    console.error('Error fetching subjects by classId:', error);
     return { success: false, message: 'Failed to fetch subjects.' };
   }
 });
