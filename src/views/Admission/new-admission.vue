@@ -195,7 +195,7 @@ import { ref, reactive, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAcademicYear } from '../../composables/useAcademicYear';
 
-const { currentYear, currentYearId } = useAcademicYear();
+const { CurrentYear, CurrentYearId } = useAcademicYear();
 const router = useRouter();
 
 const message = ref('');
@@ -221,7 +221,7 @@ const form = reactive({
   bloodGroup: '',
   classId: null,
   sectionId: null,
-  academicYearId: currentYearId,
+  academicYearId: CurrentYearId,
   admissionType: 'New'
 });
 
@@ -266,7 +266,7 @@ async function handleSubmit() {
           className: classes.value.find(c => c.Id === form.classId)?.ClassName || '',
           sectionName: sectionOptions.value.find(s => s.Id === form.sectionId)?.SectionName || '',
           rollNo: form.rollNo,
-          academicYear: currentYear.value
+          academicYear: CurrentYear.value
         }
       });
     } else {

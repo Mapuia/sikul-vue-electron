@@ -3,11 +3,11 @@
       <div class="box has-text-centered">
         <h1 class="title is-4 mb-6">Admission Successful!</h1>
         
-        <div class="notification is-success is-light">
-          <p class="subtitle is-5">Student has been successfully admitted for {{ academicYear }}</p>
+        <div class="notification is-success is-dark box">
+          <p class="subtitle is-5">Student has been successfully admitted for Academic Year {{ academicYear }}</p>
           
-          <div class="content has-text-left">
-            <div class="columns is-centered">
+          <div class="content has-text-left box">
+            <div class="columns is-centered box">
               <div class="column is-half">
                 <table class="table is-fullwidth">
                   <tbody>
@@ -21,7 +21,7 @@
                     </tr>
                     <tr>
                       <th>Class</th>
-                      <td>{{ className }} - {{ sectionName }}</td>
+                      <td>{{ className }} Section {{ sectionName }}</td>
                     </tr>
                     <tr>
                       <th>Roll Number</th>

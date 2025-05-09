@@ -4,20 +4,20 @@
     <h2 class="subtitle has-text-centered">Academic Year: {{ currentYear }}</h2>
 
     <div class="buttons mt-4">
-      <button class="button is-primary" v-if="!showForm" @click="showForm = true">
-        Ceate New Exam
+      <button class="button is-primary" v-if="!showForm" @click="showForm = true" title="Create New Exam">
+         <span class="fas fa-plus pr-3"></span> New
       </button>
     </div>
 
     <!-- Form for adding/editing exams -->
-    <div class="box mt-4" v-if="showForm">
+    <div class="box mt-4 single" v-if="showForm">
       <div class="field">
         <label class="label">Exam Name</label>
         <div class="control">
           <div class="select is-fullwidth">
-            <select v-model="form.ExamName">
+            <select v-model="form.ExamId">
               <option value="" disabled>Select Exam</option>
-              <option v-for="exam in exams" :key="exam.Id" :value="exam.ExamName">
+              <option v-for="exam in exams" :key="exam.Id" :value="exam.Id">
                 {{ exam.ExamName }}
               </option>
             </select>
@@ -28,35 +28,28 @@
       <div class="field">
         <label class="label">Major Max Mark</label>
         <div class="control">
-          <input class="input" type="number" v-model.number="form.MajorMaxMark" />
-        </div>
+          <input class="input" type="number" v-model.number="form.MajorMaxMark" required/>
+        </div>       
       </div>
 
       <div class="field">
         <label class="label">Minor Max Mark</label>
         <div class="control">
-          <input class="input" type="number" v-model.number="form.MinorMaxMark" />
-        </div>
+          <input class="input" type="number" v-model.number="form.MinorMaxMark" required />
+        </div>        
       </div>
 
-      <div class="field">
-        <label class="label">Co-Scholastic Max Mark (Optional)</label>
-        <div class="control">
-          <input class="input" type="number" v-model.number="form.CoScholasticMaxMark" />
-        </div>
-      </div>
-
-      <div class="field">
+      <div class="field is-grouped">
         <label class="checkbox">
           <input type="checkbox" v-model="form.IsActive" />
-          Active
+          Set Active
         </label>
       </div>
 
       <div class="field is-grouped">
         <div class="control">
           <button class="button is-link" @click="submitForm" :disabled="loading">
-            {{ editingId ? 'Update Exam' : 'Add Exam' }}
+            {{ editingId ? 'Update Exam' : 'Save Exam' }}
           </button>
         </div>
         <div class="control">
@@ -75,7 +68,7 @@
 
     <!-- Active Exams Table -->
     <div class="box mt-4">
-      <h2 class="subtitle">Active Exams for {{ currentYear }}</h2>
+      <h2 class="subtitle">Available Exams for {{ currentYear }}</h2>
       <div v-if="loading" class="notification is-info is-light has-text-centered">
         <span class="loader"></span> Loading...
       </div>
@@ -86,8 +79,9 @@
               <th>Name of Exams</th>
               <th>Major Marks</th>
               <th>Minor Marks</th>
-              <th>Co-Scholastic</th>
-              <th>Status</th>
+              <th>Status</th>           
+              <th>Published?</th>
+              <th>Published Date</th>
               <th>Actions</th>
             </tr>
           </thead>
@@ -95,24 +89,34 @@
             <tr v-for="exam in activeExams" :key="exam.Id">
               <td>{{ exam.ExamName }}</td>
               <td>{{ exam.MajorMaxMark }}</td>
-              <td>{{ exam.MinorMaxMark }}</td>
-              <td>{{ exam.CoScholasticMaxMark || '-' }}</td>
+              <td>{{ exam.MinorMaxMark }}</td>         
               <td>
-                <span class="tag" :class="exam.IsActive ? 'is-success' : 'is-warning'">
+                <span class="tag" :class="exam.IsActive ? 'is-success' : 'is-dark'">
                   {{ exam.IsActive ? 'Active' : 'Inactive' }}
                 </span>
               </td>
               <td>
+                <span class="tag" :class="exam.Result_Published ? 'is-success' : 'is-dark'">
+                  {{ exam.Result_Published ? 'Published' : 'Not Published' }}
+                </span>
+              </td>
+              <td>
+            
+                  {{ exam.PublishDate }}
+              
+              </td>
+              <td>
                 <div class="buttons">
                   <button 
-                    class="button is-small is-info" 
+                    class="button is-small is-info no-padding" 
                     @click="editExam(exam)"
                     :disabled="loading"
+                    title="Edit this Exam"
                   >
-                    Edit
+                    <span class="fas fa-edit"></span>
                   </button>
-                  <button class="button is-small is-danger" @click="deleteExam(exam)">
-                    Delete
+                  <button class="button is-small is-danger no-padding" @click="deleteExam(exam)" title="Delete Exam">
+                    <span class="fas fa-trash-alt"></span>
                   </button>
                 </div>
               </td>
@@ -142,11 +146,11 @@ const successMessage = ref('');
 const formError = ref('');
 
 const form = ref({
-  ExamName: '',
-  MajorMaxMark: null,
-  MinorMaxMark: null,
-  CoScholasticMaxMark: null,
-  IsActive: true
+  ExamId: '', // Will be set from the dropdown
+  MajorMaxMark: 20, // Default values
+  MinorMaxMark: 10,  
+  IsActive: false,
+  Result_Published: false
 });
 
 async function fetchActiveExams() {
@@ -154,15 +158,16 @@ async function fetchActiveExams() {
   errorMessage.value = '';
   try {
     const response = await window.electronAPI.getActiveExams(currentYearId.value);
+    console.log("API Response:", response); // Debug log
+    
     if (response.success) {
-      activeExams.value = response.data.map(exam => ({
-        ...exam,
-        IsActive: exam.IsActive === 1
-      }));
+      activeExams.value = response.exams;
+      console.log("Active exams set:", activeExams.value); // Debug log
     } else {
       errorMessage.value = response.message || 'Failed to fetch active exams';
     }
   } catch (err) {
+    console.error("Fetch error:", err); // Debug log
     errorMessage.value = err.message;
   } finally {
     loading.value = false;
@@ -188,23 +193,54 @@ async function refreshData() {
 
 async function submitForm() {
   formError.value = '';
+  
+  // Debug logging before validation
+  console.log("Form inputs:", {
+    ExamId: form.value.ExamId,
+    MajorMaxMark: form.value.MajorMaxMark,
+    MinorMaxMark: form.value.MinorMaxMark   
+  });
 
-  if (!form.value.ExamName || form.value.MajorMaxMark === null || form.value.MinorMaxMark === null) {
-    formError.value = 'Please fill in all required fields';
+  // Validate required fields
+  if (!form.value.ExamId) {
+    formError.value = 'Please select an exam';
+    return;
+  }
+  
+  if (form.value.MajorMaxMark === null || form.value.MajorMaxMark === '') {
+    formError.value = 'Please enter major subject max marks';
+    return;
+  }
+  
+  if (form.value.MinorMaxMark === null || form.value.MinorMaxMark === '') {
+    formError.value = 'Please enter minor subject max marks';
+    return;
+  }
+
+  // Additional validation if needed
+  if (form.value.MajorMaxMark < 0 || form.value.MinorMaxMark < 0) {
+    formError.value = 'Marks cannot be negative';
     return;
   }
 
   loading.value = true;
 
   try {
+    const selectedExam = exams.value.find(e => e.Id === form.value.ExamId);
+    if (!selectedExam) {
+      throw new Error('Selected exam not found');
+    }
+
     const examData = {
       AcademicYearId: currentYearId.value,
-      ExamName: form.value.ExamName,
-      MajorMaxMark: form.value.MajorMaxMark,
-      MinorMaxMark: form.value.MinorMaxMark,
-      CoScholasticMaxMark: form.value.CoScholasticMaxMark || 0,
-      IsActive: form.value.IsActive ? 1 : 0
+      ExamId: form.value.ExamId,
+      MajorMaxMark: Number(form.value.MajorMaxMark),
+      MinorMaxMark: Number(form.value.MinorMaxMark),    
+      IsActive: form.value.IsActive ? 1 : 0,      
+      Result_Published: form.value.Result_Published ? 1 : 0
     };
+
+    console.log("Submitting:", examData); // Debug output
 
     let response;
     if (editingId.value) {
@@ -217,30 +253,29 @@ async function submitForm() {
     if (response.success) {
       successMessage.value = editingId.value 
         ? 'Exam updated successfully!' 
-        : 'Active exam added successfully!';
+        : 'Exam configuration added successfully!';
       resetForm();
+      setTimeout(() => successMessage.value = '', 3000);
       await refreshData();
     } else {
       formError.value = response.message || 'Operation failed. Please try again.';
     }
   } catch (err) {
+    console.error("Submission error:", err);
     formError.value = err.message;
   } finally {
     loading.value = false;
-    setTimeout(() => {
-      successMessage.value = '';
-    }, 3000);
   }
 }
 
 function editExam(exam) {
   editingId.value = exam.Id;
   form.value = {
-    ExamName: exam.ExamName,
+    ExamId: exam.ExamId,
     MajorMaxMark: exam.MajorMaxMark,
     MinorMaxMark: exam.MinorMaxMark,
-    CoScholasticMaxMark: exam.CoScholasticMaxMark,
-    IsActive: exam.IsActive
+    IsActive: exam.IsActive === 1,    
+    Result_Published: exam.Result_Published === 1
   };
   showForm.value = true;
 }
@@ -273,11 +308,11 @@ async function deleteExam(exam) {
 
 function resetForm() {
   form.value = {
-    ExamName: '',
-    MajorMaxMark: null,
-    MinorMaxMark: null,
-    CoScholasticMaxMark: null,
-    IsActive: true
+    ExamId: '',
+    MajorMaxMark: '',
+    MinorMaxMark: '',   
+    IsActive: false,
+    Result_Published: false
   };
   editingId.value = null;
   showForm.value = false;

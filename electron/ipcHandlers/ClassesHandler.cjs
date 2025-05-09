@@ -1,11 +1,11 @@
 const { ipcMain } = require('electron');
 const { db } = require('../database.cjs');
 
-console.log("Class Handler");
+console.log("Class Handler loaded Successfully");
 //////////////////////////////////////////////////////////////////////////////////////READ/GET
 ipcMain.handle('get-classes', () => {
   try {
-      const stmt = db.prepare('SELECT * FROM Classes ORDER BY Id DESC');
+      const stmt = db.prepare('SELECT * FROM Classes');////to remove order at production
       const classes = stmt.all();
       if(classes) return { success: true, classes };
       else return { success: false, message: error.message };

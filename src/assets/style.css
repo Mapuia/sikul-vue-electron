@@ -70,7 +70,7 @@ button:focus-visible {
   align-items: flex-start;
   gap: 1rem;
   width: 100%;
-  padding: 1rem 0;
+  
 }
 
 .vertical-tabs {
@@ -79,11 +79,6 @@ button:focus-visible {
   max-width: 130px;
   flex-shrink: 0; /* Prevent shrinking */
   border: 1px solid white;
-}
-
-.main-content {
-  flex: 1;
-  overflow-x: auto;
 }
 
 .tab-item {
@@ -100,7 +95,8 @@ button:focus-visible {
 
 .main-content {
   flex-grow: 1;
-  padding-left: 1rem;
+  overflow-x: auto;
+  min-height: 281px
 }
 
 .table-container-scroll {
@@ -154,4 +150,38 @@ button:focus-visible {
   width: 24px;
   min-width: 40px;
   height: 24px;
+}
+/* Add this to your component's style section or global CSS */
+.fixed-width-table {
+  table-layout: fixed;
+  width: 100%;
+}
+
+.fixed-width-table th,
+.fixed-width-table td {
+  padding: 0.5em 0.75em;
+  vertical-align: middle;
+}
+
+/* Specific column widths */
+.fixed-width-table th:nth-child(1),
+.fixed-width-table td:nth-child(1) {  /* Roll No. */
+  width: 80px;
+  text-align: center;
+}
+
+.fixed-width-table th:nth-child(2),
+.fixed-width-table td:nth-child(2) {  /* Student Name */
+  width: 200px;
+}
+
+.fixed-width-table th:nth-child(3),
+.fixed-width-table td:nth-child(3) {  /* Grade/Marks */
+  width: 120px;
+}
+
+/* For the input fields inside the table */
+.fixed-width-table .grade-input {
+  width: 100px;
+  margin: 0 auto;
 }

@@ -6,11 +6,27 @@ const { contextBridge, ipcRenderer } = require("electron");
     getCurrentAcademicYear: () => ipcRenderer.invoke('get-current-academic-year'),
     
       //Main API
-      logout: () => ipcRenderer.send('logout'),
+     
             
       addAcademicYear: (data) => ipcRenderer.invoke("add-academic-year", data),
       notifyAcademicYearAdded: () => ipcRenderer.send('academic-year-added'),
-      onAcademicYearChanged: (callback) => ipcRenderer.on('refresh-academic-year', callback),
+      onAcademicYearChanged: (callback) => {
+    // Safe check for ipcRenderer
+          if (ipcRenderer) {
+            ipcRenderer.on('refresh-academic-year', callback)
+          }
+        },
+        removeAcademicYearListener: (callback) => {
+          if (ipcRenderer) {
+            ipcRenderer.removeListener('refresh-academic-year', callback)
+          }
+        },
+        logout: () => {
+          if (ipcRenderer) {
+            ipcRenderer.send('logout')
+          }
+        },
+
       showConfirmationDialog: async (message) => await ipcRenderer.invoke('show-confirmation-dialog', message),
       
       //Classes API
@@ -26,7 +42,7 @@ const { contextBridge, ipcRenderer } = require("electron");
       deleteSection: async (sectionName) => await ipcRenderer.invoke('delete-section', sectionName),
 
       // Subjects
-      getSubjects: () => ipcRenderer.invoke('get-subjects'),
+      getSubjects: () => ipcRenderer.invoke('get-subjects'),      
       insertSubject: async (subjectData) => await ipcRenderer.invoke('insert-subject', subjectData),      
       updateSubject: async (subjectData) => await ipcRenderer.invoke('update-subject', subjectData),
       deleteSubject: async (subjectName) => await ipcRenderer.invoke('delete-subject', subjectName),
@@ -44,7 +60,7 @@ const { contextBridge, ipcRenderer } = require("electron");
       deleteActiveExam: (examId) => ipcRenderer.invoke('delete-active-exam', examId),
       deactivateAllActiveExams: (academicYearId) => ipcRenderer.invoke('deactivate-all-active-exams', academicYearId),
 
-      getCurrentExam: (CurrentYearId) => ipcRenderer.invoke('get-current-exam', CurrentYearId),
+      getCurrentExam: () => ipcRenderer.invoke('get-current-exam'),
 
       //
       //getSubjectsByClass: (className) => ipcRenderer.invoke('get-subjects-by-class', className),
@@ -75,5 +91,14 @@ const { contextBridge, ipcRenderer } = require("electron");
       onError: (callback) => ipcRenderer.on('error', callback),
 
       getStudentsByClassAndSection: (data) => ipcRenderer.invoke('get-students-by-class-and-section', data),
+      getMarksByExamSubject: (params) => ipcRenderer.invoke('get-marks-by-exam-subject', params),
+  
       saveMarks: (data) => ipcRenderer.invoke('save-marks', data),
+      saveCoScholasticMarks: (data) => ipcRenderer.invoke('save-coscholastic-marks', data),
+      getCoScholastics: () => ipcRenderer.invoke('get-coscholastic'),
+      getMarksByClassSection: (payload) => ipcRenderer.invoke('get-marks-by-class-section', payload),
+
+
+      getClassSectionStats: (params) => ipcRenderer.invoke('get-stats', params)
+      
 });

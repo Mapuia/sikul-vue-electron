@@ -1,5 +1,5 @@
 <template>
-  <div class="form-container full">
+  <div class="form-container wide">
     <h1 class="title has-text-centered">Exams - Master Entry</h1>
 
     <div class="buttons mt-4">

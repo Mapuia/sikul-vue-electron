@@ -27,7 +27,7 @@ ipcMain.handle('get-class-section-mappings', async () => {
       ...row,
       Sections: JSON.parse(row.Sections)
     }))
-    console.log("ClassSectionsHandler:", data)
+    //console.log("ClassSectionsHandler:", data)
     return { success: true, data }
   } catch (err) {
     return { success: false, message: err.message }

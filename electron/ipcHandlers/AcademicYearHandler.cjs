@@ -7,6 +7,7 @@ console.log("Academic Year is loaded.");
 ipcMain.handle('get-current-academic-year', () => {
   try {
     const stmt = db.prepare('SELECT * FROM AcademicYears WHERE isActive = 1');
+    console.log(stmt.get())
     return stmt.get();
   } catch (err) {
     console.error('DB error (AcademicYear):', err);

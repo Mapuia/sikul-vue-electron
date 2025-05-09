@@ -43,7 +43,7 @@
     <div v-if="errorMessage" class="notification is-danger fixed-notification">
       {{ errorMessage }}
     </div>
-    <div v-if="successMessage" class="notification is-successfixed-notification">
+    <div v-if="successMessage" class="notification is-success fixed-notification">
       {{ successMessage }}
     </div>
 

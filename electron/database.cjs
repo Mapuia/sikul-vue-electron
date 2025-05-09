@@ -10,6 +10,7 @@ const schemaFilePath = path.join(__dirname, 'schema.sql');
 let db = null;
 
 function initializeDatabase() {
+  
   try {
     // Check if database file exists
     const isNewDatabase = !fs.existsSync(dbFilePath);
@@ -29,6 +30,7 @@ function initializeDatabase() {
       const schemaSQL = fs.readFileSync(schemaFilePath, 'utf-8');
       db.exec(schemaSQL);
       console.log('Schema executed successfully.');
+
     }
 
     // Verify connection
@@ -61,9 +63,10 @@ function closeDatabase() {
   }
 }
 
+
+
 // Initialize database immediately when this module is loaded
 initializeDatabase();
-
 // Cleanup on process exit
 process.on('exit', closeDatabase);
 process.on('SIGINT', () => process.exit());

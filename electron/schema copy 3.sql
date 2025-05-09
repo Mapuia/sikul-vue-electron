@@ -73,7 +73,7 @@ CREATE TABLE IF NOT EXISTS Exams (
 );
 
 -- ActiveExam Table
-CREATE TABLE IF NOT EXISTS ActiveExams (
+CREATE TABLE IF NOT EXISTS ActiveExam (
     Id INTEGER PRIMARY KEY AUTOINCREMENT,   
     AcademicYearId INTEGER NOT NULL,
     ExamId INTEGER NOT NULL,
@@ -94,8 +94,8 @@ CREATE TABLE IF NOT EXISTS Students (
     Id INTEGER PRIMARY KEY AUTOINCREMENT,
     Name TEXT NOT NULL,
     Gender TEXT CHECK(Gender IN ('Male', 'Female')),
-    FathersName TEXT,
-    MothersName TEXT,
+    fathersName TEXT,
+    mothersName TEXT,
     DOB DATE,
     Aadhaar TEXT UNIQUE,
     APAR TEXT UNIQUE,
@@ -103,27 +103,27 @@ CREATE TABLE IF NOT EXISTS Students (
     Contact TEXT CHECK(length(Contact) = 10 AND Contact GLOB '[0-9]*'),
     Address TEXT,
     FirstAdmissionDate DATE DEFAULT CURRENT_TIMESTAMP,
-    Status TEXT NOT NULL DEFAULT 'Admitted', --"Passed Out"
+    Status TEXT NOT NULL DEFAULT 'Admitted',
     Caste TEXT,
     Religion TEXT,
     Height INTEGER CHECK(Height > 0 AND Height < 250),
     Weight REAL CHECK(Weight > 0 AND Weight < 200),
     BloodGroup TEXT CHECK(BloodGroup IN ('A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-')),
     Creation_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    Last_Modified_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    Modified_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Admission Table
-CREATE TABLE IF NOT EXISTS Admissions (
+CREATE TABLE IF NOT EXISTS Admission (
     Id INTEGER PRIMARY KEY AUTOINCREMENT,
     StudentId INTEGER NOT NULL,
     AcademicYearId INTEGER NOT NULL,
     ClassId INTEGER NOT NULL,
     SectionId INTEGER NOT NULL,
     RollNo INTEGER,
-    AdmissionType TEXT NOT NULL CHECK(AdmissionType IN ('New', 'Re-admission')),
+    AdmissionType TEXT NOT NULL CHECK(AdmissionType IN ('New', 'Re-admission', 'Transfer')),
     Creation_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    Last_Modified_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    Modified_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (StudentId) REFERENCES Students(Id) ON DELETE CASCADE ON UPDATE CASCADE,
     FOREIGN KEY (ClassId) REFERENCES Classes(Id) ON DELETE CASCADE ON UPDATE CASCADE,
     FOREIGN KEY (SectionId) REFERENCES Sections(Id) ON DELETE CASCADE ON UPDATE CASCADE,
@@ -134,15 +134,17 @@ CREATE TABLE IF NOT EXISTS Admissions (
 CREATE TABLE IF NOT EXISTS Marks (
     Id INTEGER PRIMARY KEY AUTOINCREMENT,
     StudentId INTEGER NOT NULL,
+    ClassId INTEGER NOT NULL,
     SubjectId INTEGER NOT NULL,
     ActiveExamId INTEGER NOT NULL,
     AcademicYearId INTEGER NOT NULL,
+    MaxMarks REAL NOT NULL,
     MarksObtained REAL NOT NULL,
     Creation_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    Last_Modified_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    Modified_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (StudentId) REFERENCES Students(Id) ON DELETE CASCADE ON UPDATE CASCADE,
     FOREIGN KEY (SubjectId) REFERENCES Subjects(Id) ON DELETE CASCADE ON UPDATE CASCADE,
-    FOREIGN KEY (ActiveExamId) REFERENCES ActiveExams(Id) ON DELETE CASCADE ON UPDATE CASCADE,
+    FOREIGN KEY (ActiveExamId) REFERENCES ActiveExam(Id) ON DELETE CASCADE ON UPDATE CASCADE,
     FOREIGN KEY (AcademicYearId) REFERENCES AcademicYears(Id) ON DELETE CASCADE ON UPDATE CASCADE,
     UNIQUE(StudentId, SubjectId, ActiveExamId)
 );
@@ -155,10 +157,10 @@ CREATE TABLE IF NOT EXISTS CoScholasticMarks (
     AcademicYearId INTEGER NOT NULL,
     Score REAL NOT NULL,
     Creation_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    Last_Modified_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    Modified_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (StudentId) REFERENCES Students(Id) ON DELETE CASCADE ON UPDATE CASCADE,
     FOREIGN KEY (SubjectId) REFERENCES Subjects(Id) ON DELETE CASCADE ON UPDATE CASCADE,
-    FOREIGN KEY (ActiveExamId) REFERENCES ActiveExams(Id) ON DELETE CASCADE ON UPDATE CASCADE,
+    FOREIGN KEY (ActiveExamId) REFERENCES ActiveExam(Id) ON DELETE CASCADE ON UPDATE CASCADE,
     FOREIGN KEY (AcademicYearId) REFERENCES AcademicYears(Id) ON DELETE CASCADE ON UPDATE CASCADE,
     UNIQUE(StudentId, SubjectId, ActiveExamId)
 );
@@ -167,15 +169,18 @@ CREATE TABLE IF NOT EXISTS CoScholasticMarks (
 CREATE TABLE IF NOT EXISTS CumulativeMarks (
     Id INTEGER PRIMARY KEY AUTOINCREMENT,
     StudentId INTEGER NOT NULL,
-    ActiveExamId INTEGER NOT NULL,
+    ClassId NTEGER NOT NULL,
+    SubjectId INTEGER NOT NULL,
+    CumulativeTypeId INTEGER NOT NULL,
+    TotalMaxMarks REAL DEFAULT 0, 
     TotalMarksObtained REAL DEFAULT 0,
     AcademicYearId INTEGER NOT NULL,
     Creation_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    Last_Modified_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    Modified_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (StudentId) REFERENCES Students(Id) ON DELETE CASCADE ON UPDATE CASCADE,
-    FOREIGN KEY (ActiveExamId) REFERENCES ActiveExams(Id) ON DELETE CASCADE ON UPDATE CASCADE,    
+    
     FOREIGN KEY (AcademicYearId) REFERENCES AcademicYears(Id) ON DELETE CASCADE ON UPDATE CASCADE,
-    UNIQUE(StudentId, ActiveExamId)
+    UNIQUE(StudentId, CumulativeTypeId)
 );
 
 -- Results Table (Fixed)
@@ -183,17 +188,20 @@ CREATE TABLE IF NOT EXISTS Results (
     Id INTEGER PRIMARY KEY AUTOINCREMENT,
     AcademicYearId INTEGER NOT NULL,
     StudentId INTEGER NOT NULL,
+    ClassId INTEGER NOT NULL,
     ActiveExamId INTEGER NOT NULL, 
+    TotalMaxMark REAL NOT NULL,
     TotalMarksObtained REAL NOT NULL,
     Percentage REAL NOT NULL,
     Division TEXT NOT NULL, --Dist/I/II/II & if not pass in all subs, May be SP or F
     Rank INTEGER,
     ResultStatus TEXT NOT NULL, --Pass/Simple
+    Published INTEGER DEFAULT 0,
     Creation_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    Last_Modified_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    Modified_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (StudentId) REFERENCES Students(Id) ON DELETE CASCADE ON UPDATE CASCADE,
     FOREIGN KEY (AcademicYearId) REFERENCES AcademicYears(Id) ON DELETE CASCADE ON UPDATE CASCADE,
-    FOREIGN KEY (ActiveExamId) REFERENCES ActiveExams(Id) ON DELETE CASCADE ON UPDATE CASCADE,
+    FOREIGN KEY (ActiveExamId) REFERENCES ActiveExam(Id) ON DELETE CASCADE ON UPDATE CASCADE,
     UNIQUE(StudentId, ActiveExamId)
 );
 
@@ -201,23 +209,16 @@ CREATE TABLE IF NOT EXISTS Results (
 CREATE TABLE IF NOT EXISTS ReportCards (
     Id INTEGER PRIMARY KEY AUTOINCREMENT,
     StudentId INTEGER NOT NULL,
+    ClassId INTEGER NOT NULL,
     ActiveExamId INTEGER NOT NULL,
     AcademicYearId INTEGER NOT NULL,
     ReportCardData TEXT NOT NULL,
     Creation_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    Last_Modified_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    Modified_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (StudentId) REFERENCES Students(Id) ON DELETE CASCADE ON UPDATE CASCADE,
     FOREIGN KEY (AcademicYearId) REFERENCES AcademicYears(Id) ON DELETE CASCADE ON UPDATE CASCADE
 );
-
--- ========== INDEXES ========== --
-CREATE INDEX IF NOT EXISTS idx_marks_student ON Marks(StudentId);
-CREATE INDEX IF NOT EXISTS idx_admissions_class ON Admissions(ClassId, SectionId);
-
-
-
-
--- ========== Preloaded Master DATA ========== --
+-- ========== SAMPLE DATA ========== --
 
 -- Insert Users
 INSERT INTO Users (Username, Password, Role) VALUES
@@ -361,42 +362,80 @@ INSERT INTO Exams (ExamName, Description) VALUES
     ('Annual Exam', 'Final annual examination');
 
 -- Insert Active Exams
-INSERT INTO ActiveExams (AcademicYearId, ExamId, MajorMaxMark, MinorMaxMark, IsActive, Result_Published)
+INSERT INTO ActiveExam (AcademicYearId, ExamId, MajorMaxMark, MinorMaxMark, IsActive, Result_Published)
 SELECT 
     (SELECT Id FROM AcademicYears WHERE IsActive = 1),
     (SELECT Id FROM Exams WHERE ExamName = 'First Periodic Test'),
     20, 10, 1, 0;
 
-INSERT INTO ActiveExams (AcademicYearId, ExamId, MajorMaxMark, MinorMaxMark, IsActive, Result_Published)
+INSERT INTO ActiveExam (AcademicYearId, ExamId, MajorMaxMark, MinorMaxMark, IsActive, Result_Published)
 SELECT 
     (SELECT Id FROM AcademicYears WHERE IsActive = 1),
     (SELECT Id FROM Exams WHERE ExamName = 'Half Yearly Exam'),
     80, 20, 0, 0;
 
+-- Insert Students for Class V Section A
+INSERT INTO Students (Name, Gender, fathersName, mothersName, DOB, Aadhaar, APAR, PEN, Contact, Address, Status, Caste, Religion, Height, Weight, BloodGroup) VALUES
+('Aarav Sharma', 'Male', 'Rajesh Sharma', 'Priya Sharma', '2013-05-15', '111122223333', 'APAR001', 'PEN001', '9876543210', '12 Gandhi Nagar, Delhi', 'Admitted', 'General', 'Hindu', 140, 38.5, 'B+'),
+('Diya Patel', 'Female', 'Rahul Patel', 'Neha Patel', '2013-07-22', '111122223334', 'APAR002', 'PEN002', '9876543211', '34 Nehru Road, Mumbai', 'Admitted', 'OBC', 'Hindu', 138, 37.0, 'A+'),
+('Vihaan Gupta', 'Male', 'Amit Gupta', 'Pooja Gupta', '2013-03-10', '111122223335', 'APAR003', 'PEN003', '9876543212', '56 Tagore Street, Kolkata', 'Admitted', 'General', 'Hindu', 142, 40.0, 'O+');
 
 
--- Sample Student
-INSERT INTO Students (
-    Name, Gender, fathersName, mothersName, DOB,
-    Aadhaar, APAR, PEN, Contact, Address,
-    Status, Caste, Religion,
-    Height, Weight, BloodGroup
-) VALUES (
-    'Rahul Sharma', 'Male', 'Rajesh Sharma', 'Priya Sharma', '2010-05-15',
-    '123456789012', '123456789012', '98765432109', '9876543210', '12 Gandhi Nagar, Delhi',
-    'Admitted', 'General', 'Hindu',
-    145, 42.5, 'B+'
-);
+-- Admission records for Class V Section A
+INSERT INTO Admission (StudentId, AcademicYearId, ClassId, SectionId, RollNo, AdmissionType)
+SELECT Id, 
+       (SELECT Id FROM AcademicYears WHERE IsActive = 1), 
+       (SELECT Id FROM Classes WHERE ClassName = 'V'),
+       (SELECT Id FROM Sections WHERE SectionName = 'A'),
+       ROW_NUMBER() OVER (ORDER BY Id),
+       'New'
+FROM Students WHERE Id BETWEEN 1 AND 3;
 
--- Sample Admission Record
-INSERT INTO Admissions (
-    StudentId, AcademicYearId, ClassId, SectionId, RollNo, AdmissionType
-) VALUES (
-    (SELECT Id FROM Students WHERE PEN = '98765432109'),
-    (SELECT Id FROM AcademicYears WHERE IsActive = 1),
-    (SELECT Id FROM Classes WHERE ClassName = 'V'),
-    (SELECT Id FROM Sections WHERE SectionName = 'A'),
-    1,
-    'New'
-);
+-- Insert Students for Class V Section B
+INSERT INTO Students (Name, Gender, fathersName, mothersName, DOB, Aadhaar, APAR, PEN, Contact, Address, Status, Caste, Religion, Height, Weight, BloodGroup) VALUES
+('Aryan Khan', 'Male', 'Imran Khan', 'Sana Khan', '2013-01-14', '111122223343', 'APAR011', 'PEN011', '9876543220', '22 Gandhi Road, Delhi', 'Admitted', 'General', 'Muslim', 139, 38.0, 'A+'),
+('Kiara Kapoor', 'Female', 'Rishi Kapoor', 'Karisma Kapoor', '2013-03-19', '111122223344', 'APAR012', 'PEN012', '9876543221', '33 Nehru Lane, Mumbai', 'Admitted', 'OBC', 'Hindu', 137, 36.5, 'B+'),
+('Arjun Mehra', 'Male', 'Rahul Mehra', 'Priya Mehra', '2013-05-24', '111122223345', 'APAR013', 'PEN013', '9876543222', '44 Tagore Street, Kolkata', 'Admitted', 'General', 'Hindu', 141, 39.5, 'O+');
 
+
+-- Admission records for Class V Section B
+INSERT INTO Admission (StudentId, AcademicYearId, ClassId, SectionId, RollNo, AdmissionType)
+SELECT Id, 
+       (SELECT Id FROM AcademicYears WHERE IsActive = 1), 
+       (SELECT Id FROM Classes WHERE ClassName = 'V'),
+       (SELECT Id FROM Sections WHERE SectionName = 'B'),
+       ROW_NUMBER() OVER (ORDER BY Id),
+       'New'
+FROM Students WHERE Id BETWEEN 4 AND 6;
+
+-- ========== INDEXES ========== --
+
+-- Basic indexes
+CREATE INDEX IF NOT EXISTS idx_AcademicYears_Year ON AcademicYears(YearName);
+CREATE INDEX IF NOT EXISTS idx_AcademicYears_IsActive ON AcademicYears(IsActive);
+CREATE INDEX IF NOT EXISTS idx_Classes_Name ON Classes(ClassName);
+CREATE INDEX IF NOT EXISTS idx_Sections_Name ON Sections(SectionName);
+CREATE INDEX IF NOT EXISTS idx_Subjects_Name ON Subjects(SubjectName);
+CREATE INDEX IF NOT EXISTS idx_Subjects_Category ON Subjects(SubjectCategory);
+CREATE INDEX IF NOT EXISTS idx_Exams_Name ON Exams(ExamName);
+CREATE INDEX IF NOT EXISTS idx_Students_Name ON Students(Name);
+CREATE INDEX IF NOT EXISTS idx_Students_Aadhaar ON Students(Aadhaar);
+CREATE INDEX IF NOT EXISTS idx_Students_Status ON Students(Status);
+CREATE INDEX IF NOT EXISTS idx_Students_PEN ON Students(PEN);
+CREATE INDEX IF NOT EXISTS idx_Students_Contact ON Students(Contact);
+
+-- Foreign key indexes
+CREATE INDEX IF NOT EXISTS idx_ClassSectionMapping_Class ON ClassSectionMapping(ClassId);
+CREATE INDEX IF NOT EXISTS idx_ClassSectionMapping_Section ON ClassSectionMapping(SectionId);
+CREATE INDEX IF NOT EXISTS idx_ClassSubjectMapping_Class ON ClassSubjectMapping(ClassId);
+CREATE INDEX IF NOT EXISTS idx_ClassSubjectMapping_Subject ON ClassSubjectMapping(SubjectId);
+CREATE INDEX IF NOT EXISTS idx_ActiveExam_AcademicYear ON ActiveExam(AcademicYearId);
+CREATE INDEX IF NOT EXISTS idx_ActiveExam_Exam ON ActiveExam(ExamId);
+
+-- Admission indexes
+CREATE INDEX IF NOT EXISTS idx_Admission_Student ON Admission(StudentId);
+CREATE INDEX IF NOT EXISTS idx_Admission_Class ON Admission(ClassId);
+CREATE INDEX IF NOT EXISTS idx_Admission_Section ON Admission(SectionId);
+CREATE INDEX IF NOT EXISTS idx_Admission_AcademicYear ON Admission(AcademicYearId);
+CREATE INDEX IF NOT EXISTS idx_Admission_RollNo ON Admission(RollNo);
+CREATE INDEX IF NOT EXISTS idx_Admission_Class_Section_Year ON Admission(ClassId, SectionId, AcademicYearId);

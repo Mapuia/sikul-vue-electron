@@ -1,19 +1,31 @@
 import { ref } from 'vue'
 
-const currentExam = ref('')
-const currentExamId = ref('')
+const CurrentExamName = ref('')
+const CurrentExamId = ref('')
+const MajorMaxMark = ref('')
+const MinorMaxMark = ref('')
+const Result_Published = ref('')
 
-export const useActiveExam = (currentYearId) => {
+
+export const useActiveExam = () => {
   const loadActiveExam = async () => {
-    const result = await window.electronAPI.getCurrentExam(currentYearId)
-    console.log("From Api:", result)
-    currentExam.value = result?.ExamName || 'Not Found'
-    currentExamId.value = result?.Id || 'Not Found'
+    const result = await window.electronAPI.getCurrentExam()
+   
+    CurrentExamName.value = result?.ExamName || 'Not Found'
+    CurrentExamId.value = result?.Id || 'Not Found'
+    MajorMaxMark.value = result?.MajorMaxMark ?? 'Not Found'
+    MinorMaxMark.value = result?.MinorMaxMark ?? 'Not Found'
+    Result_Published.value = result?.Result_Published !== undefined ? result.Result_Published : 'Not Found'
+    
+   // console.log('Composable PublishedResult:', currentExamName.value)
   }
 
   return {
-    currentExamId,
-    currentExam,
+    CurrentExamId,
+    CurrentExamName,
+    MajorMaxMark,
+    MinorMaxMark,
+    Result_Published,
     loadActiveExam,
   }
 }

@@ -5,7 +5,7 @@ const { db } = require('../database.cjs');
 //////////////////////////////////////////////////////////////////////////////////////                  GET
 ipcMain.handle('get-sections-by-class', async (event, ClassId) => {
   try {
-    console.log("Handler ClassId:", ClassId)
+    console.log("Handler ClassId:(AdmissionHandler.cjs)", ClassId)
     const stmt = db.prepare(`SELECT 
       s.Id, s.SectionName FROM Sections AS s
       JOIN
@@ -29,16 +29,16 @@ ipcMain.handle('get-sections-by-class', async (event, ClassId) => {
 ipcMain.handle('insert-student-admission', (event, form) => {
   const insertStudent = db.prepare(`
     INSERT INTO Students (
-      Name, Gender, fathersName, mothersName, DOB, Aadhaar, APAR, PEN, Contact, Address,
+      Name, Gender, FathersName, MothersName, DOB, Aadhaar, APAR, PEN, Contact, Address,
       FirstAdmissionDate, Status, Caste, Religion, Height, Weight, BloodGroup
     ) VALUES (
-      @Name, @Gender, @fathersName, @mothersName, @DOB, @Aadhaar, @APAR, @PEN, @Contact, @Address,
+      @Name, @Gender, @FathersName, @MothersName, @DOB, @Aadhaar, @APAR, @PEN, @Contact, @Address,
       @FirstAdmissionDate, @Status, @Caste, @Religion, @Height, @Weight, @BloodGroup
     )
   `);
 
   const insertAdmission = db.prepare(`
-    INSERT INTO Admission (
+    INSERT INTO Admissions (
       StudentId, AcademicYearId, ClassId, SectionId, RollNo, AdmissionType
     ) VALUES (
       @StudentId, @AcademicYearId, @ClassId, @SectionId, @RollNo, @AdmissionType
@@ -50,8 +50,8 @@ ipcMain.handle('insert-student-admission', (event, form) => {
     const studentResult = insertStudent.run({
       Name: form.name,
       Gender: form.gender,
-      fathersName: form.fathersName,
-      mothersName: form.mothersName,
+      FathersName: form.fathersName,
+      MothersName: form.mothersName,
       DOB: form.dob,
       Aadhaar: form.aadhaar,
       APAR: form.apar,

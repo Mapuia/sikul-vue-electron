@@ -1,6 +1,7 @@
 // main.cjs
 const { app, BrowserWindow, ipcMain, dialog } = require('electron');
 const path = require('path');
+const { runMigrations } = require('./utils/databaseMigrations.cjs');
 
 // Import database and handlers
 const db = require('./database.cjs');
@@ -15,6 +16,7 @@ require('./ipcHandlers/ClassSectionsMappingHandler.cjs');
 require('./ipcHandlers/AdmissionHandler.cjs');
 require('./ipcHandlers/StudentsHandler.cjs');
 require('./ipcHandlers/MarksEntryHandler.cjs');
+require('./ipcHandlers/StatsHandler.cjs');
 
 let mainWindow;
 let splash;
@@ -68,8 +70,9 @@ function createMainWindow() {
   });
 }
 
-app.whenReady().then(() => {
-  try {    
+app.whenReady().then(async() => {
+  try {   
+   // await runMigrations();
     createSplashWindow();
     createMainWindow();
   } catch (err) {
@@ -80,8 +83,14 @@ app.whenReady().then(() => {
 
 // IPC: Notify UI of new Academic Year
 ipcMain.on('academic-year-added', () => {
-  const [win] = BrowserWindow.getAllWindows();
-  if (win) win.webContents.send('refresh-academic-year');
+  try {
+    const [win] = BrowserWindow.getAllWindows();
+    if (win && !win.isDestroyed()) {
+      win.webContents.send('refresh-academic-year');
+    }
+  } catch (error) {
+    console.error('Error sending academic year update:', error);
+  }
 });
 
 // IPC: Show confirmation dialog
@@ -95,6 +104,7 @@ ipcMain.handle('show-confirmation-dialog', async (event, message) => {
   });
   return result.response === 0;
 });
+
 
 // IPC: Logout and quit
 let isSafeToQuit = false;

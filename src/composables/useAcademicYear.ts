@@ -1,19 +1,31 @@
-import { ref } from 'vue'
-
-const currentYear = ref('')
-const currentYearId = ref('')
+// src/composables/useAcademicYear.ts
+import { ref } from 'vue';
 
 export const useAcademicYear = () => {
+  const CurrentYear = ref('');
+  const CurrentYearId = ref<number | null>(null);
+
+  // Safe access to electronAPI
+  const electronAPI = window.electronAPI || {
+    getCurrentAcademicYear: () => Promise.resolve(null),
+    onAcademicYearChanged: () => {}
+  };
+
   const loadAcademicYear = async () => {
-    const result = await window.electronAPI.getCurrentAcademicYear()
-  
-    currentYear.value = result?.YearName || 'Not Found'
-    currentYearId.value = result?.Id || 'Not Found'
-  }
+    try {
+      const year = await electronAPI.getCurrentAcademicYear();
+      if (year) {
+        CurrentYear.value = year.YearName;
+        CurrentYearId.value = year.Id;
+      }
+    } catch (error) {
+      console.error('Failed to load academic year:', error);
+    }
+  };
 
   return {
-    currentYearId,
-    currentYear,
-    loadAcademicYear,
-  }
-}
+    CurrentYear,
+    CurrentYearId,
+    loadAcademicYear
+  };
+};

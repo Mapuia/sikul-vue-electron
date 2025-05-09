@@ -81,3 +81,20 @@ ipcMain.handle('delete-subject', async (event, subjectId) => {
     return { success: false, message: err.message };
   }
 });
+
+///////////////////////////////////////////////////////////////////////////////////// GET CO-SCHOLASTIC ACTIVITY
+ipcMain.handle('get-coscholastic', async () => {
+  try {
+    const stmt = db.prepare(`
+      SELECT * FROM Subjects 
+      WHERE SubjectCategory = 'Co-Scholastic' 
+      ORDER BY Id
+    `);
+    const subjects = stmt.all();
+    console.log("Activities:", subjects);
+    return { success: true, subjects };
+  } catch (err) {
+    console.error('Failed to get subjects:', err);
+    return { success: false, message: err.message };
+  }
+});

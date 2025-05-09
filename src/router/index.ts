@@ -9,7 +9,9 @@ import CreateExam from '../views/Manage/createExams.vue'
 import Result from '../views/Results/createResults.vue'
 import resultCriteria from '../views/Manage/resultCriteria.vue'
 import Report from '../views/Results/reportCard.vue'
-import marksEntry from '@/views/Marks/marksEntry.vue'
+import marksEntry from '../views/Marks/marksEntry.vue'
+import CoSCholasticEntry from '../views/Marks/coscholasticmarksEntry.vue'
+
 import marksViewEdit from '../views/Marks/marksViewEdit.vue'
 import ClassSubjectMapping from '../views/Manage/mapClassSubject.vue'
 import ClassSectionMapping from '../views/Manage/mapClassSection.vue'
@@ -91,6 +93,11 @@ const routes = [
     path: '/marks/student-marks-entry',
     name: 'marksEntry',
     component: marksEntry
+  },
+  {
+    path: '/marks/student-marks-entry-coscholastic',
+    name: 'CoSCholasticEntry',
+    component: CoSCholasticEntry
   },
   {
     path: '/class/master',
