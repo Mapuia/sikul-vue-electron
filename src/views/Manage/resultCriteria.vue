@@ -1,15 +1,9 @@
 <template>
     <div class="form-container wide">
-      <h1 class="title has-text-centered">Set Result Criteria</h1>
+      <h1 class="title has-text-centered">Result Criteria Info</h1>
   
       <div class="box">
-        <ul>
-            <li>Pass Mark Percentage</li>
-            <li>Division Percentage</li>
-            <li>Grade Percentage</li>
-            <li>How to consider Simple pass</li>
-            <li>Which Subject is Mandatory to Pass</li>
-        </ul>
+        <h1 class="subtitle">About Result Criteria <span class="icon has-text-info"><i class="fas fa-info-circle"></i></span></h1>
    <hr>   
         <p>Pass Mark in each subject is 40%. </p>
 
@@ -35,26 +29,29 @@
 25 and above - B <br />
 25 below - C</p>
 
-        <!-- Example input -->
+  
+<!-- Example input 
         <div class="field mt-4">
           <label class="label">Sample Input</label>
           <div class="control">
             <input class="input" type="text" v-model="sampleText" placeholder="Type something..." />
           </div>
         </div>
-  
-        <!-- Example buttons -->
+-->  
+        <!-- Example buttons 
         <div class="buttons mt-4">
           <button class="button is-primary" @click="handleSubmit">Submit</button>
           <button class="button is-light" @click="reset">Reset</button>
         </div>
-  
-        <!-- Output display -->
+--> 
+        <!-- Output display -
         <div v-if="submitted" class="notification is-success mt-4">
           You submitted: <strong>{{ sampleText }}</strong>
         </div>
-      </div>
-    </div>
+      
+    
+-->   x</div>
+    </div>    
   </template>
   
   <script setup>

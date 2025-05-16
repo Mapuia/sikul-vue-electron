@@ -1,6 +1,5 @@
 const { ipcMain } = require('electron');
 const { db } = require('../database.cjs');
-console.log("Exam Handler");
 
 // Section IPC Handlers
 //////////////////////////////////////////////////////////////////////////////             GET

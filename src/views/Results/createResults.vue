@@ -1,127 +1,175 @@
 <template>
-  <div class="form-container wide">
-    <div v-if="Publishable">
-    <h1 class="title is-4 has-text-centered">Create Result - {{ currentExamName }} ({{ currentYear }})</h1>
-      </div>
-      <div v-else><h1 class="title is-4 has-text-centered">{{ currentExamName }} ({{ currentYear }})</h1>
-        <h2 class="subtitle is-5 has-text-centered mb-2">Result is not Published!</h2>
-      </div>
-    <section class="box">
+  <div class="form-container full ">
+    <div>
+      <h1 class="title is-4 has-text-centered mb-4">Create Result - {{ CurrentExamName }} ({{ CurrentYear }})</h1>
+      <h2 class="subtitle is-5 has-text-centered mb-4">ExamType - {{ CurrentExamType }}</h2>
+    </div>
+
+    <div class="box form-container single">
+      Calculate total marks.
+    </div>
     
-      <h1 class="title is-4 has-text-centered">Statistics</h1>
+    
+    <div class="is-flex ">
 
-      <div v-if="errorMessage" class="notification is-danger fixed-notification">
-        {{ errorMessage }}
-      </div>
-
-      <div v-if="loading" class="has-text-centered">
-        <button class="button is-loading is-light is-info">Loading</button>
-      </div>
-
-      <div v-else>
-        <table class="table is-striped is-hoverable is-fullwidth">
-          <thead>
-            <tr>
-              <th>Class</th>
-              <th>Section</th>
-              <th>No. of Students</th>
-              <th>No. of Appearance</th>
-              <th>Percentage</th>
-              <th class="has-text-centered">Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            <template v-for="cls in classSectionStats" :key="cls.ClassId">
-              <tr v-for="(section, index) in cls.Sections" :key="cls.ClassId + '-' + section.SectionId">
-                <!-- Merge Class column -->
-                <td v-if="index === 0" :rowspan="cls.Sections.length">{{ cls.ClassName }}</td>
-                <td>{{ section.SectionName }}</td>
-                <td>{{ section.TotalStudents }}</td>
-                <td>{{ section.StudentsAppeared }}</td>
-                <td>{{ section.TotalStudents > 0 ? ((section.StudentsAppeared / section.TotalStudents) * 100).toFixed(2) + '%' : "N.A" }}</td>
-                
-                <!-- Merge Action button column -->
-                <td v-if="index === 0" :rowspan="cls.Sections.length ">
-                  <div v-if="PublishedResult" class="buttons is-flex is-flex-direction-column">
-                  <button class="button is-primary is-small " @click="createResult(cls.ClassId, cls.ClassName)">
-                    Create Result
+      <!-- Marks Entry Status Table -->
+      <section class="box column mr-2">
+        <div class="table-container">
+          <table class="table is-fullwidth is-striped is-hoverable">
+            <thead>
+              <tr>
+                <th>Class</th>
+                <th>Section</th>
+                <th>#Subjects Entered</th>
+                <th>Mark Entry Status</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="item in classSectionStatus" :key="`${item.classId}-${item.sectionId}`">
+                <td>{{ !["KG-I", "KG-II"].includes(item.className) ? "Class " + item.className : item.className }}</td>
+                <td>Section - {{ item.sectionName }}</td>
+                <td>
+                  <span class="has-text-grey">{{ item.finishedSubjects }} of {{ item.totalSubjects }} ({{ item.completionPercentage }}%)</span>
+                </td>
+                <td>
+                  <span class="tag is-small mr-2" :class="item.allFinished ? 'is-success' : 'is-dark'">
+                    {{ item.allFinished ? 'Completed' : 'In Progress' }}
+                  </span>
+                  <p class="help is-size-8 mt-1 ">
+                    <i>{{ item.allFinished ? 'Ready to generate results' : 'Complete mark entry first' }}</i>
+                  </p>
+                </td>
+                <td>
+                  <button v-if="item.allFinished && isCalculated && resultGenerated"
+                    class="button is-small is-dark "
+                    :disabled="resultGenerated"                  
+                  >
+                    Result Generated
                   </button>
-                  <button class="button is-light is-small " @click="createResult(cls.ClassId)">
-                    View Result
+                  <button v-else-if="item.allFinished && !isCalculated"
+                    class="button is-small is-primary"
+                    :disabled="!item.allFinished"
+                    @click="calculateTotalMarks(item.classId, item.sectionId)"
+                  >
+                    {{ isCalculating ? "Calculating..." : "Calculate Total Marks" }}
                   </button>
-                  </div>
-                  <div v-else class="mt-4 is-flex is-justify-content-center is-align-items-center">
-                    <i><small>No Action</small></i>
-                  </div>
+                  <button v-else-if="item.allFinished && isCalculated"
+                    class="button is-small is-success "
+                    :disabled="isCalculating"
+                    @click="generateResult(item.classId, item.sectionId)"
+                  >
+                    Generate Result
+                  </button>
+                  
+                  <button v-else
+                    class="button is-small is-danger"
+                    :disabled="item.allFinished"
+                    @click="goToMarkEntry(item.classId, item.sectionId)"
+                  >
+                    Mark Entry
+                  </button>
                 </td>
               </tr>
-            </template>
-          </tbody>
-        </table>
-      </div>
-    </section>
- 
- 
- <!--Section for Result Creation--> 
-    <section class="box">
-      <button class="button is-primary"></button>
-    </section>
-
-  </div> 
+            </tbody>
+          </table>
+        </div>
+      </section>
+      <section class="box info-container ">
+        <h2 class="subtitle">Instructions </h2>
+        <div class="notification info is-dark">
+          <ul class="bullet">
+            <li>Click Calculate button to calculate the Cummulative Total marks for all the students.</li>
+          </ul>
+        </div>
+      </section>
+    </div>
+  </div>
 </template>
 
 <script setup>
-import { ref, onMounted, watch } from 'vue'
+
+import { ref, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { useAcademicYear } from '../../composables/useAcademicYear'
 import { useActiveExam } from '../../composables/useActiveExam'
 
-const { currentYearId, currentYear} = useAcademicYear()
-const { currentExamId, currentExamName, Publishable, Result_Published, loadActiveExam } = useActiveExam()
+const router = useRouter()
+const { CurrentYearId, CurrentYear } = useAcademicYear()
+const { CurrentExamId, CurrentExamType, CurrentExamName, loadActiveExam } = useActiveExam()
 
-const classSectionStats = ref([])
-const errorMessage = ref('')
-const loading = ref(false)
+// State
+const classSectionStatus = ref([])
+const isLoading = ref(false)
+const isCalculating = ref(false)
+const isCalculated = ref(false)
+const resultGenerated = ref(false)
 
-console.log("Create Result !:", currentExamId.value) 
-
-async function fetchClassSectionStats() {
-  if (!currentYearId.value || !currentExamId.value) return
-
-  loading.value = true
-  errorMessage.value = ''
-  try {
-    const response = await window.electronAPI.getClassSectionStats({
-      academicYearId: currentYearId.value,
-      activeExamId: currentExamId.value
-    })
-    if (response.success) {
-      classSectionStats.value = response.data
-    } else {
-      errorMessage.value = 'Failed to load class-section statistics.'
-    }
-  } catch (err) {
-    errorMessage.value = err.message
-  } finally {
-    loading.value = false
-  }
-}
-
+// Fetch all required data
 onMounted(async () => {
+  isLoading.value = true
   await loadActiveExam()
-  fetchClassSectionStats()
+  await fetchMarkEntryStatus()
+  isLoading.value = false
 })
 
-watch([currentYearId, currentExamId], ([yearId, examId]) => {
-  if (yearId && examId) {
-    fetchClassSectionStats()
-  } else {
-    errorMessage.value = 'Failed to load class-section statistics.'
+// Fetch mark entry status for all class-section combinations
+async function fetchMarkEntryStatus() {
+  try {
+    const status = await window.electronAPI.getmarkEntryStatus({
+      academicYearId: CurrentYearId.value,
+      examId: CurrentExamId.value
+    })
+    
+    if (status.success) {
+      classSectionStatus.value = status.data
+    } else {
+      console.error('Error fetching status:', status.error)
+    }
+  } catch (error) {
+    console.error('Error:', error)
   }
-})
-
-// Handler for Create Result button
-function createResult(classId,clsName,) {
-  console.log('Creating result for class:', clsName)
- alert("Result is created for Class: " + clsName)
 }
+
+function goToMarkEntry(classId, sectionId) {
+  console.log('ID to pass from create result:', sectionId)
+  router.push({
+    name: 'MarksEntry',
+    query: { 
+      classId, 
+      sectionId,
+      examId: CurrentExamId.value,
+      yearId: CurrentYearId.value
+    }
+  })
+}
+
+function calculateTotalMarks(classId, sectionId){
+  isCalculating.value = true
+   setTimeout(() => {
+    isCalculated.value = true
+    isCalculating.value = false;
+  }, 3000); 
+  // 1000ms = 1 second
+}
+
+function generateResult(classId, sectionId){
+  resultGenerated.value = true;
+  console.log("Result Generated")
+}
+
+
 </script>
+
+<style scoped>
+.table-container {
+  overflow-x: auto;
+}
+.button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.help {
+  display: inline-block;
+}
+</style>

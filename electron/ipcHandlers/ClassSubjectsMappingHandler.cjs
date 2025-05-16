@@ -1,6 +1,6 @@
 const { ipcMain } = require('electron');
 const { db } = require('../database.cjs');
-console.log("Mapping Handler");
+//console.log("Mapping Handler");
 ////////////////////////////////////////////////////////////////////////////////Select Subjects based on Class
 ipcMain.handle('get-subjects-by-class', async (event, className) => {
   try {
@@ -33,7 +33,7 @@ ipcMain.handle('get-subjects-by-classId', async (event, ClassId) => {
     `);
    
     const subjects = stmt.all(ClassId);
-    console.log('Subjects at Handler:', subjects);
+    //console.log('Subjects at Handler:', subjects);
   
     return { success: true, subjects };
   } catch (error) {

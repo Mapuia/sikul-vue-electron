@@ -12,6 +12,7 @@ CREATE TABLE IF NOT EXISTS Users (
 CREATE TABLE IF NOT EXISTS AcademicYears (
     Id INTEGER PRIMARY KEY AUTOINCREMENT,
     YearName TEXT NOT NULL UNIQUE,
+    BaseYear TEXT NOT NULL UNIQUE,
     StartDate DATE NOT NULL,
     EndDate DATE NOT NULL,
     IsActive INTEGER DEFAULT 0 CHECK(IsActive IN (0, 1)),
@@ -22,7 +23,9 @@ CREATE TABLE IF NOT EXISTS AcademicYears (
 -- Classes Table
 CREATE TABLE IF NOT EXISTS Classes (
     Id INTEGER PRIMARY KEY AUTOINCREMENT,
+    ClassId TEXT UNIQUE,
     ClassName TEXT NOT NULL UNIQUE,
+    Teacher TEXT,
     Creation_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -47,9 +50,14 @@ CREATE TABLE IF NOT EXISTS ClassSectionMapping (
 -- Subjects Table
 CREATE TABLE IF NOT EXISTS Subjects (
     Id INTEGER PRIMARY KEY AUTOINCREMENT,
-    SubjectName TEXT NOT NULL UNIQUE,
-    SubjectCategory TEXT,
-    Creation_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    SubjectCode TEXT UNIQUE,
+    SubjectName TEXT UNIQUE,
+    SubjectCategory TEXT NOT NULL CHECK(SubjectCategory IN ('Major', 'Minor', 'Co-Scholastic')),
+    FullMark REAL NOT NULL CHECK(FullMark > 0),  -- Base full marks for the subject
+    IsCore BOOLEAN DEFAULT 0,  -- For critical subjects like Math/Science
+    DisplayOrder INTEGER,
+    Creation_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    Last_Modified_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
 -- ClassSubjectMapping Table
@@ -67,6 +75,7 @@ CREATE TABLE IF NOT EXISTS ClassSubjectMapping (
 CREATE TABLE IF NOT EXISTS Exams (
     Id INTEGER PRIMARY KEY AUTOINCREMENT,
     ExamName TEXT NOT NULL UNIQUE,
+    ExamType TEXT NOT NULL,
     Creation_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     Modified_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     Description TEXT    
@@ -79,11 +88,12 @@ CREATE TABLE IF NOT EXISTS ActiveExams (
     ExamId INTEGER NOT NULL,
     MajorMaxMark REAL NOT NULL,
     MinorMaxMark REAL NOT NULL,
+    PassingPercentage REAL DEFAULT 40 CHECK(PassingPercentage BETWEEN 0 AND 100),
     IsActive INTEGER DEFAULT 0 CHECK(IsActive IN (0, 1)),
     Result_Published INTEGER DEFAULT 0 CHECK(Result_Published IN (0, 1)),
     PublishDate DATETIME,
     Creation_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    Modified_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    Last_Modified_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (ExamId) REFERENCES Exams(Id) ON DELETE CASCADE ON UPDATE CASCADE,
     FOREIGN KEY (AcademicYearId) REFERENCES AcademicYears(Id) ON DELETE CASCADE ON UPDATE CASCADE,
     UNIQUE(AcademicYearId, ExamId)
@@ -100,15 +110,15 @@ CREATE TABLE IF NOT EXISTS Students (
     Aadhaar TEXT UNIQUE,
     APAR TEXT UNIQUE,
     PEN TEXT UNIQUE,
-    Contact TEXT CHECK(length(Contact) = 10 AND Contact GLOB '[0-9]*'),
+    Contact TEXT,
     Address TEXT,
     FirstAdmissionDate DATE DEFAULT CURRENT_TIMESTAMP,
     Status TEXT NOT NULL DEFAULT 'Admitted', --"Passed Out"
     Caste TEXT,
     Religion TEXT,
-    Height INTEGER CHECK(Height > 0 AND Height < 250),
-    Weight REAL CHECK(Weight > 0 AND Weight < 200),
-    BloodGroup TEXT CHECK(BloodGroup IN ('A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-')),
+    Height INTEGER,
+    Weight REAL,
+    BloodGroup TEXT,
     Creation_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     Last_Modified_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
@@ -121,7 +131,7 @@ CREATE TABLE IF NOT EXISTS Admissions (
     ClassId INTEGER NOT NULL,
     SectionId INTEGER NOT NULL,
     RollNo INTEGER,
-    AdmissionType TEXT NOT NULL CHECK(AdmissionType IN ('New', 'Re-admission')),
+    AdmissionType TEXT NOT NULL CHECK(AdmissionType IN ('New', 'Promoted','Repeater')),
     Creation_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     Last_Modified_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (StudentId) REFERENCES Students(Id) ON DELETE CASCADE ON UPDATE CASCADE,
@@ -137,7 +147,9 @@ CREATE TABLE IF NOT EXISTS Marks (
     SubjectId INTEGER NOT NULL,
     ActiveExamId INTEGER NOT NULL,
     AcademicYearId INTEGER NOT NULL,
+    MaxMark REAL NOT NULL,
     MarksObtained REAL NOT NULL,
+    Status TEXT NOT NULL CHECK(Status IN ('Pass', 'Fail')),
     Creation_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     Last_Modified_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (StudentId) REFERENCES Students(Id) ON DELETE CASCADE ON UPDATE CASCADE,
@@ -153,7 +165,7 @@ CREATE TABLE IF NOT EXISTS CoScholasticMarks (
     SubjectId INTEGER NOT NULL,
     ActiveExamId INTEGER NOT NULL,
     AcademicYearId INTEGER NOT NULL,
-    Score REAL NOT NULL,
+    Grade TEXT,
     Creation_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     Last_Modified_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (StudentId) REFERENCES Students(Id) ON DELETE CASCADE ON UPDATE CASCADE,
@@ -163,11 +175,31 @@ CREATE TABLE IF NOT EXISTS CoScholasticMarks (
     UNIQUE(StudentId, SubjectId, ActiveExamId)
 );
 
--- CumulativeMarks Table (Fixed)
-CREATE TABLE IF NOT EXISTS CumulativeMarks (
+--Subject Entry tracker
+CREATE TABLE SubjectEntryStatus (
+    Id INTEGER PRIMARY KEY AUTOINCREMENT,
+    AcademicYearId INTEGER NOT NULL,
+    ActiveExamId INTEGER NOT NULL,
+    ClassId INTEGER NOT NULL,
+    SectionId INTEGER NOT NULL,
+    SubjectId INTEGER NOT NULL,
+    Finished BOOLEAN DEFAULT 0,
+    Creation_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    Last_Modified_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (AcademicYearId) REFERENCES AcademicYears(Id) ON DELETE CASCADE ON UPDATE CASCADE,
+    FOREIGN KEY (ActiveExamId) REFERENCES ActiveExams(Id) ON DELETE CASCADE ON UPDATE CASCADE,    
+    FOREIGN KEY (ClassId) REFERENCES Classes(Id) ON DELETE CASCADE ON UPDATE CASCADE,
+    FOREIGN KEY (SectionId) REFERENCES Sections(Id) ON DELETE CASCADE ON UPDATE CASCADE,
+    FOREIGN KEY (SubjectId) REFERENCES Subjects(Id) ON DELETE CASCADE ON UPDATE CASCADE,
+    UNIQUE(AcademicYearId, ActiveExamId, ClassId, SectionId, SubjectId) 
+);
+
+-- CumulativeTotalMarks Table (Fixed)
+CREATE TABLE IF NOT EXISTS CumulativeTotalMarks (
     Id INTEGER PRIMARY KEY AUTOINCREMENT,
     StudentId INTEGER NOT NULL,
     ActiveExamId INTEGER NOT NULL,
+    TotalMaxMarks REAL,
     TotalMarksObtained REAL DEFAULT 0,
     AcademicYearId INTEGER NOT NULL,
     Creation_at DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -176,6 +208,23 @@ CREATE TABLE IF NOT EXISTS CumulativeMarks (
     FOREIGN KEY (ActiveExamId) REFERENCES ActiveExams(Id) ON DELETE CASCADE ON UPDATE CASCADE,    
     FOREIGN KEY (AcademicYearId) REFERENCES AcademicYears(Id) ON DELETE CASCADE ON UPDATE CASCADE,
     UNIQUE(StudentId, ActiveExamId)
+);
+
+--Calculation Tracker
+CREATE TABLE SumCalculationStatus (
+    Id INTEGER PRIMARY KEY AUTOINCREMENT,
+    AcademicYearId INTEGER NOT NULL,
+    ActiveExamId INTEGER NOT NULL,
+    ClassId INTEGER NOT NULL,
+    SectionId INTEGER NOT NULL,    
+    Finished BOOLEAN DEFAULT 0,
+    Creation_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    Last_Modified_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (AcademicYearId) REFERENCES AcademicYears(Id) ON DELETE CASCADE ON UPDATE CASCADE,
+    FOREIGN KEY (ActiveExamId) REFERENCES ActiveExams(Id) ON DELETE CASCADE ON UPDATE CASCADE,    
+    FOREIGN KEY (ClassId) REFERENCES Classes(Id) ON DELETE CASCADE ON UPDATE CASCADE,
+    FOREIGN KEY (SectionId) REFERENCES Sections(Id) ON DELETE CASCADE ON UPDATE CASCADE,    
+    UNIQUE(AcademicYearId, ActiveExamId, ClassId, SectionId) 
 );
 
 -- Results Table (Fixed)
@@ -207,15 +256,42 @@ CREATE TABLE IF NOT EXISTS ReportCards (
     Creation_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     Last_Modified_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (StudentId) REFERENCES Students(Id) ON DELETE CASCADE ON UPDATE CASCADE,
-    FOREIGN KEY (AcademicYearId) REFERENCES AcademicYears(Id) ON DELETE CASCADE ON UPDATE CASCADE
+    FOREIGN KEY (AcademicYearId) REFERENCES AcademicYears(Id) ON DELETE CASCADE ON UPDATE CASCADE,
+    FOREIGN KEY (ActiveExamId) REFERENCES ActiveExams(Id) ON DELETE CASCADE ON UPDATE CASCADE
+
 );
 
+CREATE TABLE IF NOT EXISTS ResultRules (
+    Id INTEGER PRIMARY KEY AUTOINCREMENT,
+    RuleName TEXT NOT NULL UNIQUE,
+    ClassRangeStart INTEGER NOT NULL CHECK(ClassRangeStart >= 1),
+    ClassRangeEnd INTEGER NOT NULL CHECK(ClassRangeEnd >= ClassRangeStart),
+    MaxAllowedFailures INTEGER NOT NULL DEFAULT 0,
+    RequiresAllCorePass BOOLEAN DEFAULT 1,
+    MinimumAggregatePercentage REAL DEFAULT 40,
+    CriticalPassingPercentage REAL DEFAULT 25 CHECK(CriticalPassingPercentage BETWEEN 0 AND 100),
+    Creation_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS DivisionPercentage (
+    Id INTEGER PRIMARY KEY AUTOINCREMENT,
+    Percentage REAL NOT NULL,
+    Division TEXT NOT NULL,
+    Creation_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
 -- ========== INDEXES ========== --
-CREATE INDEX IF NOT EXISTS idx_marks_student ON Marks(StudentId);
-CREATE INDEX IF NOT EXISTS idx_admissions_class ON Admissions(ClassId, SectionId);
+-- For faster result generation
+-- For faster student lookups
+CREATE INDEX IF NOT EXISTS idx_students_name ON Students(Name);
+CREATE INDEX IF NOT EXISTS idx_students_contact ON Students(Contact);
 
+-- For result generation performance
+CREATE INDEX IF NOT EXISTS idx_marks_exam_subject ON Marks(ActiveExamId, SubjectId);
+CREATE INDEX IF NOT EXISTS idx_admissions_year_class ON Admissions(AcademicYearId, ClassId, SectionId);
+CREATE INDEX IF NOT EXISTS idx_results_exam_year ON Results(ActiveExamId, AcademicYearId);
+CREATE INDEX IF NOT EXISTS idx_reportcards_student_exam ON ReportCards(StudentId, ActiveExamId);
 
-
+CREATE INDEX IF NOT EXISTS idx_marks_student_exam ON Marks(StudentId, ActiveExamId);
 
 -- ========== Preloaded Master DATA ========== --
 
@@ -227,13 +303,13 @@ INSERT INTO Users (Username, Password, Role) VALUES
     ('deo', 'deo123', 'Admission');
 
 -- Insert Academic Years
-INSERT INTO AcademicYears (YearName, StartDate, EndDate, IsActive) VALUES
-    ('2024-2025', '2024-04-01', '2025-03-31', 1);
+INSERT INTO AcademicYears (YearName, BaseYear, StartDate, EndDate, IsActive) VALUES
+    ('2024-2025', '2024', '2024-04-01', '2025-03-31', 1);
 
 -- Insert Classes (up to Class XI)
-INSERT INTO Classes (ClassName) VALUES
-    ('KG-I'), ('KG-II'), ('I'), ('II'), ('III'), ('IV'), ('V'),
-    ('VI'), ('VII'), ('VIII'), ('IX'), ('X'), ('XI');
+INSERT INTO Classes (ClassId, ClassName) VALUES
+    ('KG1', 'KG-I'), ('KG2', 'KG-II'), ('1', 'I'), ('2', 'II'), ('3', 'III'), ('4', 'IV'), ('5', 'V'), ('6', 'VI'), ('7', 'VII'), ('8', 'VIII'), ('9', 'IX'), ('10', 'X'), ('11', 'XI');
+
 
 -- Insert Sections
 INSERT INTO Sections (SectionName) VALUES ('A'), ('B');
@@ -245,154 +321,147 @@ WHERE c.ClassName IN ('KG-I', 'KG-II', 'I', 'II', 'III', 'IV', 'V', 'VI', 'VII',
 ORDER BY c.Id, s.Id;
 
 -- Insert Subjects
-INSERT INTO Subjects (SubjectName, SubjectCategory) VALUES
-    ('MATHEMATICS', 'Major'),
-    ('ENGLISH', 'Major'),
-    ('ENGLISH - I', 'Major'),
-    ('ENGLISH - II', 'Major'),
-    ('LANGUAGE', 'Major'),
-    ('SCIENCE', 'Major'),
-    ('SOCIAL SCIENCE', 'Major'),
-    ('EVS', 'Major'),
-    ('GENERAL KNOWLEDGE', 'Minor'),
-    ('MORAL SCIENCE', 'Minor'),
-    ('COMPUTER', 'Minor'),
-    ('ART EDUCATION', 'Minor'),
-    ('CONVERSATION', 'Minor'),
-    ('RHYMES', 'Minor'),
-    ('SUPW', 'Co-Scholastic'),
-    ('CCA', 'Co-Scholastic'),
-    ('Games and sports', 'Co-Scholastic'),
-    ('Cleanliness', 'Co-Scholastic'),
-    ('Punctuality', 'Co-Scholastic'),
-    ('Obedience', 'Co-Scholastic');
+INSERT INTO Subjects (SubjectCode, SubjectName, SubjectCategory, FullMark, IsCore, DisplayOrder) VALUES
+('ENG', 'English', 'Major', 100, 0, 1),
+('ENGI', 'English-I', 'Major', 100, 0, 2),
+('ENGII', 'English-II', 'Major', 100, 0, 3),
+('LANG', 'Language', 'Major', 100, 0, 4),
+('EVS', 'EVS', 'Major', 100, 0, 5),
+('SCI', 'Science', 'Major', 100, 1, 6),
+('MATH', 'Mathematics', 'Major', 100, 1, 7),
+('SOCSCI', 'Social Science', 'Major', 100, 0, 8),
+('HIST', 'History', 'Major', 100, 0, 9),
+('POLSCI', 'Pol. Science.', 'Major', 100, 0, 10),
+('GEOG', 'Geography', 'Major', 100, 0, 11),
+('EDU', 'Education', 'Major', 100, 0, 12),
+('ECON', 'Economics', 'Major', 100, 0, 13),
+('GK', 'GK', 'Minor', 50, 0, 14),
+('MORAL', 'Moral Science', 'Minor', 50, 0, 15),
+('COMP', 'Computer', 'Minor', 50, 0, 16),
+('ART', 'Art Education', 'Minor', 50, 0, 17),
+('CONV', 'Conversation', 'Minor', 50, 0, 18),
+('RHY', 'Rhymes', 'Minor', 50, 0, 19),
+('SUPW', 'SUPW', 'Co-Scholastic', 50, 0, 20),
+('CCA', 'CCA', 'Co-Scholastic', 50, 0, 21),
+('GAME', 'Games & Sports', 'Co-Scholastic', 50, 0, 22),
+('CLEAN', 'Cleanliness', 'Co-Scholastic', 50, 0, 23),
+('PUNC', 'Punctuality', 'Co-Scholastic', 50, 0, 24),
+('OBEY', 'Obedience', 'Co-Scholastic', 50, 0, 25);
+
 
 -- Insert Class-Subject Mappings for Class V and VI
 --- Insert Class-Subject Mappings
 -- KG-I
+-- KG-I
 INSERT INTO ClassSubjectMapping (ClassId, SubjectId)
 SELECT c.Id, s.Id FROM Classes c, Subjects s 
 WHERE c.ClassName = 'KG-I' AND s.SubjectName IN 
-('MATHEMATICS', 'ENGLISH', 'EVS', 'GENERAL KNOWLEDGE', 'CONVERSATION', 'RHYMES');
+('Mathematics', 'English', 'EVS', 'GK', 'Conversation', 'Rhymes');
 
 -- KG-II
 INSERT INTO ClassSubjectMapping (ClassId, SubjectId)
 SELECT c.Id, s.Id FROM Classes c, Subjects s 
 WHERE c.ClassName = 'KG-II' AND s.SubjectName IN 
-('MATHEMATICS', 'ENGLISH', 'EVS', 'GENERAL KNOWLEDGE', 'CONVERSATION', 'RHYMES');
+('Mathematics', 'English', 'EVS', 'GK', 'Conversation', 'Rhymes');
 
 -- Class I
 INSERT INTO ClassSubjectMapping (ClassId, SubjectId)
 SELECT c.Id, s.Id FROM Classes c, Subjects s 
 WHERE c.ClassName = 'I' AND s.SubjectName IN 
-('MATHEMATICS', 'EVS', 'GENERAL KNOWLEDGE', 'MORAL SCIENCE', 'ENGLISH', 'LANGUAGE', 'ART EDUCATION');
+('Mathematics', 'EVS', 'GK', 'Moral Science', 'English', 'Language', 'Art Education');
 
 -- Class II
 INSERT INTO ClassSubjectMapping (ClassId, SubjectId)
 SELECT c.Id, s.Id FROM Classes c, Subjects s 
 WHERE c.ClassName = 'II' AND s.SubjectName IN 
-('MATHEMATICS', 'EVS', 'GENERAL KNOWLEDGE', 'MORAL SCIENCE', 'ENGLISH', 'LANGUAGE', 'ART EDUCATION');
+('Mathematics', 'EVS', 'GK', 'Moral Science', 'English', 'Language', 'Art Education');
 
 -- Class III
 INSERT INTO ClassSubjectMapping (ClassId, SubjectId)
 SELECT c.Id, s.Id FROM Classes c, Subjects s 
 WHERE c.ClassName = 'III' AND s.SubjectName IN 
-('MATHEMATICS', 'LANGUAGE', 'ENGLISH - I', 'ENGLISH - II', 'MORAL SCIENCE', 'SCIENCE', 'EVS', 'GENERAL KNOWLEDGE', 'ART EDUCATION');
+('Mathematics', 'Language', 'English-I', 'English-II', 'Moral Science', 'Science', 'EVS', 'GK', 'Art Education');
 
 -- Class IV
 INSERT INTO ClassSubjectMapping (ClassId, SubjectId)
 SELECT c.Id, s.Id FROM Classes c, Subjects s 
 WHERE c.ClassName = 'IV' AND s.SubjectName IN 
-('MATHEMATICS', 'LANGUAGE', 'ENGLISH - I', 'ENGLISH - II', 'MORAL SCIENCE', 'SCIENCE', 'EVS', 'GENERAL KNOWLEDGE', 'ART EDUCATION', 'COMPUTER');
+('Mathematics', 'Language', 'English-I', 'English-II', 'Moral Science', 'Science', 'EVS', 'GK', 'Art Education', 'Computer');
 
 -- Class V
 INSERT INTO ClassSubjectMapping (ClassId, SubjectId)
 SELECT c.Id, s.Id FROM Classes c, Subjects s 
 WHERE c.ClassName = 'V' AND s.SubjectName IN 
-('MATHEMATICS', 'LANGUAGE', 'ENGLISH - I', 'ENGLISH - II', 'MORAL SCIENCE', 'SCIENCE', 'EVS', 'GENERAL KNOWLEDGE', 'ART EDUCATION', 'COMPUTER');
+('Mathematics', 'Language', 'English-I', 'English-II', 'Moral Science', 'Science', 'EVS', 'GK', 'Art Education', 'Computer');
 
 -- Class VI
 INSERT INTO ClassSubjectMapping (ClassId, SubjectId)
 SELECT c.Id, s.Id FROM Classes c, Subjects s 
 WHERE c.ClassName = 'VI' AND s.SubjectName IN 
-('MATHEMATICS', 'LANGUAGE', 'ENGLISH - I', 'ENGLISH - II', 'MORAL SCIENCE', 'SCIENCE', 'SOCIAL SCIENCE', 'COMPUTER');
+('Mathematics', 'Language', 'English-I', 'English-II', 'Moral Science', 'Science', 'Social Science', 'Computer');
 
 -- Class VII
 INSERT INTO ClassSubjectMapping (ClassId, SubjectId)
 SELECT c.Id, s.Id FROM Classes c, Subjects s 
 WHERE c.ClassName = 'VII' AND s.SubjectName IN 
-('MATHEMATICS', 'LANGUAGE', 'ENGLISH - I', 'ENGLISH - II', 'MORAL SCIENCE', 'SCIENCE', 'SOCIAL SCIENCE', 'COMPUTER');
+('Mathematics', 'Language', 'English-I', 'English-II', 'Moral Science', 'Science', 'Social Science', 'Computer');
 
 -- Class VIII
 INSERT INTO ClassSubjectMapping (ClassId, SubjectId)
 SELECT c.Id, s.Id FROM Classes c, Subjects s 
 WHERE c.ClassName = 'VIII' AND s.SubjectName IN 
-('MATHEMATICS', 'LANGUAGE', 'ENGLISH - I', 'ENGLISH - II', 'MORAL SCIENCE', 'SCIENCE', 'SOCIAL SCIENCE', 'COMPUTER');
+('Mathematics', 'Language', 'English-I', 'English-II', 'Moral Science', 'Science', 'Social Science', 'Computer');
 
 -- Class IX
 INSERT INTO ClassSubjectMapping (ClassId, SubjectId)
 SELECT c.Id, s.Id FROM Classes c, Subjects s 
 WHERE c.ClassName = 'IX' AND s.SubjectName IN 
-('MATHEMATICS', 'LANGUAGE', 'ENGLISH', 'SCIENCE', 'SOCIAL SCIENCE');
+('Mathematics', 'Language', 'English', 'Science', 'Social Science');
 
 -- Class X
 INSERT INTO ClassSubjectMapping (ClassId, SubjectId)
 SELECT c.Id, s.Id FROM Classes c, Subjects s 
 WHERE c.ClassName = 'X' AND s.SubjectName IN 
-('MATHEMATICS', 'LANGUAGE', 'ENGLISH', 'SCIENCE', 'SOCIAL SCIENCE');
+('Mathematics', 'Language', 'English', 'Science', 'Social Science');
 
 -- Class XI
 INSERT INTO ClassSubjectMapping (ClassId, SubjectId)
 SELECT c.Id, s.Id FROM Classes c, Subjects s 
 WHERE c.ClassName = 'XI' AND s.SubjectName IN 
-('ENGLISH', 'POLITICAL SCIENCE', 'HISTORY', 'GEOGRAPHY', 'EDUCATION', 'ECONOMICS');
+('English', 'Political Science', 'History', 'Geography', 'Education', 'Economics');
 
--- Class XII
-INSERT INTO ClassSubjectMapping (ClassId, SubjectId)
-SELECT c.Id, s.Id FROM Classes c, Subjects s 
-WHERE c.ClassName = 'XII' AND s.SubjectName IN 
-('ENGLISH', 'POLITICAL SCIENCE', 'HISTORY', 'GEOGRAPHY', 'EDUCATION', 'ECONOMICS');
+
 
 -- Insert Exams
-INSERT INTO Exams (ExamName, Description) VALUES
-    ('First Periodic Test', 'First periodic assessment of the term'),
-    ('Half Yearly Exam', 'Mid-term comprehensive examination'),
-    ('Second Periodic Test', 'Second periodic assessment of the term'),
-    ('Annual Exam', 'Final annual examination');
+INSERT INTO Exams (ExamName, ExamType, Description) VALUES
+    ('First Periodic Test', 'Periodic', 'First periodic assessment of the term'),
+    ('Half Yearly Exam', 'Term', 'Mid-term comprehensive examination'),
+    ('Second Periodic Test', 'Periodic', 'Second periodic assessment of the term'),
+    ('Annual Exam', 'Annual', 'Final annual examination');
 
 -- Insert Active Exams
-INSERT INTO ActiveExams (AcademicYearId, ExamId, MajorMaxMark, MinorMaxMark, IsActive, Result_Published)
+INSERT INTO ActiveExams (AcademicYearId, ExamId, MajorMaxMark, MinorMaxMark, PassingPercentage, IsActive, Result_Published)
 SELECT 
     (SELECT Id FROM AcademicYears WHERE IsActive = 1),
     (SELECT Id FROM Exams WHERE ExamName = 'First Periodic Test'),
-    20, 10, 1, 0;
+    20, 10, 40, 1, 0;
 
-INSERT INTO ActiveExams (AcademicYearId, ExamId, MajorMaxMark, MinorMaxMark, IsActive, Result_Published)
+INSERT INTO ActiveExams (AcademicYearId, ExamId, MajorMaxMark, MinorMaxMark, PassingPercentage, IsActive, Result_Published)
 SELECT 
     (SELECT Id FROM AcademicYears WHERE IsActive = 1),
     (SELECT Id FROM Exams WHERE ExamName = 'Half Yearly Exam'),
-    80, 20, 0, 0;
+    80, 20, 40, 0, 0;
 
+-- Students for Classes V, Sections A, B
 
+-- Student 2 - V A
+INSERT INTO Students (Name, Gender, FathersName, MothersName, DOB, Aadhaar, APAR, PEN, Contact, Address, Status, Caste, Religion, Height, Weight, BloodGroup)
+VALUES 
+('Aarav Mehta', 'Male', 'Ramesh Mehta', 'Sunita Mehta', '2010-03-21', '111122223333', '111122223333', '10100000001', '9998887771', '5 MG Road, Delhi', 'Admitted', 'OBC', 'Hindu', 142, 40.0, 'A+');
 
--- Sample Student
-INSERT INTO Students (
-    Name, Gender, fathersName, mothersName, DOB,
-    Aadhaar, APAR, PEN, Contact, Address,
-    Status, Caste, Religion,
-    Height, Weight, BloodGroup
-) VALUES (
-    'Rahul Sharma', 'Male', 'Rajesh Sharma', 'Priya Sharma', '2010-05-15',
-    '123456789012', '123456789012', '98765432109', '9876543210', '12 Gandhi Nagar, Delhi',
-    'Admitted', 'General', 'Hindu',
-    145, 42.5, 'B+'
-);
-
--- Sample Admission Record
-INSERT INTO Admissions (
-    StudentId, AcademicYearId, ClassId, SectionId, RollNo, AdmissionType
-) VALUES (
-    (SELECT Id FROM Students WHERE PEN = '98765432109'),
+INSERT INTO Admissions (StudentId, AcademicYearId, ClassId, SectionId, RollNo, AdmissionType)
+VALUES (
+    (SELECT Id FROM Students WHERE PEN = '10100000001'),
     (SELECT Id FROM AcademicYears WHERE IsActive = 1),
     (SELECT Id FROM Classes WHERE ClassName = 'V'),
     (SELECT Id FROM Sections WHERE SectionName = 'A'),
@@ -400,3 +469,108 @@ INSERT INTO Admissions (
     'New'
 );
 
+-- Student 2 - V A
+INSERT INTO Students (Name, Gender, FathersName, MothersName, DOB, Aadhaar, APAR, PEN, Contact, Address, Status, Caste, Religion, Height, Weight, BloodGroup)
+VALUES 
+('Aryan Singh', 'Male', 'Ravi Singh', 'Meera Singh', '2010-03-15', '222233334444', '222233334444', '10100000003', '9998877665', '21 Rose Park, Delhi', 'Admitted', 'OBC', 'Hindu', 142, 39.0, 'A+');
+
+INSERT INTO Admissions (StudentId, AcademicYearId, ClassId, SectionId, RollNo, AdmissionType)
+VALUES (
+    (SELECT Id FROM Students WHERE PEN = '10100000003'),
+    (SELECT Id FROM AcademicYears WHERE IsActive = 1),
+    (SELECT Id FROM Classes WHERE ClassName = 'V'),
+    (SELECT Id FROM Sections WHERE SectionName = 'A'),
+    2,
+    'New'
+);
+
+-- Student 3 - V A
+INSERT INTO Students (Name, Gender, FathersName, MothersName, DOB, Aadhaar, APAR, PEN, Contact, Address, Status, Caste, Religion, Height, Weight, BloodGroup)
+VALUES 
+('Sneha Nair', 'Female', 'Rajeev Nair', 'Latha Nair', '2010-07-20', '333344445555', '333344445555', '10100000004', '9998866554', '11 Green Avenue, Delhi', 'Admitted', 'General', 'Hindu', 139, 37.2, 'B+');
+
+INSERT INTO Admissions (StudentId, AcademicYearId, ClassId, SectionId, RollNo, AdmissionType)
+VALUES (
+    (SELECT Id FROM Students WHERE PEN = '10100000004'),
+    (SELECT Id FROM AcademicYears WHERE IsActive = 1),
+    (SELECT Id FROM Classes WHERE ClassName = 'V'),
+    (SELECT Id FROM Sections WHERE SectionName = 'A'),
+    3,
+    'New'
+);
+
+-- Student 4 - V A
+INSERT INTO Students (Name, Gender, FathersName, MothersName, DOB, Aadhaar, APAR, PEN, Contact, Address, Status, Caste, Religion, Height, Weight, BloodGroup)
+VALUES 
+('Rohit Das', 'Male', 'Anil Das', 'Sunita Das', '2010-01-25', '444455556666', '444455556666', '10100000005', '9998855443', '5 Mango Street, Delhi', 'Admitted', 'SC', 'Hindu', 143, 38.0, 'O+');
+
+INSERT INTO Admissions (StudentId, AcademicYearId, ClassId, SectionId, RollNo, AdmissionType)
+VALUES (
+    (SELECT Id FROM Students WHERE PEN = '10100000005'),
+    (SELECT Id FROM AcademicYears WHERE IsActive = 1),
+    (SELECT Id FROM Classes WHERE ClassName = 'V'),
+    (SELECT Id FROM Sections WHERE SectionName = 'A'),
+    4,
+    'New'
+);
+
+-- Section B
+-- Student 1 - V B
+INSERT INTO Students (Name, Gender, FathersName, MothersName, DOB, Aadhaar, APAR, PEN, Contact, Address, Status, Caste, Religion, Height, Weight, BloodGroup)
+VALUES 
+('Ishita Verma', 'Female', 'Vikas Verma', 'Neha Verma', '2010-06-10', '111122224444', '111122224444', '10100000002', '9998887772', '9 Lotus Lane, Delhi', 'Admitted', 'General', 'Hindu', 140, 38.5, 'O+');
+
+INSERT INTO Admissions (StudentId, AcademicYearId, ClassId, SectionId, RollNo, AdmissionType)
+VALUES (
+    (SELECT Id FROM Students WHERE PEN = '10100000002'),
+    (SELECT Id FROM AcademicYears WHERE IsActive = 1),
+    (SELECT Id FROM Classes WHERE ClassName = 'V'),
+    (SELECT Id FROM Sections WHERE SectionName = 'B'),
+    1,
+    'New'
+);
+
+INSERT INTO Students (Name, Gender, FathersName, MothersName, DOB, Aadhaar, APAR, PEN, Contact, Address, Status, Caste, Religion, Height, Weight, BloodGroup)
+VALUES 
+('Kavya Sharma', 'Female', 'Amit Sharma', 'Pooja Sharma', '2010-08-05', '555566667777', '555566667777', '10100000006', '9998844332', '17 Palm View, Delhi', 'Admitted', 'General', 'Hindu', 141, 36.8, 'A-');
+
+-- Student 2 - V B
+INSERT INTO Admissions (StudentId, AcademicYearId, ClassId, SectionId, RollNo, AdmissionType)
+VALUES (
+    (SELECT Id FROM Students WHERE PEN = '10100000006'),
+    (SELECT Id FROM AcademicYears WHERE IsActive = 1),
+    (SELECT Id FROM Classes WHERE ClassName = 'V'),
+    (SELECT Id FROM Sections WHERE SectionName = 'B'),
+    2,
+    'New'
+);
+
+-- Student 3 - V B
+INSERT INTO Students (Name, Gender, FathersName, MothersName, DOB, Aadhaar, APAR, PEN, Contact, Address, Status, Caste, Religion, Height, Weight, BloodGroup)
+VALUES 
+('Mohammed Arif', 'Male', 'Salman Arif', 'Nasreen Arif', '2010-12-11', '666677778888', '666677778888', '10100000007', '9998833221', '3 Crescent Road, Delhi', 'Admitted', 'OBC', 'Muslim', 140, 37.5, 'B+');
+
+INSERT INTO Admissions (StudentId, AcademicYearId, ClassId, SectionId, RollNo, AdmissionType)
+VALUES (
+    (SELECT Id FROM Students WHERE PEN = '10100000007'),
+    (SELECT Id FROM AcademicYears WHERE IsActive = 1),
+    (SELECT Id FROM Classes WHERE ClassName = 'V'),
+    (SELECT Id FROM Sections WHERE SectionName = 'B'),
+    3,
+    'New'
+);
+
+-- Student 4 - V B
+INSERT INTO Students (Name, Gender, FathersName, MothersName, DOB, Aadhaar, APAR, PEN, Contact, Address, Status, Caste, Religion, Height, Weight, BloodGroup)
+VALUES 
+('Priya Das', 'Female', 'Subhash Das', 'Anita Das', '2010-09-30', '777788889999', '777788889999', '10100000008', '9998822110', '8 Lily Road, Delhi', 'Admitted', 'SC', 'Hindu', 138, 36.2, 'O+');
+
+INSERT INTO Admissions (StudentId, AcademicYearId, ClassId, SectionId, RollNo, AdmissionType)
+VALUES (
+    (SELECT Id FROM Students WHERE PEN = '10100000008'),
+    (SELECT Id FROM AcademicYears WHERE IsActive = 1),
+    (SELECT Id FROM Classes WHERE ClassName = 'V'),
+    (SELECT Id FROM Sections WHERE SectionName = 'B'),
+    4,
+    'New'
+);

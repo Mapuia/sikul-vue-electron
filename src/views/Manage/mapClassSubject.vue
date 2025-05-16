@@ -1,5 +1,5 @@
 <template>
-  <div class="form-container full">
+  <div class="form-container single">
     <h1 class="title is-4 has-text-centered">Class-Subject Mapping</h1>
 
     <div v-if="errorMessage" class="notification is-danger fixed-notification">{{ errorMessage }}</div>
@@ -61,9 +61,9 @@
       <div v-if="selectedSubjects.length" class="box mt-4">
         <h2 class="subtitle is-6">Selected Subjects:</h2>
         <ul>
-          <li v-for="subject in selectedSubjects" :key="subject.Id">
+          <li class="mt-3" v-for="subject in selectedSubjects" :key="subject.Id">
             {{ subject.SubjectName }} ({{ subject.SubjectCategory }})
-            <button class="delete is-small ml-2" @click="removeSubject(subject)"></button>
+            <button class="delete is-small ml-2 mt-1" @click="removeSubject(subject)"></button>
           </li>
         </ul>
       </div>

@@ -2,13 +2,14 @@
   <div class="form-container wide">
     <h1 class="title has-text-centered">Exams - Master Entry</h1>
 
-    <div class="buttons mt-4">
+    <div class="buttons mt-3">
       <button class="button is-primary " @click="showAddForm = true" v-if="!showAddForm">
+        <i class="fas fa-solid fa-plus mr-2"></i>
         Add New Exam
       </button>
     </div>
 
-    <div class="box mt-4" v-if="showAddForm">
+    <div class="box form-container single" v-if="showAddForm">
       <h2 class="subtitle">Add New Exam</h2>
       <form @submit.prevent="submitForm" @reset="resetForm">
         <div class="field">
@@ -23,15 +24,29 @@
             />
           </div>
         </div>
+        <div class="field">
+          <label class="label">Exam Type (Important for result calculation)</label>
+          <div class="control">
+            <div class="select is-fullwidth">
+              <select v-model="newExamType" required>
+                <option disabled value="">-- Select Exam Type --</option>
+                <option>Periodic1</option>
+                <option>Periodic2</option>
+                <option>Term</option>
+                <option>Annual</option>
+              </select>
+            </div>
+          </div>
+        </div>
       
         <div class="field">
           <label class="label">Description</label>
           <div class="control">
-            <textarea
-              class="textarea"
+            <input
+              class="input"
               v-model="newDescription"
               placeholder="Exam Description"
-            ></textarea>
+            ></input>
           </div>
         </div>
 
@@ -53,7 +68,7 @@
     <div v-if="errorMessage" class="notification is-danger fixed-notification">
       {{ errorMessage }}
     </div>
-    <div v-if="successMessage" class="notification is-successfixed-notification">
+    <div v-if="successMessage" class="notification is-success fixed-notification">
       {{ successMessage }}
     </div>
 
@@ -68,6 +83,7 @@
             <tr>
               <th>ID</th>
               <th>Exam Name</th>
+              <th>Exam Type</th>
                <th>Description</th>
               <th class="has-text-right">Actions</th>
             </tr>
@@ -80,6 +96,18 @@
               <td v-else>
                 <input type="text" class="input" v-model="editExamName" />
               </td>
+
+              <td v-if="editingExamId !== exam.Id">{{ exam.ExamType }}</td>
+              <td v-else>
+                <div class="select is-fullwidth">
+                  <select v-model="editExamType" required>
+                    <option disabled value="">-- Select Exam Type --</option>                    
+                    <option value="Periodic">Periodic</option>
+                    <option value="Term">Term</option>
+                    <option value="Annual">Annual</option>
+                  </select>
+                </div>
+              </td>
               
               <td v-if="editingExamId !== exam.Id">{{ exam.Description }}</td>
               <td v-else>
@@ -88,34 +116,34 @@
               <td>
                 <div class="buttons is-grouped is-justify-content-end">
                   <button
-                    class="button is-small is-info"
+                    class="button is-small is-info no-padding"
                     @click="editExam(exam)"
                     v-if="editingExamId !== exam.Id"
                   >
-                    Edit
+                    <i class="fas fa-edit"></i>
                   </button>
                   <button
-                    class="button is-small is-success"
+                    class="button is-small is-success no-padding"
                     @click="saveEdit(exam)"
                     v-else
                   >
                     <span class="icon is-small">
                       <i class="fas fa-check"></i>
                     </span>
-                    <span>Save</span>
+                   
                   </button>
                   <button
-                    class="button is-small is-warning"
+                    class="button is-small is-warning no-padding"
                     @click="cancelEdit()"
                     v-if="editingExamId === exam.Id"
                   >
                     <span class="icon is-small">
                       <i class="fas fa-times"></i>
                     </span>
-                    <span>Cancel</span>
+                 
                   </button>
-                  <button class="button is-small is-danger" @click="deleteExam(exam.Id)">
-                    Delete
+                  <button class="button is-small is-danger no-padding" @click="deleteExam(exam.Id)">
+                    <i class="fas fa-trash"></i>
                   </button>
                 </div>
               </td>
@@ -135,6 +163,7 @@ import { ref, onMounted } from 'vue';
 
 const exams = ref([]);
 const newExamName = ref('');
+const newExamType = ref('');
 const newDescription = ref('');
 const successMessage = ref('');
 const errorMessage = ref('');
@@ -142,6 +171,7 @@ const addErrorMessage = ref('');
 const showAddForm = ref(false);
 const editingExamId = ref(null);
 const editExamName = ref('');
+const editExamType = ref('');
 const editDescription = ref('');
 const loading = ref(false);
 
@@ -170,6 +200,7 @@ async function submitForm() { // Add Exam
   try {
     const response = await window.electronAPI.insertExam(
       newExamName.value.trim(),      
+      newExamType.value,      
       newDescription.value
     );
     if (response.success) {
@@ -177,6 +208,7 @@ async function submitForm() { // Add Exam
       addErrorMessage.value = '';
       showAddForm.value = false;
       newExamName.value = '';     
+      newExamType.value = '';     
       newDescription.value = '';
       fetchExams(); // Refresh the exam list
       setTimeout(() => {
@@ -192,6 +224,7 @@ async function submitForm() { // Add Exam
 
 function resetForm() {
   newExamName.value = '';
+  newExamType.value = '';
   newDescription.value = '';
   addErrorMessage.value = '';
 }
@@ -199,32 +232,40 @@ function resetForm() {
 function editExam(exam) {
   editingExamId.value = exam.Id;
   editExamName.value = exam.ExamName;
+  editExamType.value = exam.ExamType;
   editDescription.value = exam.Description;
 }
 
 function cancelEdit() {
   editingExamId.value = null;
   editExamName.value = '';
+  editExamType.value = '';
   editDescription.value = '';
 }
 
 async function saveEdit(exam) {
-    if (!editExamName.value.trim()) {
+  if (!editExamName.value.trim()) {
     errorMessage.value = 'Exam Name is required.';
     return;
   }
+ 
+  if (!editExamType) {
+    errorMessage.value = 'Select Exam Type.';
+    return;
+  }
   
-
   try {
     const response = await window.electronAPI.updateExam(
       exam.Id,
       editExamName.value.trim(),
+      editExamType.value,
       editDescription.value
     );
     if (response.success) {
       successMessage.value = 'Exam updated successfully.';
       editingExamId.value = null;
       editExamName.value = '';
+      editExamType.value = '';
       editDescription.value = '';
       fetchExams(); // Refresh the exam list
       setTimeout(() => {
@@ -261,40 +302,15 @@ async function deleteExam(examId) {
   }
 }
 
-onMounted(() => {
+onMounted(() => { 
   fetchExams();
 });
+
 </script>
 
 <style scoped>
 
-
-.title {
-  margin-bottom: 1rem;
-}
-
-.subtitle {
-  margin-bottom: 0.5rem;
-}
-
-.loader {
-  border: 4px solid #f3f3f3;
-  /* Light grey */
-  border-top: 4px solid #3699ff;
-  /* Blue */
-  border-radius: 50%;
-  width: 30px;
-  height: 30px;
-  animation: spin 2s linear infinite;
-}
-
-@keyframes spin {
-  0% {
-    transform: rotate(0deg);
-  }
-
-  100% {
-    transform: rotate(360deg);
-  }
+.buttons {
+  justify-content: center;
 }
 </style>

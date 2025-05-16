@@ -63,10 +63,9 @@ function closeDatabase() {
   }
 }
 
-
-
 // Initialize database immediately when this module is loaded
 initializeDatabase();
+
 // Cleanup on process exit
 process.on('exit', closeDatabase);
 process.on('SIGINT', () => process.exit());

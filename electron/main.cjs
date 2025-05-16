@@ -16,7 +16,10 @@ require('./ipcHandlers/ClassSectionsMappingHandler.cjs');
 require('./ipcHandlers/AdmissionHandler.cjs');
 require('./ipcHandlers/StudentsHandler.cjs');
 require('./ipcHandlers/MarksEntryHandler.cjs');
+require('./ipcHandlers/CoScholastticHandler.cjs');
 require('./ipcHandlers/StatsHandler.cjs');
+require('./ipcHandlers/ResultsHandler.cjs');
+
 
 let mainWindow;
 let splash;
@@ -46,6 +49,7 @@ function createMainWindow() {
   mainWindow = new BrowserWindow({
     width: 1200,
     height: 800,
+    autoHideMenuBar: true,
     show: false, // wait until content is ready
     webPreferences: {
       preload: path.join(__dirname, 'preload.cjs'),
@@ -72,7 +76,7 @@ function createMainWindow() {
 
 app.whenReady().then(async() => {
   try {   
-   // await runMigrations();
+   //await runMigrations();
     createSplashWindow();
     createMainWindow();
   } catch (err) {

@@ -68,6 +68,70 @@ async function runMigrations() {
 }
 module.exports = { runMigrations };
 
+/*
+function ensureGradeColumnIsText() {
+  // Step 1: Check column type
+  db=getDatabase();
+  const columnInfo = db.prepare("PRAGMA table_info(CoScholasticMarks)").all();
+  const gradeColumn = columnInfo.find(col => col.name === 'Grade');
+  
+  console.log("Grade Info:",gradeColumn);
+
+  if (gradeColumn.type.toUpperCase() === 'TEXT') {
+    console.log("Grade column is already of type TEXT.");
+    return;
+  }
+
+  console.log(`Grade column is of type ${gradeColumn.type}. Altering to TEXT...`);
+
+  // Step 2: Begin transaction and alter table
+  const alterTransaction = db.transaction(() => {
+    // Rename old table
+    db.prepare(`ALTER TABLE CoScholasticMarks RENAME TO CoScholasticMarks_old`).run();
+
+    // Recreate with correct column types
+    db.prepare(`
+      CREATE TABLE IF NOT EXISTS CoScholasticMarks (
+    Id INTEGER PRIMARY KEY AUTOINCREMENT,
+    StudentId INTEGER NOT NULL,
+    SubjectId INTEGER NOT NULL,
+    ActiveExamId INTEGER NOT NULL,
+    AcademicYearId INTEGER NOT NULL,
+    Grade TEXT,
+    Creation_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    Last_Modified_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (StudentId) REFERENCES Students(Id) ON DELETE CASCADE ON UPDATE CASCADE,
+    FOREIGN KEY (SubjectId) REFERENCES Subjects(Id) ON DELETE CASCADE ON UPDATE CASCADE,
+    FOREIGN KEY (ActiveExamId) REFERENCES ActiveExams(Id) ON DELETE CASCADE ON UPDATE CASCADE,
+    FOREIGN KEY (AcademicYearId) REFERENCES AcademicYears(Id) ON DELETE CASCADE ON UPDATE CASCADE,
+    UNIQUE(StudentId, SubjectId, ActiveExamId)
+)
+    `).run();
+
+    // Copy data
+    db.prepare(`
+      INSERT INTO CoScholasticMarks (
+        StudentId, SubjectId, ActiveExamId, AcademicYearId, Grade, Last_Modified_at
+      )
+      SELECT StudentId, SubjectId, ActiveExamId, AcademicYearId, Grade, Last_Modified_at
+      FROM CoScholasticMarks_old
+    `).run();
+
+    // Drop old table
+    db.prepare(`DROP TABLE CoScholasticMarks_old`).run();
+  });
+
+  // Run the transaction
+  try {
+    alterTransaction();
+    console.log("Column 'Grade' successfully changed to TEXT.");
+  } catch (error) {
+    console.error("Failed to alter 'Grade' column to TEXT:", error);
+  }
+}
+
+*/
+
 /**const { db } = require('../database.cjs');
 
 async function runMigrations() {

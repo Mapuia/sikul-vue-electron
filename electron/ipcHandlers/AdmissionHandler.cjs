@@ -2,31 +2,11 @@ const { ipcMain } = require('electron');
 const { db } = require('../database.cjs');
 
 
-//////////////////////////////////////////////////////////////////////////////////////                  GET
-ipcMain.handle('get-sections-by-class', async (event, ClassId) => {
-  try {
-    console.log("Handler ClassId:(AdmissionHandler.cjs)", ClassId)
-    const stmt = db.prepare(`SELECT 
-      s.Id, s.SectionName FROM Sections AS s
-      JOIN
-      ClassSectionMapping AS m
-      ON
-      s.Id = m.SectionId
-      WHERE
-      m.ClassId = ?`);
-    const sections = stmt.all(ClassId);
-    console.log("Handler Sections:", sections)
-    return { success: true, sections };
-  } catch (err) {
-    console.error('Failed to get subjects:', err);
-    return { success: false, message: err.message };
-  }
-});
-
 ///////////////////////////////////////////////////////////////////////////////////////                CREATE
 
 //Insert Student and Admission
 ipcMain.handle('insert-student-admission', (event, form) => {
+  //console.log("Student Insert:", form)
   const insertStudent = db.prepare(`
     INSERT INTO Students (
       Name, Gender, FathersName, MothersName, DOB, Aadhaar, APAR, PEN, Contact, Address,
@@ -92,5 +72,35 @@ ipcMain.handle('insert-student-admission', (event, form) => {
   } catch (err) {
     console.error('Transaction failed:', err.message);
     throw err;
+  }
+});
+
+ipcMain.handle('get-admission-details', async (event, studentId, AcademicYearId) => {
+  
+  try {
+    // Get admission details
+    const admissionStmt = db.prepare(`
+      SELECT 
+        c.ClassName, s.SectionName, a.RollNo, ay.YearName, a.AdmissionType, std.Name, std.FathersName, std.Gender, std.PEN, std.APAR
+      FROM Classes c
+      JOIN Admissions a ON a.ClassId = c.Id
+      JOIN Sections s ON s.Id = a.SectionId
+      JOIN AcademicYears ay ON ay.Id = a.AcademicYearId
+      JOIN Students std ON std.Id = a.StudentId
+      WHERE a.StudentId = ? AND a.AcademicYearId = ?
+    `);
+
+  // Also fetch Some Details from Last Year Result
+   const admission = admissionStmt.get(studentId, AcademicYearId);
+   console.log('AdmissionHandler- Fetch Addmission Details:', admission)
+    return { 
+      success: true, 
+      admission: {
+        ...admission
+      } 
+    };
+  } catch (error) {
+    console.log('Error:', error.message)
+    return { success: false, error: error.message };
   }
 });

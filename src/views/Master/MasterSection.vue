@@ -4,7 +4,7 @@
 
     <div class="buttons mt-4">
       <button class="button is-primary" @click="showAddSectionForm = true" v-if="!showAddSectionForm">
-        Add New
+        <i class="fas fa-plus mr-2"></i>Add New
       </button>
     </div>
 
@@ -64,36 +64,35 @@
                 <input type="text" class="input" v-model="editSectionName" />
               </td>
               <td>
-                <div class="buttons is-grouped is-justify-content-end">
+                <div class="buttons is-grouped is-justify-content-end ">
                   <button
-                    class="button is-small is-info"
+                    class="button is-small is-info no-padding"
                     @click="editSection(sectionItem)"
                     v-if="editingSection !== sectionItem.SectionName"
                   >
-                    Edit
+                    <i class="fas fa-edit"></i>
                   </button>
                   <button
-                    class="button is-small is-success"
+                    class="button is-small is-success no-padding"
                     @click="saveEditSection(sectionItem)"
                     v-else
                   >
                     <span class="icon is-small">
                       <i class="fas fa-check"></i>
-                    </span>
-                    <span>Save</span>
+                    </span>                    
                   </button>
                   <button
-                    class="button is-small is-warning"
+                    class="button is-small is-warning no-padding"
                     @click="cancelEditSection()"
                     v-if="editingSection === sectionItem.SectionName"
                   >
                     <span class="icon is-small">
                       <i class="fas fa-times"></i>
                     </span>
-                    <span>Cancel</span>
+                   
                   </button>
-                  <button class="button is-small is-danger" @click="deleteSection(sectionItem)">
-                    Delete
+                  <button class="button is-small is-danger no-padding" @click="deleteSection(sectionItem)">
+                    <i class="fas fa-trash-alt"></i>
                   </button>
                 </div>
               </td>
@@ -275,3 +274,9 @@ onMounted(() => {
   fetchSections(); // Fetch sections on component mount
 });
 </script>
+
+<style scoped>
+.buttons{
+  justify-content: center;
+}
+</style>

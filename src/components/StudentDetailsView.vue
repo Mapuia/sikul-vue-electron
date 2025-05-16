@@ -1,103 +1,74 @@
 <template>
-  <!-- Personal Info -->
-  <div class="box">
-    <h3 class="title is-5">Personal Information</h3>
-    <div class="columns is-multiline">
-      <div class="column is-one-third">
-        <p><strong>Name:</strong> {{ student.name || '-' }}</p>
-      </div>
-      <div class="column is-one-third">
-        <p><strong>Gender:</strong> {{ student.gender || '-' }}</p>
-      </div>
-      <div class="column is-one-third">
-        <p><strong>Date of Birth:</strong> {{ formatDate(student.dob) || '-' }}</p>
-      </div>
-      <div class="column is-one-third">
-        <p><strong>Father's Name:</strong> {{ student.fathersName || '-' }}</p>
-      </div>
-      <div class="column is-one-third">
-        <p><strong>Mother's Name:</strong> {{ student.mothersName || '-' }}</p>
-      </div>
-      <div class="column is-one-third">
-        <p><strong>Contact:</strong> {{ student.contact || '-' }}</p>
-      </div>
-      <div class="column is-one-third">
-        <p><strong>Caste:</strong> {{ student.caste || '-' }}</p>
-      </div>
-      <div class="column is-one-third">
-        <p><strong>Religion:</strong> {{ student.religion || '-' }}</p>
-      </div>
-      <div class="column is-one-third">
-        <p><strong>Blood Group:</strong> {{ student.bloodGroup || '-' }}</p>
-      </div>
-      <div class="column is-full">
-        <p><strong>Address:</strong> {{ student.address || '-' }}</p>
-      </div>
-    </div>
-  </div>
+  <div class="student-details">
 
-  <!-- Academic Info -->
-  <div class="box">
-    <h3 class="title is-5">Academic Information</h3>
-    <div class="columns is-multiline">
-      <div class="column is-one-third">
-        <p><strong>Current Class:</strong> {{ student.className || '-' }}</p>
-      </div>
-      <div class="column is-one-third">
-        <p><strong>Section:</strong> {{ student.sectionName || '-' }}</p>
-      </div>
-      <div class="column is-one-third">
-        <p><strong>Roll No:</strong> {{ student.rollNo || '-' }}</p>
-      </div>
-      <div class="column is-one-third">
-        <p><strong>Admission Type:</strong> {{ student.admissionType || '-' }}</p>
-      </div>
-      <div class="column is-one-third">
-        <p><strong>Academic Year:</strong> {{ student.academicYear || '-' }}</p>
-      </div>
-      <div class="column is-one-third">
-        <p><strong>First Admission:</strong> {{ formatDate(student.firstAdmissionDate) || '-' }}</p>
-      </div>
-      <div class="column is-one-third">
-        <p><strong>Status:</strong> 
-          <span class="tag" :class="statusTagClass(student.status)">
-            {{ student.status || '-' }}
-          </span>
-        </p>
-      </div>
+    <!-- Personal Information -->
+    <div class="box">
+      <h3 class="title is-5">Personal Information</h3>
+      <table class="sikul-table is-fullwidth">
+        <thead>
+          <tr><th>Name:</th><td>{{ student.Name || '-' }}</td></tr>
+          <tr><th>Gender:</th><td>{{ student.Gender || '-' }}</td></tr>
+          <tr><th>Date of Birth:</th><td>{{ formatDate(student.DOB) }}</td></tr>
+          <tr><th>Father's Name:</th><td>{{ student.FathersName || '-' }}</td></tr>
+          <tr><th>Mother's Name:</th><td>{{ student.MothersName || '-' }}</td></tr>
+          <tr><th>Contact:</th><td>{{ student.Contact || '-' }}</td></tr>
+          <tr><th>Caste:</th><td>{{ student.Caste || '-' }}</td></tr>
+          <tr><th>Religion:</th><td>{{ student.Religion || '-' }}</td></tr>
+          <tr><th>Blood Group:</th><td>{{ student.BloodGroup || '-' }}</td></tr>
+          <tr><th>Address:</th><td>{{ student.Address || '-' }}</td></tr>
+        </thead>
+      </table>
     </div>
-  </div>
 
-  <!-- Identification -->
-  <div class="box">
-    <h3 class="title is-5">Identification</h3>
-    <div class="columns is-multiline">
-      
-      <div class="column is-one-third">
-        <p><strong>PEN:</strong> {{ student.pen || '-' }}</p>
-      </div>
-      <div class="column is-one-third">
-        <p><strong>APAR:</strong> {{ student.apar || '-' }}</p>
-      </div>
-      <div class="column is-one-third">
-        <p><strong>Aadhaar:</strong> {{ student.aadhaar || '-' }}</p>
-      </div>
+    <!-- Academic Information -->
+    <div class="box">
+      <h3 class="title is-5">Academic Information</h3>
+      <table class="sikul-table is-fullwidth">
+        <thead>
+          <tr><th>Academic Year:</th><td>{{ student.YearName || '-' }}</td></tr>
+          <tr><th>Current Class:</th><td>{{ student.ClassName || '-' }}</td></tr>
+          <tr><th>Section:</th><td>{{ student.SectionName || '-' }}</td></tr>
+          <tr><th>Roll No:</th><td>{{ student.RollNo || '-' }}</td></tr>
+          <tr><th>Admission Type:</th><td>{{ student.AdmissionType || '-' }}</td></tr>
+          <tr><th>First Admission:</th><td>{{ formatDate(student.FirstAdmissionDate) }}</td></tr>
+          <tr>
+            <th>Current Status:</th>
+            <td>
+              <span class="tag" :class="statusTagClass(student.Status)">
+                {{ student.Status || '-' }}
+              </span>
+            </td>
+          </tr>
+        </thead>
+      </table>
     </div>
-  </div>
 
-  <!-- Physical Attributes -->
-  <div class="box">
-    <h3 class="title is-5">Physical Attributes</h3>
-    <div class="columns">
-      <div class="column is-one-third">
-        <p><strong>Height:</strong> {{ student.height || '-' }}</p>
-      </div>
-      <div class="column is-one-third">
-        <p><strong>Weight:</strong> {{ student.weight || '-' }}</p>
-      </div>
+    <!-- Identification -->
+    <div class="box">
+      <h3 class="title is-5">Identification</h3>
+      <table class="sikul-table is-fullwidth">
+        <thead>
+          <tr><th>PEN:</th><td>{{ student.PEN || '-' }}</td></tr>
+          <tr><th>APAR:</th><td>{{ student.APAR || '-' }}</td></tr>
+          <tr><th>Aadhaar:</th><td>{{ student.Aadhaar || '-' }}</td></tr>
+        </thead>
+      </table>
     </div>
+
+    <!-- Physical Attributes -->
+    <div class="box">
+      <h3 class="title is-5">Physical Attributes</h3>
+      <table class="sikul-table is-fullwidth">
+        <thead>
+          <tr><th>Height:</th><td>{{ student.Height || '-' }}</td></tr>
+          <tr><th>Weight:</th><td>{{ student.Weight || '-' }}</td></tr>
+        </thead>
+      </table>
+    </div>
+
   </div>
 </template>
+
 
 <script setup>
 const props = defineProps({

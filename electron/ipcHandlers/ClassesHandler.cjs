@@ -5,73 +5,69 @@ console.log("Class Handler loaded Successfully");
 //////////////////////////////////////////////////////////////////////////////////////READ/GET
 ipcMain.handle('get-classes', () => {
   try {
-      const stmt = db.prepare('SELECT * FROM Classes');////to remove order at production
-      const classes = stmt.all();
-      if(classes) return { success: true, classes };
-      else return { success: false, message: error.message };
-  
-    } catch (err) {
-      console.error('Failed to get classes:', err);
-      throw err;
-    }
+    const stmt = db.prepare('SELECT * FROM Classes');
+    const classes = stmt.all();
+    return { success: true, classes };
+  } catch (err) {
+    console.error('Failed to get classes:', err);
+    return { success: false, message: err.message };
+  }
 });
 
 //////////////////////////////////////////////////////////////////////////////////////INSERT
-ipcMain.handle('insert-class', async (event, className) => {
-    try {
-      const stmt = db.prepare('INSERT INTO Classes (ClassName) VALUES (?)');
-      stmt.run(className);
-      return {success: true};
-    } catch (err) {
-      console.error('Failed to insert class:', err);
-      throw err;
-    }
+ipcMain.handle('insert-class', async (event, classId, className, classTeacher) => {
+  try {
+    const stmt = db.prepare('INSERT INTO Classes (ClassId, ClassName, Teacher) VALUES (?, ?, ?)');
+    stmt.run(classId, className, classTeacher);
+    return { success: true };
+  } catch (err) {
+    console.error('Failed to insert class:', err);
+    return { success: false, message: err.message };
+  }
 });
   
 //////////////////////////////////////////////////////////////////////////////////////UPDATE
-ipcMain.handle('update-class', async (event, classId, newClassName) => {
+ipcMain.handle('update-class', async (event, id, classId, newClassName, newClassTeacher) => {
   try {
-    // First check if the new name already exists (excluding current class)
     const checkStmt = db.prepare(`
       SELECT COUNT(*) as count FROM Classes 
-      WHERE ClassName = ? AND Id != ?
+      WHERE ClassName = ? AND Teacher = ? AND ClassId = ? AND Id != ?
     `);
-    const exists = checkStmt.get(newClassName, classId);
-    
+    const exists = checkStmt.get(newClassName, newClassTeacher, classId, id);
+
     if (exists.count > 0) {
-      return { success: false, message: 'Class name already exists' };
+      return { success: false, message: 'Class with same name, ID, and teacher already exists' };
     }
 
-    // Update the class
     const updateStmt = db.prepare(`
       UPDATE Classes 
-      SET ClassName = ? 
+      SET ClassName = ?, Teacher = ?, ClassId = ?
       WHERE Id = ?
     `);
-    const result = updateStmt.run(newClassName, classId);
-    
-    if (result.changes > 0) {
-      return { success: true };
-    } else {
-      return { success: false, message: 'No changes made - class not found' };
-    }
-    
+    const result = updateStmt.run(newClassName, newClassTeacher, classId, id);
+
+    return result.changes > 0
+      ? { success: true }
+      : { success: false, message: 'No changes made - class not found' };
   } catch (err) {
     console.error('Update class error:', err);
     return { success: false, message: err.message };
   }
 });
 
+
 //////////////////////////////////////////////////////////////////////////////////////DELETE
-ipcMain.handle('delete-class', async (event, ClassId) => {
+ipcMain.handle('delete-class', async (event, classId) => {
   try {
     const stmt = db.prepare('DELETE FROM Classes WHERE Id = ?');
-    const result = stmt.run(ClassId);
-    if(result.length>0) return {success: true};
-        else {
-          return {success: false};
-        }
+    const result = stmt.run(classId);
+
+    return result.changes > 0
+      ? { success: true }
+      : { success: false, message: 'Class not found' };
   } catch (err) {
+    console.error('Delete class error:', err);
     return { success: false, message: err.message };
   }
 });
+

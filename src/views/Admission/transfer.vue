@@ -1,13 +1,14 @@
 <template>
   <div class="form-container single">
     <h1 class="title has-text-centered">Transfer Student</h1>
+    <h2 class="subtitle has-text-centered">(Limited)</h2>
 
     <div class="box">
-      <p>This is a temporary Vue component for development/testing purposes.</p>
+      <p>This page wil be used for recording and keeping track of Transfered and Passout Students...</p>
 
       <!-- Example input -->
       <div class="field mt-4">
-        <label class="label">Sample Input</label>
+        <label class="label">Search Student</label>
         <div class="control">
           <input class="input" type="text" v-model="sampleText" placeholder="Type something..." />
         </div>
@@ -37,6 +38,7 @@ function handleSubmit() {
   if (sampleText.value.trim()) {
     submitted.value = true
   }
+  alert('This will be the upgraded feature of this Application.')
 }
 
 function reset() {
@@ -46,8 +48,5 @@ function reset() {
 </script>
 
 <style scoped>
-.container {
-  max-width: 600px;
-  margin: 0 auto;
-}
+
 </style>

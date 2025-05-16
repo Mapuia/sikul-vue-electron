@@ -14,71 +14,61 @@ ipcMain.handle('get-subjects', async () => {
 });
 
 ///////////////////////////////////////////////////////////////////////////////////////                CREATE
-ipcMain.handle('insert-subject', async (event, { subjectName, subjectCategory }) => {
+ipcMain.handle('insert-subject', async (event, subjectData) => {
+  //console.log("Received subject data:", subjectData); // Debug log
   try {
-    // Check if subject already exists (case-insensitive)
-    const checkStmt = db.prepare(`
-      SELECT COUNT(*) as count FROM Subjects 
-      WHERE UPPER(SubjectName) = UPPER(?)
+    const stmt = db.prepare(`
+      INSERT INTO Subjects (SubjectCode, SubjectName, SubjectCategory, FullMark, IsCore, DisplayOrder)
+      VALUES (?, ?, ?, ?, ?, ?)
     `);
-    const exists = checkStmt.get(subjectName);
     
-    if (exists.count > 0) {
-      return { success: false, message: 'Subject name already exists' };
-    }
-
-    // Insert new subject
-    const insertStmt = db.prepare(`
-      INSERT INTO Subjects (SubjectName, SubjectCategory) 
-      VALUES (?, ?)
-    `);
-    const result = insertStmt.run(subjectName.toUpperCase(), subjectCategory);
+    stmt.run(
+      subjectData.subjectCode,
+      subjectData.subjectName,
+      subjectData.subjectCategory,
+      subjectData.fullMark,
+      subjectData.isCore,
+      subjectData.displayOrder
+    );
     
-    return { success: result.changes > 0 };
-  } catch (err) {
-    console.error('Failed to insert subject:', err);
-    return { success: false, message: err.message };
+    return { success: true };
+  } catch (error) {
+    return { success: false, message: error.message };
   }
 });
 
 ///////////////////////////////////////////////////////////////////////////////////////             UPDATE
-ipcMain.handle('update-subject', async (event, { Id, subjectName, subjectCategory }) => {
+ipcMain.handle('update-subject', async (event, subject) => {  // Remove the destructuring
   try {
-    // Check if new name already exists (excluding current subject)
-    const checkStmt = db.prepare(`
-      SELECT COUNT(*) as count FROM Subjects 
-      WHERE UPPER(SubjectName) = UPPER(?) AND Id != ?
-    `);
-    const exists = checkStmt.get(subjectName, Id);
-    
-    if (exists.count > 0) {
-      return { success: false, message: 'Subject name already exists' };
-    }
-
-    // Update subject
     const stmt = db.prepare(`
-      UPDATE Subjects 
-      SET SubjectName = ?, SubjectCategory = ? 
+      UPDATE Subjects
+      SET SubjectCode = ?, SubjectName = ?, SubjectCategory = ?, 
+          FullMark = ?, IsCore = ?, DisplayOrder = ?
       WHERE Id = ?
     `);
-    const result = stmt.run(subjectName.toUpperCase(), subjectCategory, Id);
-    
-    return { success: result.changes > 0 };
-  } catch (err) {
-    console.error('Failed to update subject:', err);
-    return { success: false, message: err.message };
+    stmt.run(
+      subject.subjectCode,  // Add this
+      subject.subjectName,
+      subject.subjectCategory,
+      subject.fullMark,
+      subject.isCore,
+      subject.displayOrder,
+      subject.id
+    );
+    return { success: true };
+  } catch (error) {
+    return { success: false, message: error.message };
   }
 });
 
 ///////////////////////////////////////////////////////////////////////////////////////              DELETE
-ipcMain.handle('delete-subject', async (event, subjectId) => {
+ipcMain.handle('delete-subject', async (event, Id) => {
   try {
-    const stmt = db.prepare('DELETE FROM Subjects WHERE Id = ?');
-    const result = stmt.run(subjectId);
-    return { success: result.changes > 0 };
-  } catch (err) {
-    console.error('Failed to delete subject:', err);
-    return { success: false, message: err.message };
+    const stmt = db.prepare(`DELETE FROM Subjects WHERE Id = ?`);
+    stmt.run(Id);
+    return { success: true };
+  } catch (error) {
+    return { success: false, message: error.message };
   }
 });
 
@@ -91,7 +81,7 @@ ipcMain.handle('get-coscholastic', async () => {
       ORDER BY Id
     `);
     const subjects = stmt.all();
-    console.log("Activities:", subjects);
+    //console.log("Activities:", subjects);
     return { success: true, subjects };
   } catch (err) {
     console.error('Failed to get subjects:', err);

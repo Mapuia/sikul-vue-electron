@@ -2,6 +2,8 @@ const { ipcMain } = require('electron');
 const { db } = require('../database.cjs');
 
 ipcMain.handle('get-stats', async (_event, { academicYearId, activeExamId }) => {
+
+  //console.log("Input for stats:", academicYearId,activeExamId)
     try {
       const classSectionData = db.prepare(`
         SELECT 
@@ -10,9 +12,9 @@ ipcMain.handle('get-stats', async (_event, { academicYearId, activeExamId }) => 
         FROM ClassSectionMapping m
         JOIN Classes c ON m.ClassId = c.Id
         JOIN Sections s ON m.SectionId = s.Id
-        ORDER BY c.ClassName, s.SectionName
+        ORDER BY c.Id, s.SectionName
       `).all()
-  
+     //console.log("Output for stats:",classSectionData)     
       const grouped = {}
   
       for (const row of classSectionData) {
@@ -25,7 +27,7 @@ ipcMain.handle('get-stats', async (_event, { academicYearId, activeExamId }) => 
         }
   
         const totalStudents = db.prepare(`
-          SELECT COUNT(*) as count FROM Admission 
+          SELECT COUNT(*) as count FROM Admissions
           WHERE ClassId = ? AND SectionId = ? AND AcademicYearId = ?
         `).get(row.ClassId, row.SectionId, academicYearId).count
   
@@ -33,7 +35,7 @@ ipcMain.handle('get-stats', async (_event, { academicYearId, activeExamId }) => 
           SELECT COUNT(DISTINCT StudentId) as count FROM Marks
           WHERE ActiveExamId = ? AND AcademicYearId = ?
           AND StudentId IN (
-            SELECT StudentId FROM Admission
+            SELECT StudentId FROM Admissions
             WHERE ClassId = ? AND SectionId = ? AND AcademicYearId = ?
           )
         `).get(activeExamId, academicYearId, row.ClassId, row.SectionId, academicYearId).count
@@ -45,8 +47,8 @@ ipcMain.handle('get-stats', async (_event, { academicYearId, activeExamId }) => 
           StudentsAppeared: appeared
         })
       }
-  
-      return { success: true, data: Object.values(grouped) }
+    //  console.log("Returned from stats:", Object.values(grouped))
+      return  Object.values(grouped) 
     } catch (err) {
       return { success: false, message: err.message }
     }

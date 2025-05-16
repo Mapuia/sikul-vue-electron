@@ -1,26 +1,40 @@
 <template>
-  <div class="form-container wide">
+  <div class="form-container full">
     <h1 class="title has-text-centered">Subject - Master Entry</h1>
 
     <div class="buttons mt-4">
       <button class="button is-primary" @click="showAddSubjectForm = true" v-if="!showAddSubjectForm">
+        <i class="fas fa-soli fa-plus mr-2"></i>
         Add New
       </button>
     </div>
 
-    <div class="box mt-4" v-if="showAddSubjectForm">
+    <div class="box form-container single mt-3" v-if="showAddSubjectForm">
       <h2 class="subtitle">Add New Subject</h2>
       <form @submit.prevent="submitSubjectForm" @reset="resetSubjectForm">
         <div class="field">
-          <label class="label">Subject Name</label>
+          <label class="label">Subject Code</label>
+          <div class="control">
+            <input
+              class="input"
+              type="text"
+              v-model="newSubjectCode"
+              @input="newSubjectCode = newSubjectCode.toUpperCase()"
+              placeholder="e.g. MATH, SCI, HIST etc..."
+              
+            />
+          </div>
+          <p class="help is-danger" v-if="addSubjectCodeErrorMessage">{{ addSubjectCodeErrorMessage }}</p>
+        </div>
+        <div class="field"> 
+        <label class="label">Subject Name</label>
           <div class="control">
             <input
               class="input"
               type="text"
               v-model="newSubjectName"
-              @input="newSubjectName = newSubjectName.toUpperCase()"
-              placeholder="e.g. MATHEMATICS, SCIENCE, HISTORY"
-              required
+              placeholder="e.g. Mathematics, Science etc..."
+              
             />
           </div>
           <p class="help is-danger" v-if="addSubjectErrorMessage">{{ addSubjectErrorMessage }}</p>
@@ -39,6 +53,45 @@
             </div>
           </div>
           <p class="help is-danger" v-if="addSubjectCategoryErrorMessage">{{ addSubjectCategoryErrorMessage }}</p>
+        </div>
+
+        <div class="field">
+          <label class="label">Full Mark</label>
+          <div class="control">
+            <input
+              class="input"
+              type="text"
+              v-model="newFullMark"
+              placeholder="e.g. 100, 50 ..."
+              
+            />
+          </div>
+          <p class="help is-danger" v-if="addFullMarkErrorMessage">{{ addFullMarkErrorMessage }}</p>
+        </div>
+
+        <div class="field">
+          <label class="label">Set as Core Subject</label>
+          <div class="control">            
+            <input type="checkbox" v-model="newIsCore" />
+            Usually Maths & Science, Students need to score at least 25% to be promoted     
+          </div>
+          <p class="help is-danger" v-if="addIsCoreErrorMessage">{{ addIsCoreErrorMessage }}</p>
+        </div>
+
+       
+        <div class="field">
+          <label class="label">Display Order</label>
+          <div class="control">
+            <input
+              class="input"
+              type="text"
+              v-model="newDisplayOrder"
+              placeholder="e.g. 1, 2..."
+              required
+            />
+          </div>  
+
+          <p class="help is-danger" v-if="addDisplayOrderErrorMessage">{{ addDisplayOrderErrorMessage }}</p>
         </div>
 
         <div class="field is-grouped mt-4">
@@ -73,15 +126,28 @@
         <table class="table is-fullwidth">
           <thead>
             <tr>
-              <th>Subject ID</th>
+              <th>Subject Code</th>
               <th>Subject Name</th>
               <th>Subject Category</th>
+              <th>Full Mark</th>
+              <th style="width: 150px">Core ?</th>
+              <th>Display Order</th>
               <th class="has-text-right">Actions</th>
             </tr>
           </thead>
           <tbody>
             <tr v-for="subject in subjects" :key="subject.Id">
-              <td>{{ subject.Id }}</td>
+              <td v-if="editingId !== subject.Id">
+                {{ subject.SubjectCode }}
+              </td>
+              <td v-else>
+                <input 
+                  type="text" 
+                  class="input"
+                  v-model="editSubjectCode"          
+                >
+              </td>
+              
               <td v-if="editingId !== subject.Id">
                 {{ subject.SubjectName }}
               </td>
@@ -90,7 +156,7 @@
                   type="text" 
                   class="input" 
                   v-model="editSubjectName"
-                  @input="editSubjectName = editSubjectName.toUpperCase()"
+                  @input="editSubjectName = editSubjectName()"
                   required
                 />
               </td>
@@ -106,18 +172,52 @@
                   </select>
                 </div>
               </td>
+
+              <td v-if="editingId !== subject.Id">
+                {{ subject.FullMark }}
+              </td>
+              <td v-else>
+                <input 
+                  type="number" 
+                  class="input" 
+                  v-model="editFullMark"                 
+                  required
+                />
+              </td>
+
+              <td v-if="editingId !== subject.Id">
+                <span class="tag" :class="subject.IsCore? 'is-success': 'is-dark' " >{{ subject.IsCore? "Yes": "No" }}</span>
+              </td>
+
+              <td v-else>
+                <input type="checkbox" v-model="editIsCore" />
+                  Core subject?     
+              </td>
+
+              <td v-if="editingId !== subject.Id">
+                {{ subject.DisplayOrder }}
+              </td>
+              <td v-else>
+                <input 
+                  type="number" 
+                  class="input" 
+                  v-model="editDisplayOrder"                 
+                  required
+                />
+              </td>
+
               <td class="has-text-right">
                 <div class="buttons is-grouped is-justify-content-end">
                   <button
-                    class="button is-small is-info"
+                    class="button is-small is-info no-padding"
                     @click="editSubject(subject)"
                     v-if="editingId !== subject.Id"
                     :disabled="isSubmitting"
                   >
-                    Edit
+                     <i class="fas fa-edit"></i>
                   </button>
                   <button
-                    class="button is-small is-success"
+                    class="button is-small is-success no-padding"
                     @click="saveEditSubject(subject)"
                     v-else
                     :disabled="isSubmitting"
@@ -125,22 +225,22 @@
                     <span v-if="isSubmitting" class="icon is-small">
                       <i class="fas fa-spinner fa-spin"></i>
                     </span>
-                    <span>Save</span>
+                    <i class="fas fa-check"></i>
                   </button>
                   <button
-                    class="button is-small is-warning"
+                    class="button is-small is-warning no-padding"
                     @click="cancelEditSubject()"
                     v-if="editingId === subject.Id"
                     :disabled="isSubmitting"
                   >
-                    Cancel
+                    <i class="fas fa-times"></i>
                   </button>
                   <button 
-                    class="button is-small is-danger" 
+                    class="button is-small is-danger no-padding" 
                     @click="deleteSubject(subject)"
                     :disabled="isSubmitting"
                   >
-                    Delete
+                    <i class="fas fa-trash-alt"></i>
                   </button>
                 </div>
               </td>
@@ -158,20 +258,40 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 
+// Reactive variables
 const subjects = ref([]);
-const newSubjectName = ref('');
-const newSubjectCategory = ref('');
-const addSubjectErrorMessage = ref('');
-const addSubjectCategoryErrorMessage = ref('');
-const showAddSubjectForm = ref(false);
-const editingId = ref(null);
-const editSubjectName = ref('');
-const editSubjectCategory = ref('');
 const loadingSubjects = ref(false);
+const isSubmitting = ref(false);
+const showAddSubjectForm = ref(false);
 const errorMessage = ref('');
 const successMessage = ref('');
-const isSubmitting = ref(false);
 
+// Form fields for adding new subject
+const newSubjectCode = ref('');
+const newSubjectName = ref('');
+const newSubjectCategory = ref('');
+const newFullMark = ref('');
+const newIsCore = ref(false);
+const newDisplayOrder = ref('');
+
+// Error messages for add form
+const addSubjectCodeErrorMessage = ref('');
+const addSubjectErrorMessage = ref('');
+const addSubjectCategoryErrorMessage = ref('');
+const addFullMarkErrorMessage = ref('');
+const addIsCoreErrorMessage = ref('');
+const addDisplayOrderErrorMessage = ref('');
+
+// Edit-related states
+const editingId = ref(null);
+const editSubjectCode = ref('');
+const editSubjectName = ref('');
+const editSubjectCategory = ref('');
+const editFullMark = ref('');
+const editIsCore = ref(false);
+const editDisplayOrder = ref('');
+
+// Fetch subjects from backend
 async function fetchSubjects() {
   loadingSubjects.value = true;
   errorMessage.value = '';
@@ -189,10 +309,22 @@ async function fetchSubjects() {
   }
 }
 
+// Add new subject
 async function submitSubjectForm() {
+  // Clear previous error messages
+  addSubjectCodeErrorMessage.value = '';
   addSubjectErrorMessage.value = '';
   addSubjectCategoryErrorMessage.value = '';
-  
+  addFullMarkErrorMessage.value = '';
+  addDisplayOrderErrorMessage.value = '';
+  errorMessage.value = '';
+  successMessage.value = '';
+
+  // Validate inputs
+  if (!newSubjectCode.value.trim()) {
+    addSubjectCodeErrorMessage.value = 'Subject Code is required.';
+    return;
+  }
   if (!newSubjectName.value.trim()) {
     addSubjectErrorMessage.value = 'Subject Name is required.';
     return;
@@ -201,55 +333,82 @@ async function submitSubjectForm() {
     addSubjectCategoryErrorMessage.value = 'Subject Category is required.';
     return;
   }
+  if (!newFullMark.value.trim() || isNaN(newFullMark.value)) {
+    addFullMarkErrorMessage.value = 'Valid Full Mark is required.';
+    return;
+  }
+  if (!newDisplayOrder.value.trim() || isNaN(newDisplayOrder.value)) {
+    addDisplayOrderErrorMessage.value = 'Valid Display Order is required.';
+    return;
+  }
 
   isSubmitting.value = true;
   try {
-    const response = await window.electronAPI.insertSubject({
+    const subjectData = {
+      subjectCode: newSubjectCode.value.trim().toUpperCase(),
       subjectName: newSubjectName.value.trim(),
       subjectCategory: newSubjectCategory.value,
-    });
+      fullMark: parseInt(newFullMark.value),
+      isCore: newIsCore.value ? 1 : 0,
+      displayOrder: parseInt(newDisplayOrder.value)
+    };
+
+    const response = await window.electronAPI.insertSubject(subjectData);
     
     if (response.success) {
-      successMessage.value = 'Subject added successfully.';
-      resetSubjectForm();
-      showAddSubjectForm.value = false;
-      await fetchSubjects();
+      // ... success handling ...
     } else {
-      addSubjectErrorMessage.value = response.message || 'Failed to add subject.';
+      errorMessage.value = response.message || 'Failed to add subject.';
     }
   } catch (err) {
-    addSubjectErrorMessage.value = err.message;
+    errorMessage.value = err.message;
   } finally {
     isSubmitting.value = false;
     setTimeout(() => {
-      successMessage.value = '';
       errorMessage.value = '';
+      successMessage.value = '';
     }, 3000);
   }
 }
 
+// Reset new subject form
 function resetSubjectForm() {
+  newSubjectCode.value = '';
   newSubjectName.value = '';
   newSubjectCategory.value = '';
-  addSubjectErrorMessage.value = '';
-  addSubjectCategoryErrorMessage.value = '';
+  newFullMark.value = '';
+  newIsCore.value = false;
+  newDisplayOrder.value = '';
 }
 
+// Start editing subject
 function editSubject(subject) {
   editingId.value = subject.Id;
+  editSubjectCode.value = subject.SubjectCode;
   editSubjectName.value = subject.SubjectName;
   editSubjectCategory.value = subject.SubjectCategory;
+  editFullMark.value = subject.FullMark;
+  editIsCore.value = subject.IsCore === 1;
+  editDisplayOrder.value = subject.DisplayOrder;
 }
 
+// Cancel edit mode
 function cancelEditSubject() {
   editingId.value = null;
+  editSubjectCode.value = '';
   editSubjectName.value = '';
   editSubjectCategory.value = '';
+  editFullMark.value = '';
+  editIsCore.value = false;
+  editDisplayOrder.value = '';
 }
 
+// Save edited subject
 async function saveEditSubject(subject) {
-  errorMessage.value = '';
-  
+  if (!editSubjectCode.value.trim()) {
+    errorMessage.value = 'Subject Code cannot be empty.';
+    return;
+  }
   if (!editSubjectName.value.trim()) {
     errorMessage.value = 'Subject Name cannot be empty.';
     return;
@@ -258,18 +417,30 @@ async function saveEditSubject(subject) {
     errorMessage.value = 'Subject Category is required.';
     return;
   }
+  if (!editFullMark.value || isNaN(editFullMark.value)) {
+    errorMessage.value = 'Valid Full Mark is required.';
+    return;
+  }
+  if (!editDisplayOrder.value || isNaN(editDisplayOrder.value)) {
+    errorMessage.value = 'Valid Display Order is required.';
+    return;
+  }
 
   isSubmitting.value = true;
   try {
     const response = await window.electronAPI.updateSubject({
-      Id: subject.Id,
+      id: subject.Id,
+      subjectCode: editSubjectCode.value.trim().toUpperCase(), // Add this
       subjectName: editSubjectName.value.trim(),
       subjectCategory: editSubjectCategory.value,
+      fullMark: parseInt(editFullMark.value),
+      isCore: editIsCore.value ? 1 : 0,
+      displayOrder: parseInt(editDisplayOrder.value)
     });
 
     if (response.success) {
       successMessage.value = 'Subject updated successfully.';
-      cancelEditSubject();
+      editingId.value = null;
       await fetchSubjects();
     } else {
       errorMessage.value = response.message || 'Failed to update subject.';
@@ -279,24 +450,21 @@ async function saveEditSubject(subject) {
   } finally {
     isSubmitting.value = false;
     setTimeout(() => {
-      successMessage.value = '';
       errorMessage.value = '';
+      successMessage.value = '';
     }, 3000);
   }
 }
 
+// Delete subject
 async function deleteSubject(subject) {
-  const shouldDelete = await window.electronAPI.showConfirmationDialog(
-    `Are you sure you want to delete subject "${subject.SubjectName}"?`
-  );
-  
-  if (!shouldDelete) return;
+  if (!confirm(`Are you sure you want to delete ${subject.SubjectName}?`)) return;
 
   isSubmitting.value = true;
   try {
     const response = await window.electronAPI.deleteSubject(subject.Id);
     if (response.success) {
-      successMessage.value = `Subject "${subject.SubjectName}" deleted successfully.`;
+      successMessage.value = 'Subject deleted successfully.';
       await fetchSubjects();
     } else {
       errorMessage.value = response.message || 'Failed to delete subject.';
@@ -306,38 +474,20 @@ async function deleteSubject(subject) {
   } finally {
     isSubmitting.value = false;
     setTimeout(() => {
-      successMessage.value = '';
       errorMessage.value = '';
+      successMessage.value = '';
     }, 3000);
   }
 }
 
-onMounted(() => {
-  fetchSubjects();
-});
+// Load subjects on mount
+onMounted(fetchSubjects);
 </script>
 
+
 <style scoped>
-.loader {
-  display: inline-block;
-  width: 1em;
-  height: 1em;
-  border: 2px solid currentColor;
-  border-radius: 50%;
-  border-top-color: transparent;
-  animation: spin 1s linear infinite;
-}
 
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-
-.buttons.is-grouped {
-  flex-wrap: wrap;
-  gap: 0.5rem;
-}
-
-.table td, .table th {
-  vertical-align: middle;
+.buttons{
+  justify-content: center;
 }
 </style>

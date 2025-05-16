@@ -1,170 +1,174 @@
 const { ipcMain } = require('electron');
 const { db } = require('../database.cjs');
 
-
-console.log("Students Handler is loaded.");
-// Student search functions
-
-// Get all students
+// Get all students with admission details
 ipcMain.handle('get-all-students', async () => {
-    try {
-      const query = db.prepare(`
-        SELECT 
-          s.Id AS id,
-          s.Name AS name,
-          s.Gender AS gender,
-          s.Status AS status,
-          s.PEN AS pen,
-          s.APAR AS apar,
-          a.RollNo AS rollNo,
-          c.ClassName AS className,
-          sec.SectionName AS sectionName
-        FROM Students s
-        LEFT JOIN Admission a ON s.Id = a.StudentId AND a.Id = (
-          SELECT MAX(Id) FROM Admission WHERE StudentId = s.Id
-        )
-        LEFT JOIN Classes c ON a.ClassId = c.Id
-        LEFT JOIN Sections sec ON a.SectionId = sec.Id
-        ORDER BY s.Name
-      `);
-      return query.all();
-    } catch (error) {
-      console.error('Error in get-all-students:', error);
-      throw new Error('Failed to fetch students');
-    }
-  });
-  
-  // Search students
-  ipcMain.handle('search-students', async (event, searchTerm) => {
-    try {
-      const query = db.prepare(`
-        SELECT 
-          s.Id AS id,
-          s.Name AS name,
-          s.Gender AS gender,
-          s.Status AS status,
-          s.PEN AS pen,
-          s.APAR AS apar,
-          a.RollNo AS rollNo,
-          c.ClassName AS className,
-          sec.SectionName AS sectionName
-        FROM Students s
-        LEFT JOIN Admission a ON s.Id = a.StudentId AND a.Id = (
-          SELECT MAX(Id) FROM Admission WHERE StudentId = s.Id
-        )
-        LEFT JOIN Classes c ON a.ClassId = c.Id
-        LEFT JOIN Sections sec ON a.SectionId = sec.Id
-        WHERE s.Name LIKE @search OR s.PEN = @term OR s.APAR = @term
-        ORDER BY s.Name
-      `);
-      return query.all({
-        search: `%${searchTerm}%`,
-        term: searchTerm
-      });
-    } catch (error) {
-      console.error('Error in search-students:', error);
-      throw new Error('Search failed');
-    }
-  });
-  
-  // Get student details
-ipcMain.handle('get-student-details', (event, studentId) => {
   try {
-    const query = db.prepare(`
+    const stmt = db.prepare(`
       SELECT 
-        s.*,
-        a.RollNo,
-        a.AdmissionType,
-        c.ClassName,
-        sec.SectionName,
-        ay.YearName AS academicYear
+        s.Id as id, 
+        s.Name as name, 
+        s.Gender as gender,
+        s.Status as status,
+        a.RollNo as rollNo,
+        c.ClassName as className,
+        sec.SectionName as sectionName
       FROM Students s
-      LEFT JOIN Admission a ON s.Id = a.StudentId AND a.Id = (
-        SELECT MAX(Id) FROM Admission WHERE StudentId = s.Id
-      )
+      LEFT JOIN Admissions a ON s.Id = a.StudentId
       LEFT JOIN Classes c ON a.ClassId = c.Id
       LEFT JOIN Sections sec ON a.SectionId = sec.Id
-      LEFT JOIN AcademicYears ay ON a.AcademicYearId = ay.Id
-      WHERE s.Id = ?
+      ORDER BY s.Name
     `);
-
-    const student = query.get(studentId);
+    const students = stmt.all();
     
-    if (!student) {
-      throw new Error(`Student with ID ${studentId} not found`);
-    }
-
-    // Format dates consistently
-    const formatDate = (dateString) => {
-      if (!dateString) return '-';
-      try {
-        const date = new Date(dateString);
-        return date.toLocaleDateString('en-US', {
-          year: 'numeric',
-          month: 'long',
-          day: 'numeric'
-        });
-      } catch {
-        return dateString; // Return raw string if formatting fails
-      }
-    };
-
-    return {
-      // Personal Information
-      id: student.Id,
-      name: student.Name,
-      gender: student.Gender,
-      dob: formatDate(student.DOB),
-      fathersName: student.fathersName || '-',
-      mothersName: student.mothersName || '-',
-      contact: student.Contact || '-', // Now properly included
-      address: student.Address || '-',
-      
-      // Additional Information
-      caste: student.Caste || '-',
-      religion: student.Religion || '-',
-      bloodGroup: student.BloodGroup || '-',
-      height: student.Height ? `${student.Height} cm` : '-',
-      weight: student.Weight ? `${student.Weight} kg` : '-',
-      
-      // Identification
-      pen: student.PEN || '-',
-      apar: student.APAR || '-',
-      aadhaar: student.Aadhaar || '-',
-      
-      // Academic Information
-      rollNo: student.RollNo || '-',
-      className: student.ClassName || '-',
-      sectionName: student.SectionName || '-',
-      admissionType: student.AdmissionType || '-',
-      academicYear: student.academicYear || '-',
-      firstAdmissionDate: formatDate(student.FirstAdmissionDate), // Formatted same as DOB
-      status: student.Status || '-'
-    };
-
+    return { success: true, students }; // Consistent structure
   } catch (error) {
-    console.error('Error in get-student-details:', error);
-    throw new Error(`Failed to fetch student details: ${error.message}`);
+    return { success: false, message: error.message, students: [] };
   }
 });
-  
-  // Helper function to format dates
-  function formatDate(dateString) {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
+
+ipcMain.handle('search-students', async (event, query) => {
+  try {
+    const stmt = db.prepare(`
+      SELECT 
+        s.Id as id,
+        s.Name as name,
+        s.Gender as gender,
+        s.Status as status,
+        a.RollNo as rollNo,
+        c.ClassName as className,
+        sec.SectionName as sectionName
+      FROM Students s
+      LEFT JOIN Admissions a ON s.Id = a.StudentId
+      LEFT JOIN Classes c ON a.ClassId = c.Id
+      LEFT JOIN Sections sec ON a.SectionId = sec.Id
+      WHERE s.Name LIKE ? OR s.PEN LIKE ? OR s.APAR LIKE ?
+      ORDER BY s.Name
+    `);
+    const searchTerm = `%${query}%`;
+    const students = stmt.all(searchTerm, searchTerm, searchTerm);
+    return { success: true, students };
+  } catch (error) {
+    return { success: false, message: error.message, students: [] };
   }
-  
-  // Window management handlers
-  ipcMain.on('open-new-admission-window', () => {
-    console.log('New admission window requested');
-    // Your window creation logic here
+});
+
+// Get complete student details for editing
+ipcMain.handle('get-student-details', async (event, studentId, AcademicYearId) => {
+  console.log('Students Handler get student details- Student ID, AcademicYearID:',studentId, AcademicYearId)
+  try {
+    // Get basic student info
+    const studentStmt = db.prepare(`
+      SELECT * FROM Students WHERE Id = ?
+    `);
+    const student = studentStmt.get(studentId);
+
+    if (!student) {
+      return { success: false, error: 'Student not found' };
+    }
+
+    // Get admission details
+    const admissionStmt = db.prepare(`
+      SELECT 
+        c.ClassName, s.SectionName, a.RollNo, ay.YearName, a.AdmissionType
+      FROM Classes c
+      JOIN Admissions a ON a.ClassId = c.Id
+      JOIN Sections s ON s.Id = a.SectionId
+      JOIN AcademicYears ay ON ay.Id = a.AcademicYearId
+      WHERE a.StudentId = ? AND a.AcademicYearId = ?
+    `);
+    const admission = admissionStmt.get(studentId, AcademicYearId);
+    console.log("Student Handler get student detail- Admission:", admission)
+
+    return { 
+      success: true, 
+      student: {
+        ...student,
+        ...admission
+      } 
+    };
+  } catch (error) {
+    console.log('Error:', error.message)
+    return { success: false, error: error.message };
+  }
+});
+
+// Update student information
+ipcMain.handle('update-student', async (event, studentData) => {
+  const transaction = db.transaction(() => {
+    try {     
+      // Update Students table
+      const studentStmt = db.prepare(`
+        UPDATE Students SET
+          Name = ?,
+          Gender = ?,
+          FathersName = ?,
+          MothersName = ?,
+          DOB = ?,
+          Aadhaar = ?,
+          APAR = ?,
+          PEN = ?,
+          Contact = ?,
+          Address = ?,
+          Status = ?,
+          Caste = ?,
+          Religion = ?,
+          Height = ?,
+          Weight = ?,
+          BloodGroup = ?,
+          Last_Modified_at = CURRENT_TIMESTAMP
+        WHERE Id = ?
+      `);
+
+      studentStmt.run(
+        studentData.Name,
+        studentData.Gender,
+        studentData.FathersName,
+        studentData.MothersName,
+        studentData.DOB,
+        studentData.Aadhaar,
+        studentData.APAR,
+        studentData.PEN,
+        studentData.Contact,
+        studentData.Address,
+        studentData.Status,
+        studentData.Caste,
+        studentData.Religion,
+        studentData.Height,
+        studentData.Weight,
+        studentData.BloodGroup,
+        studentData.Id
+      );
+    return { success: true };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
   });
-  
-  ipcMain.on('open-edit-student-window', (event, studentId) => {
-    console.log(`Edit window requested for student ${studentId}`);
-    // Your window creation logic here
+
+  return transaction();
+});
+
+// Delete student
+ipcMain.handle('delete-student', async (event, studentId) => {
+  const transaction = db.transaction(() => {
+    try {
+      // First delete from Admissions (due to foreign key constraint)
+      const deleteAdmissionStmt = db.prepare(`
+        DELETE FROM Admissions WHERE StudentId = ?
+      `);
+      deleteAdmissionStmt.run(studentId);
+
+      // Then delete from Students
+      const deleteStudentStmt = db.prepare(`
+        DELETE FROM Students WHERE Id = ?
+      `);
+      deleteStudentStmt.run(studentId);
+
+      return { success: true };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
   });
+
+  return transaction();
+});

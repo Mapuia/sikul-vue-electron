@@ -41,6 +41,8 @@
           >
             New Admission
           </button>
+
+          <!--
           <button 
             class="button is-info "
             @click="reAdmission"
@@ -53,6 +55,8 @@
           >
             View All Students
           </button>
+          -->
+
         </div>
       </div>
     </div>

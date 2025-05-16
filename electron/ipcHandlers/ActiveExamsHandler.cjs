@@ -1,191 +1,133 @@
 const { ipcMain } = require('electron');
 const { db } = require('../database.cjs');
 
-console.log("Active Exams Handler is loaded.");
-
-// Main process IPC handlers
+// Get all available exams for dropdown
 
 
-// Get available exams for current academic year
+// Get active exams for current academic year
 ipcMain.handle('get-active-exams', async (event, academicYearId) => {
   try {
-    console.log("Fetching exams for year:", academicYearId);
     const stmt = db.prepare(`
-      SELECT 
-        e.ExamName,
-        a.Id,
-        a.AcademicYearId,
-        a.ExamId,
-        a.MajorMaxMark,
-        a.MinorMaxMark,
-        a.IsActive,
-        a.Result_Published,
-        a.Creation_at,
-        a.Modified_at
-      FROM 
-        ActiveExams a
-      JOIN 
-        Exams e ON a.ExamId = e.Id
-      WHERE 
-        a.AcademicYearId = ?
-   
+      SELECT ae.*, e.ExamName, e.ExamType, ay.YearName as AcademicYearName
+      FROM ActiveExams ae
+      JOIN Exams e ON ae.ExamId = e.Id
+      JOIN AcademicYears ay ON ae.AcademicYearId = ay.Id
+      WHERE ae.AcademicYearId = ?
+      ORDER BY e.ExamName
     `);
-    
     const exams = stmt.all(academicYearId);
-    console.log("Fetched exams:", exams); // Debug log
     return { success: true, exams };
   } catch (err) {
-    console.error("Error fetching exams:", err);
     return { success: false, message: err.message };
   }
 });
 
-// Insert new active exam (matches your schema)
+// Insert new active exam
 ipcMain.handle('insert-active-exam', async (event, examData) => {
-  // Validate required fields
-  if (!examData.ExamId || examData.MajorMaxMark === undefined || examData.MinorMaxMark === undefined) {
-    return { success: false, message: 'Missing required fields' };
-  }
-
   const transaction = db.transaction(() => {
     try {
-      // First deactivate all active exams if this one should be active
-      if (examData.IsActive) {
-        const deactivateStmt = db.prepare(`
-          UPDATE ActiveExams 
-          SET IsActive = 0 
-          WHERE AcademicYearId = ?
-        `);
-        deactivateStmt.run(examData.AcademicYearId);
+      // First check if this exam already exists for this academic year
+      const checkStmt = db.prepare(`
+        SELECT 1 FROM ActiveExams 
+        WHERE AcademicYearId = ? AND ExamId = ?
+      `);
+      const exists = checkStmt.get(examData.AcademicYearId, examData.ExamId);
+      
+      if (exists) {
+        throw new Error('This exam already exists for the current academic year');
       }
 
-      // Get ExamName from Exams table
-      const examName = db.prepare(`
-        SELECT ExamName FROM Exams WHERE Id = ?
-      `).get(examData.ExamId)?.ExamName;
-
-      if (!examName) {
-        return { success: false, message: 'Invalid ExamId provided' };
-      }
-
-      // Then insert the new exam
-      const stmt = db.prepare(`
+      // Insert new active exam
+      const insertStmt = db.prepare(`
         INSERT INTO ActiveExams (
-          AcademicYearId,
-          ExamId,
-          MajorMaxMark,
-          MinorMaxMark,
-          IsActive,
-          Result_Published,
-          PublishDate
+          AcademicYearId, ExamId, MajorMaxMark, MinorMaxMark,
+          PassingPercentage, IsActive, Result_Published
         ) VALUES (?, ?, ?, ?, ?, ?, ?)
       `);
       
-      const result = stmt.run(
+      const info = insertStmt.run(
         examData.AcademicYearId,
         examData.ExamId,
         examData.MajorMaxMark,
         examData.MinorMaxMark,
-        examData.IsActive ? 1 : 0,
-        examData.Result_Published ? 1 : 0,
-        examData.PublishDate || null
+        examData.PassingPercentage,
+        examData.IsActive,
+        examData.Result_Published || 0
       );
-      
-      return { success: true, id: result.lastInsertRowid };
-    } catch (err) {
-      if (err.message.includes('UNIQUE constraint failed')) {
-        return { success: false, message: 'This exam already exists for the academic year' };
-      }
-      return { success: false, message: err.message };
+
+      return { success: true, id: info.lastInsertRowid };
+    } catch (error) {
+      return { success: false, message: error.message };
     }
   });
-  
+
   return transaction();
 });
 
-// Update Active Exam (matches your schema)
+// Update active exam
 ipcMain.handle('update-active-exam', async (event, examData) => {
-  // Validate required fields
-  if (!examData.Id || !examData.ExamId || 
-      examData.MajorMaxMark === undefined || 
-      examData.MinorMaxMark === undefined) {
-    return { success: false, message: 'Missing required fields' };
+  try {
+    const stmt = db.prepare(`
+      UPDATE ActiveExams SET
+        MajorMaxMark = ?,
+        MinorMaxMark = ?,
+        PassingPercentage = ?,
+        Modified_at = CURRENT_TIMESTAMP
+      WHERE Id = ?
+    `);
+    
+    stmt.run(
+      examData.MajorMaxMark,
+      examData.MinorMaxMark,
+      examData.PassingPercentage,
+      examData.Id
+    );
+    
+    return { success: true };
+  } catch (error) {
+    return { success: false, message: error.message };
   }
-
-  const transaction = db.transaction(() => {
-    try {
-      // If activating this exam, deactivate others first
-      if (examData.IsActive) {
-        const deactivateStmt = db.prepare(`
-          UPDATE ActiveExams 
-          SET IsActive = 0 
-          WHERE AcademicYearId = ? AND Id != ?
-        `);
-        deactivateStmt.run(examData.AcademicYearId, examData.Id);
-      }
-
-      const stmt = db.prepare(`
-        UPDATE ActiveExams SET
-          MajorMaxMark = ?,
-          MinorMaxMark = ?,
-          IsActive = ?,
-          Result_Published = ?,
-          PublishDate = ?,
-          Modified_at = CURRENT_TIMESTAMP
-        WHERE Id = ?
-      `);
-      
-      const result = stmt.run(
-        examData.MajorMaxMark,
-        examData.MinorMaxMark,
-        examData.IsActive ? 1 : 0,
-        examData.Result_Published ? 1 : 0,
-        examData.PublishDate || null,
-        examData.Id
-      );
-      
-      return { success: result.changes > 0 };
-    } catch (err) {
-      return { success: false, message: err.message };
-    }
-  });
-  
-  return transaction();
 });
 
-// Delete Active Exam
+// Delete active exam
 ipcMain.handle('delete-active-exam', async (event, examId) => {
   try {
     const stmt = db.prepare('DELETE FROM ActiveExams WHERE Id = ?');
-    const result = stmt.run(examId);
-    return { success: result.changes > 0 };
-  } catch (err) {
-    return { success: false, message: err.message };
+    stmt.run(examId);
+    return { success: true };
+  } catch (error) {
+    return { success: false, message: error.message };
   }
 });
 
-//To fetch Max Marks
-ipcMain.handle('get-current-exam', async () => {
+// Deactivate all active exams for academic year
+ipcMain.handle('deactivate-all-active-exams', async (event, academicYearId) => {
   try {
     const stmt = db.prepare(`
-      SELECT 
-          e.ExamName,
-          a.Id,
-          a.AcademicYearId,
-          a.ExamId,
-          a.MajorMaxMark,
-          a.MinorMaxMark,
-          a.Result_Published
-      FROM 
-          ActiveExams a
-      JOIN 
-          Exams e ON a.ExamId = e.Id
-      WHERE 
-          a.IsActive = 1    
-     
+      UPDATE ActiveExams 
+      SET IsActive = 0, Modified_at = CURRENT_TIMESTAMP
+      WHERE AcademicYearId = ?
     `);
-   
-    return stmt.get();
+    stmt.run(academicYearId);
+    return { success: true };
+  } catch (error) {
+    return { success: false, message: error.message };
+  }
+});
+
+// Get Current Active exams for current academic year only
+ipcMain.handle('get-current-exam', async (event, yearId) => {
+  //console.log("Current Exam:",yearId)  
+  try {
+    const stmt = db.prepare(`
+      SELECT ae.*, e.ExamName, e.ExamType
+      FROM ActiveExams ae
+      JOIN Exams e ON ae.ExamId = e.Id
+      WHERE ae.AcademicYearId = ?
+      AND ae.IsActive = 1
+    `);
+    //console.log("Current Exam:",stmt.get(yearId))    
+    return stmt.get(yearId);
   } catch (err) {
     return { success: false, message: err.message };
   }

@@ -1,105 +1,200 @@
 <template>
   <div class="form-container wide">
-    <h1 class="title has-text-centered">New Admission {{ currentYear }}</h1>
+    <h1 class="title has-text-centered is-4 mb-4">New Admission {{ CurrentYear }}</h1>
     <div v-if="message" class="notification is-primary fixed-notification">{{ message }}</div>
 
     <!-- Personal Info -->
     <div class="box">
-      <fieldset>
-        <legend class="title is-5">Personal Information</legend>
-
-        <div class="field">
-          <label class="label">Full Name</label>
-          <input class="input" type="text" v-model="form.name" required />
-        </div>
-
-        <div class="field is-horizontal">
-          <div class="field-body">
-            <div class="field">
-              <label class="label">Gender</label>
-              <div class="select is-fullwidth">
-                <select v-model="form.gender" required>
+      <legend class="title is-5">Personal Information</legend>
+      <table class="sikul-table">
+        <thead>
+          <tr>
+            <th>Full Name*</th>
+            <td>
+              <input 
+                ref="nameInput" 
+                class="input" 
+                type="text" 
+                v-model="form.name" 
+                required 
+                @keyup.enter="focusNext('fathersName')"
+                :class="{ 'is-danger': errors.name }"
+              />
+              <p v-if="errors.name" class="help is-danger">{{ errors.name }}</p>
+            </td>
+          </tr>
+          <tr>
+            <th>Father's Name* (Guardian)</th>
+            <td>
+              <input 
+                ref="fathersName" 
+                class="input" 
+                type="text" 
+                v-model="form.fathersName" 
+                required 
+                @keyup.enter="focusNext('mothersName')"
+                :class="{ 'is-danger': errors.fathersName }"
+              />
+              <p v-if="errors.fathersName" class="help is-danger">{{ errors.fathersName }}</p>
+            </td>
+          </tr>
+          <tr>
+            <th>Mother's Name</th>
+            <td>
+              <input 
+                ref="mothersName" 
+                class="input" 
+                type="text" 
+                v-model="form.mothersName" 
+                @keyup.enter="focusNext('gender')"
+              />
+            </td>
+          </tr>
+          <tr>
+            <th>Gender*</th>
+            <td>
+              <div class="select is-fullwidth" :class="{ 'is-danger': errors.gender }">
+                <select 
+                  ref="gender"
+                  v-model="form.gender"
+                  @keyup.enter="focusNext('dob')"
+                >
                   <option value="">Select Gender</option>
                   <option value="Male">Male</option>
                   <option value="Female">Female</option>
                 </select>
-              </div>
-            </div>
-            <div class="field">
-              <label class="label">Date of Birth</label>
-              <input class="input" type="date" v-model="form.dob" required />
-            </div>
-            <div class="field">
-              <label class="label">Contact Number</label>
-              <input class="input" type="tel" v-model="form.contact" maxlength="10" />
-            </div>
-          </div>
-        </div>
-
-        <div class="field is-horizontal">
-          <div class="field-body">
-            <div class="field">
-              <label class="label">Father's Name</label>
-              <input class="input" type="text" v-model="form.fathersName" required />
-            </div>
-            <div class="field">
-              <label class="label">Mother's Name</label>
-              <input class="input" type="text" v-model="form.mothersName" required />
-            </div>
-          </div>
-        </div>
-
-        <div class="field">
-          <label class="label">Address</label>
-          <input class="input" placeholder="H.No, Street, Village, City, District, State" v-model="form.address" />
-        </div>
-      </fieldset>
+              </div>  
+              <p v-if="errors.gender" class="help is-danger">{{ errors.gender }}</p>
+            </td>
+          </tr>  
+          <tr>
+            <th>Date of Birth*</th>
+            <td>
+              <input 
+                ref="dob"
+                class="input" 
+                type="date" 
+                v-model="form.dob" 
+                @keyup.enter="focusNext('contact')"
+                :class="{ 'is-danger': errors.dob }"
+              />
+              <p v-if="errors.dob" class="help is-danger">{{ errors.dob }}</p>
+            </td>
+          </tr>
+          <tr>
+            <th>Contact (Mb)</th>
+            <td>
+              <input 
+                ref="contact"
+                class="input" 
+                type="tel" 
+                v-model="form.contact" 
+                maxlength="10" 
+                @keyup.enter="focusNext('address')"
+                :class="{ 'is-danger': errors.contact }"
+              />
+              <p v-if="errors.contact" class="help is-danger">{{ errors.contact }}</p>
+            </td>
+          </tr>
+          <tr>
+            <th>Address*</th>
+            <td>
+              <textarea 
+                ref="address"
+                class="textarea" 
+                placeholder="H.No, Street, Village, City, District, State" 
+                v-model="form.address"
+                @keyup.enter="focusNext('pen')"
+                :class="{ 'is-danger': errors.address }"
+              ></textarea>
+              <p v-if="errors.address" class="help is-danger">{{ errors.address }}</p>
+            </td>
+          </tr>
+        </thead>
+      </table>
     </div>
-
+      
     <!-- Unique ID -->
     <div class="box">
-      <fieldset>
-        <legend class="title is-5">Unique ID</legend>
-        <div class="field is-horizontal">
-          <div class="field-body">
-            <div class="field">
-              <label class="label">APAR</label>
-              <input class="input" v-model="form.apar" maxlength="12" />
-            </div>
-            <div class="field">
-              <label class="label">Aadhaar</label>
-              <input class="input" v-model="form.aadhaar" maxlength="12" />
-            </div>
-            <div class="field">
-              <label class="label">PEN</label>
-              <input class="input" v-model="form.pen" maxlength="12" />
-            </div>
-          </div>
-        </div>
-      </fieldset>
-    </div>
+      <legend class="title is-5">Unique ID</legend>
+      <table class="sikul-table">
+        <thead>
+          <tr>
+            <th>PEN*</th>
+            <td>
+              <input 
+                ref="pen"
+                class="input" 
+                type="text" 
+                v-model="form.pen" 
+                maxlength="12" 
+                @keyup.enter="focusNext('apar')"
+                :class="{ 'is-danger': errors.pen }"
+              />
+              <p v-if="errors.pen" class="help is-danger">{{ errors.pen }}</p>
+            </td>
+          </tr>
+          <tr>
+            <th>APAR</th>
+            <td>
+              <input 
+                ref="apar"
+                class="input" 
+                type="text" 
+                v-model="form.apar" 
+                maxlength="12" 
+                @keyup.enter="focusNext('aadhaar')"
+              />
+            </td>
+          </tr>
+          <tr>
+            <th>Aadhaar</th>
+            <td>
+              <input 
+                ref="aadhaar"
+                class="input" 
+                type="text" 
+                v-model="form.aadhaar" 
+                maxlength="12" 
+                @keyup.enter="focusNext('caste')"
+              />
+            </td>
+          </tr>
+        </thead>
+      </table>
+    </div>      
 
     <!-- Additional -->
     <div class="box">
-      <fieldset>
-        <legend class="title is-5">Additional Information</legend>
-        <div class="field is-horizontal">
-          <div class="field-body">
-            <div class="field">
-              <label class="label">Caste</label>
+      <legend class="title is-5">Additional Information</legend>
+      <table class="sikul-table">
+        <thead>
+          <tr>
+            <th>Caste</th>
+            <td>
               <div class="select is-fullwidth">
-                <select v-model="form.caste">
+                <select 
+                  ref="caste"
+                  v-model="form.caste"
+                  @keyup.enter="focusNext('religion')"
+                >
                   <option value="">Select Caste</option>
                   <option value="General">General</option>
                   <option value="SC/ST">SC/ST</option>
                   <option value="OBC">OBC</option>
                 </select>
               </div>
-            </div>
-            <div class="field">
-              <label class="label">Religion</label>
+            </td>
+          </tr>
+          <tr>
+            <th>Religion</th>
+            <td>
               <div class="select is-fullwidth">
-                <select v-model="form.religion">
+                <select 
+                  ref="religion"
+                  v-model="form.religion"
+                  @keyup.enter="focusNext('height')"
+                >
                   <option value="">Select Religion</option>
                   <option value="Hindu">Hindu</option>
                   <option value="Muslim">Muslim</option>
@@ -108,24 +203,41 @@
                   <option value="Others">Others</option>
                 </select>
               </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="field is-horizontal">
-          <div class="field-body">
-            <div class="field">
-              <label class="label">Height (cm)</label>
-              <input class="input" type="number" v-model.number="form.height" />
-            </div>
-            <div class="field">
-              <label class="label">Weight (kg)</label>
-              <input class="input" type="number" v-model.number="form.weight" />
-            </div>
-            <div class="field">
-              <label class="label">Blood Group</label>
+            </td>
+          </tr>
+          <tr>
+            <th>Height (cm)</th>
+            <td>
+              <input 
+                ref="height"
+                class="input" 
+                type="number" 
+                v-model.number="form.height" 
+                @keyup.enter="focusNext('weight')"
+              />
+            </td>
+          </tr>
+          <tr>
+            <th>Weight (kg)</th>
+            <td>
+              <input 
+                ref="weight"
+                class="input" 
+                type="number" 
+                v-model.number="form.weight" 
+                @keyup.enter="focusNext('bloodGroup')"
+              />
+            </td>
+          </tr>
+          <tr>
+            <th>Blood Group</th>
+            <td>
               <div class="select is-fullwidth">
-                <select v-model="form.bloodGroup">
+                <select 
+                  ref="bloodGroup"
+                  v-model="form.bloodGroup"
+                  @keyup.enter="focusNext('classId')"
+                >
                   <option disabled value="">Select Blood Group</option>
                   <option>A+</option>
                   <option>A-</option>
@@ -137,70 +249,250 @@
                   <option>O-</option>
                 </select>
               </div>
-            </div>
-          </div>
-        </div>
-      </fieldset>
+            </td>
+          </tr>
+        </thead>
+      </table>
     </div>
 
-    <!-- Admission -->
+    <!--Action-->
     <div class="box">
-      <fieldset>
-        <legend class="title is-5">Admitted To</legend>
-        <div class="field is-horizontal">
-          <div class="field-body">
-            <div class="field">
-              <label class="label">Class</label>
-              <div class="select is-fullwidth">
-                <select v-model.number="form.classId" @change="updateSectionOptions">
+      <legend class="title is-5">Admitted To</legend>
+      <table class="sikul-table">
+        <thead>
+          <tr>
+            <th>Class</th>
+            <td>
+              <div class="select is-fullwidth" :class="{ 'is-danger': errors.classId }">
+                <select 
+                  ref="classId"
+                  v-model.number="form.classId" 
+                  @change="updateSectionOptions"
+                  @keyup.enter="focusNext('sectionId')"
+                >
                   <option disabled value="">Select Class</option>
                   <option v-for="cls in classes" :key="cls.Id" :value="cls.Id">
                     {{ cls.ClassName }}
                   </option>
                 </select>
               </div>
-            </div>
-            <div class="field">
-              <label class="label">Section</label>
-              <div class="select is-fullwidth">
-                <select v-model.number="form.sectionId" :disabled="!form.classId">
-                  <option disabled value="">Select Section</option>
+              <p v-if="errors.classId" class="help is-danger">{{ errors.classId }}</p>
+            </td>
+          </tr>
+          <tr>
+            <th>Section</th>
+            <td>
+              <div class="select is-fullwidth" :class="{ 'is-danger': errors.sectionId }">
+                <select 
+                  ref="sectionId"
+                  v-model.number="form.sectionId" 
+                  :disabled="!form.classId"
+                  @keyup.enter="focusNext('rollNo')"
+                >
+                  <option disabled value="" selected>Select Section</option>
                   <option v-for="sec in sectionOptions" :key="sec.Id" :value="sec.Id">
                     {{ sec.SectionName }}
                   </option>
                 </select>
               </div>
-            </div>
-            <div class="field">
-              <label class="label">Assign Roll No</label>
-              <input class="input" v-model="form.rollNo" />
-            </div>
-          </div>
-        </div>
-      </fieldset>
-    </div>
-
-    <!-- Buttons -->
-    <div class="box">
+              <p v-if="errors.sectionId" class="help is-danger">{{ errors.sectionId }}</p>
+            </td>
+          </tr>
+          <tr>
+            <th>Assign Roll No</th>
+            <td>
+              <input 
+                ref="rollNo"
+                class="input" 
+                v-model="form.rollNo" 
+                @keyup.enter="showConfirmation"
+              />
+            </td>
+          </tr>
+        </thead>
+      </table>
+           
+      <!-- Buttons -->
       <div class="field is-grouped mt-4">
-        <button class="button is-primary" @click="handleSubmit">Submit</button>
-        <button class="button is-light" @click="router.push('/students')">Cancel</button>
+        <button class="button is-primary" @click="showConfirmation">Submit</button>
+        <button class="button is-light" @click="router.push('/dashboard')">Cancel</button>
       </div>
+     
+    </div>
+  </div>
+
+  <!--Modal Confirm Submission-->
+  <div class="modal" :class="{ 'is-active': showModal }">
+    <div class="modal-background" @click="showModal = false"></div>
+    <div class="modal-card" style="width: 80%; max-width: 800px;">
+      <header class="modal-card-head">
+        <p class="modal-card-title">Confirm Admission Details</p>
+        <button class="delete" aria-label="close" @click="showModal = false"></button>
+      </header>
+      <section class="modal-card-body">
+        <!-- Personal Info -->
+        <div class="box">
+          <legend class="title is-5">Personal Information</legend>
+          <table class="sikul-table">
+            <thead>
+              <tr>
+                <th>Full Name</th>
+                <td>{{ form.name }}</td>
+              </tr>
+              <tr>
+                <th>Father's Name</th>
+                <td>{{ form.fathersName }}</td>
+              </tr>
+              <tr>
+                <th>Mother's Name</th>
+                <td>{{ form.mothersName }}</td>
+              </tr>
+              <tr>
+                <th>Gender</th>
+                <td>{{ form.gender }}</td>
+              </tr>
+              <tr>
+                <th>Date of Birth</th>
+                <td>{{ formatDate(form.dob) }}</td>
+              </tr>
+              <tr>
+                <th>Contact</th>
+                <td>{{ form.contact }}</td>
+              </tr>
+              <tr>
+                <th>Address</th>
+                <td>{{ form.address }}</td>
+              </tr>
+            </thead>
+          </table>
+        </div>
+        
+        <!-- Unique ID -->
+        <div class="box">
+          <legend class="title is-5">Unique ID</legend>
+          <table class="sikul-table">
+            <thead>
+              <tr>
+                <th>PEN</th>
+                <td>{{ form.pen }}</td>
+              </tr>
+              <tr>
+                <th>APAR</th>
+                <td>{{ form.apar }}</td>
+              </tr>
+              <tr>
+                <th>Aadhaar</th>
+                <td>{{ form.aadhaar }}</td>
+              </tr>
+            </thead>
+          </table>
+        </div>
+
+        <!-- Additional Info -->
+        <div class="box">
+          <legend class="title is-5">Additional Information</legend>
+          <table class="sikul-table">
+            <thead>
+              <tr>
+                <th>Caste</th>
+                <td>{{ form.caste }}</td>
+              </tr>
+              <tr>
+                <th>Religion</th>
+                <td>{{ form.religion }}</td>
+              </tr>
+              <tr>
+                <th>Height</th>
+                <td>{{ form.height }} cm</td>
+              </tr>
+              <tr>
+                <th>Weight</th>
+                <td>{{ form.weight }} kg</td>
+              </tr>
+              <tr>
+                <th>Blood Group</th>
+                <td>{{ form.bloodGroup }}</td>
+              </tr>
+            </thead>
+          </table>
+        </div>
+
+        <!-- Admission Info -->
+        <div class="box">
+          <legend class="title is-5">Admission Details</legend>
+          <table class="sikul-table">
+            <thead>
+              <tr>
+                <th>Class</th>
+                <td>{{ getClassName(form.classId) }}</td>
+              </tr>
+              <tr>
+                <th>Section</th>
+                <td>{{ getSectionName(form.sectionId) }}</td>
+              </tr>
+              <tr>
+                <th>Roll No</th>
+                <td>{{ form.rollNo }}</td>
+              </tr>
+              <tr>
+                <th>Academic Year</th>
+                <td>{{ CurrentYear }}</td>
+              </tr>
+            </thead>
+          </table>
+        </div>
+      </section>
+      <footer class="modal-card-foot has-text-right">
+        <button class="button is-primary mr-2" @click="confirmSubmit">Confirm</button>
+        <button class="button is-light" @click="showModal = false">Cancel</button>
+      </footer>
     </div>
   </div>
 </template>
 
-<script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue';
+<script setup>
+import { ref, reactive, onMounted, nextTick } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAcademicYear } from '../../composables/useAcademicYear';
 
-const { CurrentYear, CurrentYearId } = useAcademicYear();
+const { CurrentYearId, CurrentYear, loadAcademicYear } = useAcademicYear()
 const router = useRouter();
 
 const message = ref('');
 const classes = ref([]);
 const sectionOptions = ref([]);
+
+// Refs for all input fields
+const nameInput = ref(null);
+const fathersName = ref(null);
+const mothersName = ref(null);
+const gender = ref(null);
+const dob = ref(null);
+const contact = ref(null);
+const address = ref(null);
+const pen = ref(null);
+const apar = ref(null);
+const aadhaar = ref(null);
+const caste = ref(null);
+const religion = ref(null);
+const height = ref(null);
+const weight = ref(null);
+const bloodGroup = ref(null);
+const classId = ref(null);
+const sectionId = ref(null);
+const rollNo = ref(null);
+
+const errors = reactive({
+  name: '',
+  fathersName: '',
+  gender: '',
+  dob: '',
+  contact: '',
+  address: '',
+  pen: '',
+  classId: '',
+  sectionId: ''
+});
 
 const form = reactive({
   name: '',
@@ -221,9 +513,142 @@ const form = reactive({
   bloodGroup: '',
   classId: null,
   sectionId: null,
-  academicYearId: CurrentYearId,
+  academicYearId: CurrentYearId.value,
   admissionType: 'New'
 });
+
+function validateForm() {
+  let isValid = true;
+  
+  // Reset errors
+  Object.keys(errors).forEach(key => errors[key] = '');
+  
+  // Validate required fields
+  if (!form.name.trim()) {
+    errors.name = 'Full name is required';
+    isValid = false;
+  }
+  
+  if (!form.fathersName.trim()) {
+    errors.fathersName = "Father's name is required";
+    isValid = false;
+  }
+  
+  if (!form.gender) {
+    errors.gender = 'Gender is required';
+    isValid = false;
+  }
+  
+  if (!form.dob) {
+    errors.dob = 'Date of birth is required';
+    isValid = false;
+  } else {
+    // Validate date is not in the future
+    const dobDate = new Date(form.dob);
+    const today = new Date();
+    if (dobDate > today) {
+      errors.dob = 'Date of birth cannot be in the future';
+      isValid = false;
+    }
+  }
+  
+  if (form.contact && !/^\d{10}$/.test(form.contact)) {
+    errors.contact = 'Contact must be 10 digits';
+    isValid = false;
+  }
+  
+  if (!form.address.trim()) {
+    errors.address = 'Address is required';
+    isValid = false;
+  }
+  
+  if (!form.pen.trim()) {
+    errors.pen = 'PEN is required';
+    isValid = false;
+  }
+  
+  if (!form.classId) {
+    errors.classId = 'Class is required';
+    isValid = false;
+  }
+  
+  if (!form.sectionId) {
+    errors.sectionId = 'Section is required';
+    isValid = false;
+  }
+  
+  return isValid;
+}
+
+//////////////////////////////////////////////////////////////////////////Modal Block
+const showModal = ref(false);
+
+function showConfirmation() {
+  if (!validateForm()) {
+    return;
+  }
+  showModal.value = true;
+}
+
+function confirmSubmit() {
+  showModal.value = false;
+  handleSubmit(); // Call your existing submit function
+}
+
+function formatDate(dateString) {
+  if (!dateString) return '';
+  const date = new Date(dateString);
+  return date.toLocaleDateString('en-IN'); // Format for Indian date
+}
+
+function getClassName(classId) {
+  if (!classId) return '';
+  const cls = classes.value.find(c => c.Id === classId);
+  return cls ? cls.ClassName : '';
+}
+
+function getSectionName(sectionId) {
+  if (!sectionId) return '';
+  const sec = sectionOptions.value.find(s => s.Id === sectionId);
+  return sec ? sec.SectionName : '';
+}
+
+function focusNext(fieldName) {
+  const fieldRefs = {
+    name: nameInput,
+    fathersName: fathersName,
+    mothersName: mothersName,
+    gender: gender,
+    dob: dob,
+    contact: contact,
+    address: address,
+    pen: pen,
+    apar: apar,
+    aadhaar: aadhaar,
+    caste: caste,
+    religion: religion,
+    height: height,
+    weight: weight,
+    bloodGroup: bloodGroup,
+    classId: classId,
+    sectionId: sectionId,
+    rollNo: rollNo
+  };
+  
+  if (fieldRefs[fieldName]) {
+    nextTick(() => {
+      if (fieldRefs[fieldName].value) {
+        if (fieldRefs[fieldName].value.$el) {
+          // For select elements wrapped in components
+          fieldRefs[fieldName].value.$el.focus();
+        } else {
+          // For regular input elements
+          fieldRefs[fieldName].value.focus();
+        }
+      }
+    });
+  }
+}
 
 async function fetchClasses() {
   const response = await window.electronAPI.getClasses();
@@ -239,7 +664,7 @@ async function updateSectionOptions() {
     sectionOptions.value = [];
     return;
   }
-  const response = await window.electronAPI.getSectionsByClass(form.classId);
+  const response = await window.electronAPI.getSectionsByClassId(form.classId);
   if (response.success) {
     sectionOptions.value = response.sections;
   } else {
@@ -248,6 +673,15 @@ async function updateSectionOptions() {
 }
 
 async function handleSubmit() {
+  if (!validateForm()) {
+    // Focus on the first error field
+    const firstErrorField = Object.keys(errors).find(key => errors[key]);
+    if (firstErrorField) {
+      focusNext(firstErrorField);
+    }
+    return;
+  }
+
   console.log('Submitting form', form);
 
   try {
@@ -272,11 +706,35 @@ async function handleSubmit() {
     } else {
       message.value = response.message || 'Failed to admit student.';
     }
-  } catch (err: any) {
+  } catch (err) {
     console.error('Submission error:', err);
     message.value = err.message || 'Unexpected error.';
   }
 }
 
-onMounted(fetchClasses);
+onMounted(async() => {
+  await loadAcademicYear();
+  console.log('Year ID after load:', CurrentYearId.value);
+  form.academicYearId = CurrentYearId.value;
+  fetchClasses();
+  
+  // Focus on name input when page loads
+  nextTick(() => {
+    if (nameInput.value) {
+      nameInput.value.focus();
+    }
+  });
+});
 </script>
+
+<style scoped>
+.help.is-danger {
+  color: #ff3860;
+  font-size: 0.75rem;
+  margin-top: 0.25rem;
+}
+.is-danger {
+  border-color: #ff3860 !important;
+}
+
+</style>

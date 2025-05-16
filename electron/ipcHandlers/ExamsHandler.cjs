@@ -15,12 +15,12 @@ ipcMain.handle('get-exams', async () => {
 });
 
 //////////////////////////////////////////////////////////////////////////////             CREATE
-ipcMain.handle('insert-exam', async (event, examName, description) => {
+ipcMain.handle('insert-exam', async (event, examName, ExamType, description) => {
   try {
       const stmt = db.prepare(
-        'INSERT INTO Exams (ExamName, Description) VALUES (?, ?)'
+        'INSERT INTO Exams (ExamName, ExamType, Description) VALUES (?, ?)'
       );
-      stmt.run(examName, description);
+      stmt.run(examName, ExamType, description);
       return {success: true};
     } catch (error) {
       console.error('Failed to insert exam:', error);
@@ -29,16 +29,16 @@ ipcMain.handle('insert-exam', async (event, examName, description) => {
 });
 
 //////////////////////////////////////////////////////////////////////////////             UPDATE
-ipcMain.handle('update-exam', async (event, id, examName, description) => {
+ipcMain.handle('update-exam', async (event, id, examName, ExamType, description) => {
   try {
       const stmt = db.prepare(
-        'UPDATE Exams SET ExamName = ?, Description = ? WHERE Id = ?'
+        'UPDATE Exams SET ExamName = ?, ExamType = ?, Description = ? WHERE Id = ?'
       );
-      const result = stmt.run(examName, description, id);
+      const result = stmt.run(examName, ExamType, description, id);
       return { success: true};
     } catch (err) {
       if (err.code === 'SQLITE_CONSTRAINT_UNIQUE') {
-        return { success: false, message: 'New class name already exists.' };
+        return { success: false, message: 'Exam name or Exam type already exists.' };
       }
       return { success: false, message: err.message };
     }

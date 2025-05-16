@@ -65,7 +65,7 @@
           <thead>
             <tr>
               <th>Class</th>
-              <th>Sections</th>
+              <th>Available Sections</th>
               <th class="has-text-right">Actions</th>
             </tr>
           </thead>
@@ -85,10 +85,10 @@
               </td>
               <td class="has-text-right">
                 <button 
-                  class="button is-small is-danger"
+                  class="button is-small is-danger no-padding"
                   @click="deleteMapping(mapping.ClassId)"
                 >
-                  Delete
+                  <i class="fas fa-trash-alt"></i>
                 </button>
               </td>
             </tr>

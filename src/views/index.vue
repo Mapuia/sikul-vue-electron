@@ -2,8 +2,8 @@
     <section class="section">
       <div class="content container full">
         <img src="../assets/sikul_logo.png" alt="School Logo" class="logo" />
-        <h1 class="welcome">Welcome to Calvary High School</h1>
-        <p>Light to Enlight</p>
+        <h1 class="welcome">Welcome to Calvary Higher Secondary School</h1>
+        <h2 class="subtitle">Light to Enlight</h2>
         <router-link to="/dashboard" class="enter-button">Dashboard</router-link>
       </div>
     </section>
@@ -11,28 +11,23 @@
   
   <script setup>
   </script>
-  
+
   <style scoped>
   .welcome{
-    color: black;
+    color: rgb(144, 139, 147);
   }
-  .landing {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    height: 100vh;
-    background: url('../assets/logo-watermark.png') no-repeat center center fixed;
-    background-size: 400px auto;
-  }
+ 
   
   .content {
+    margin-top: 3rem;
     text-align: center;
     backdrop-filter: blur(6px);
-    background-color: rgba(255, 255, 255, 0.8);
-    padding: 2rem 3rem;
+    background-color: rgba(51, 48, 48, 0.8);
+    padding: 4rem 3rem;
     border-radius: 12px;
     box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
-    color: black;
+    color: rgb(65, 60, 60);
+    height: 500px;
   }
   
   .logo {

@@ -1,7 +1,7 @@
 <template>
   <div class="form-container full">
-    <h1 class="title has-text-centered">View Marks - {{ CurrentExamName }}</h1>
-    <h2 class="subtitle has-text-centered">{{ CurrentYear }}</h2>
+    <h1 class="title has-text-centered">View Marks - {{ CurrentExamName }} ({{ CurrentYear }})</h1>
+    <h2 class="subtitle has-text-centered">(Limitted Feature)</h2>
     <hr class="thin-line" />
 
     <div class="marks-entry-container">
@@ -9,7 +9,7 @@
       <aside class="vertical-tabs box">
         <div class="tab-heading has-text-weight-bold has-text-centered py-2 has-background-black">Class</div>
         <ul>
-          <li
+          <li class="py-1"
             v-for="cls in classes"
             :key="cls.Id"
             :class="{ 'is-active': cls.Id === selectedClassId }"
@@ -43,7 +43,7 @@
         </div>
 
         <!-- Loading Indicator -->
-        <div v-if="loading" class="notification is-info is-light has-text-centered mt-4">
+        <div v-if="loading" class="notification is-info is-dark has-text-centered mt-4">
           <span class="loader"></span> Loading marks data...
         </div>
 
@@ -54,11 +54,12 @@
               <thead>
                 <tr>
                   <th style="background-color: #201f1f;" class="sticky-col left-col">Roll No.</th>
-                  <th style="background-color: #201f1f; min-width: 200px;" class="sticky-col">Student Name</th>
+                  <th style="background-color: #201f1f; min-width: 180px;" class="sticky-col">Student Name</th>
                   <th 
                     v-for="subject in subjects" 
                     :key="subject.Id"
-                    style="background-color: #201f1f;"
+                    style="background-color: #201f1f; font-size: x-small;"
+                    
                   >
                     {{ subject.SubjectName }} (Max:{{ subject.SubjectCategory === "Major" ? MajorMaxMark : MinorMaxMark }})
                   </th>

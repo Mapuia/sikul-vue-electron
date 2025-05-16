@@ -1,9 +1,9 @@
 <template>
     <div class="container">
-      <h1 class="title has-text-centered mb-6">Student Management</h1>
+      <h1 class="title has-text-centered mb-4">Student Management</h1>
   
       <!-- Search Box -->
-      <div class="box" style="max-width: 600px; margin: 0 auto;">
+      <div class="box mb-4" style="max-width: 600px; margin: 0 auto; ">
         <div class="field has-addons">
           <div class="control is-expanded">
             <input
@@ -11,7 +11,8 @@
               type="text"
               v-model="searchQuery"
               placeholder="Search by Name, PEN or APAR"
-              @keyup.enter="searchStudents"
+              @keydown="searchStudents"
+              
             />
           </div>
           <div class="control">
@@ -24,7 +25,7 @@
       </div>
   
       <!-- Action Buttons -->
-      <div class="buttons is-centered mb-5">
+      <div class="buttons is-centered mb-4">
         <button class="button is-success" @click="openNewAdmission">
           <span class="icon">
             <i class="fas fa-user-plus"></i>
@@ -38,11 +39,17 @@
           <span>Refresh</span>
         </button>
       </div>
-  
+      <!-- No Results Message -->
+      <div v-if="hasSearched && !students.length > 0" class="box has-text-centered">
+        <p>No students found matching your search criteria.</p>
+      </div>
+      <div v-else="hasSearched && students.length > 0" class="has-text-right is flex pr-3">
+        <p>Found {{ students.length }} student record(s).</p>
+      </div>
       <!-- Search Results -->
-      <div v-if="students.length > 0" class="mt-6">
+      <div v-if="students.length > 0" class="mt-4">
         <div class="box">
-          <h2 class="subtitle is-4">Student Records ({{ students.length }})</h2>
+          <h2 class="subtitle is-4">Student Records </h2>
           
           <div class="table-container">
             <table class="table is-fullwidth is-striped is-hoverable">
@@ -102,15 +109,12 @@
         <div v-if="errorMessage" class="notification is-danger fixed-notification">
              {{ errorMessage }}
         </div>
-      <!-- No Results Message 
-      <div v-else-if="hasSearched" class="box has-text-centered">
-        <p>No students found matching your search criteria.</p>
-      </div>
-  -->
+      
+ 
       <!-- Student Details Modal -->
       <div class="modal" :class="{ 'is-active': showDetailsModal }">
         <div class="modal-background" @click="closeModal"></div>
-        <div class="modal-card" style="width: 80%; max-width: 800px;">
+        <div class="modal-card" style="width: 80%; max-width: 1000px;">
           <header class="modal-card-head">
             <p class="modal-card-title">Student Details</p>
             <button class="delete" aria-label="close" @click="closeModal"></button>
@@ -128,8 +132,10 @@
   
   <script setup>
   import { ref, onMounted } from 'vue';
+  import { useRouter } from 'vue-router';
   import StudentDetailsView from '@/components/StudentDetailsView.vue';
-  
+  const router = useRouter();
+
   const searchQuery = ref('');
   const students = ref([]);
   const isSearching = ref(false);
@@ -146,8 +152,7 @@
   async function fetchAllStudents() {
     try {
       isSearching.value = true;
-      students.value = await window.electronAPI.getAllStudents();
-      hasSearched.value = true;
+      students.value = await window.electronAPI.getAllStudents();      
     } catch (error) {
       console.error('Error fetching students:', error);
     } finally {
@@ -175,6 +180,7 @@
   
 async function refreshStudents() {
     searchQuery.value = '';
+    hasSearched.value = false;
     await fetchAllStudents();
   }
   
@@ -211,10 +217,10 @@ async function refreshStudents() {
   }
   
   function openNewAdmission() {
-    window.electronAPI.openNewAdmissionWindow();
+    router.push({ name: 'NewAdmission' });
   }
   
-  function editStudent(studentId) {
+  function editStudent(studentId) {    
     window.electronAPI.openEditStudentWindow(studentId);
   }
   </script>

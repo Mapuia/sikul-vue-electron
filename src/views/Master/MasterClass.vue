@@ -4,6 +4,7 @@
 
     <div class="buttons mt-4">
       <button class="button is-primary" @click="showAddForm = true" v-if="!showAddForm">
+        <i class="fas fa-solid fa-plus mr-2"></i>
         Add New
       </button>
     </div>
@@ -11,6 +12,18 @@
     <div class="box mt-4" v-if="showAddForm">
       <h2 class="subtitle">Add New Class</h2>
       <form @submit.prevent="submitForm" @reset="resetForm">
+        <div class="field">
+          <label class="label">Class ID</label>
+          <div class="control">
+            <input
+              class="input"
+              type="text"
+              v-model="newClassId"
+              placeholder="If alphabet, make it Capital"
+              required
+            />
+          </div>
+        </div>  
         <div class="field">
           <label class="label">Class Name</label>
           <div class="control">
@@ -21,6 +34,17 @@
               placeholder="e.g. Class Name I, II, III, KG-I, etc."
               @input="newClassName = newClassName.toUpperCase()"
               required
+            />
+          </div>
+        </div>
+        <div class="field">
+          <label class="label">Class Teacher</label>
+          <div class="control">
+            <input
+              class="input"
+              type="text"
+              v-model="newClassTeacher"
+              placeholder="Mr/Ms/Mrs XXXX"        
             />
           </div>
         </div>
@@ -58,28 +82,30 @@
             <tr>
               <th>Class ID</th>
               <th>Class Name</th>
-              <th>Sections</th>
+              <th>Class Teacher Name</th>
               <th class="has-text-right">Actions</th>
             </tr>
           </thead>
           <tbody>
             <tr v-for="classItem in classes" :key="classItem.Id">
-              <td>{{ classItem.Id }}</td>
+              <td v-if="editingClass !== classItem.Id">
+                {{ classItem.ClassId }}</td>
+              <td v-else>
+                <input type="text" class="input" v-model="editClassId"  />
+              </td>
+
               <td v-if="editingClass !== classItem.Id">
                 Class {{ classItem.ClassName }}
-              </td>
-              
+              </td>              
               <td v-else>
                 <input type="text" class="input" v-model="editClassName"  />
               </td>
               
-              <td>
-                <span v-for="section in sections" :key="section.Id" :value="section.Id" lass="tag is-info mr-1">
-                  {{ section.SectionName }}
-                </span>
-                <span v-if="sections.length === 0" class="has-text-grey">
-                 <i> Go to <b>Master -> [Class - Section Mapping]</b> to see Sections.</i>
-                </span>
+              <td v-if="editingClass !== classItem.Id"> 
+               {{ classItem.Teacher }}
+              </td>
+              <td v-else>
+                <input type="text" class="input" v-model="editClassTeacher"  />
               </td>
               
               <td class="has-text-right">
@@ -90,7 +116,7 @@
                     v-if="editingClass !== classItem.Id"
                     title="Edit"
                   >
-                    <i class="fas fa-pen"></i>
+                    <i class="fas fa-edit"></i>
                   </button>
 
                   
@@ -137,21 +163,24 @@
 import { ref, onMounted } from 'vue';
 
 const classes = ref([]);
-const sections = ref([]);
 const newClassName = ref('');
+const newClassId = ref('');
+const newClassTeacher = ref('');
 const successMessage = ref('');
 const errorMessage = ref('');
 const addErrorMessage = ref('');
 const showAddForm = ref(false);
 const editingClass = ref(null);
+const editClassId = ref('');
 const editClassName = ref('');
+const editClassTeacher = ref('');
 const loading = ref(false);
 
 async function fetchClasses() {
   loading.value = true;
   try {
     const Classes = await window.electronAPI.getClasses();
-    console.log(Classes);
+    //console.log(Classes);
     if (Classes.success ) {
         classes.value = Classes.classes;     
      } else {
@@ -163,21 +192,7 @@ async function fetchClasses() {
     loading.value = false;
   }
 }
-async function fetchSections() {
-  loading.value = true;
-  try {
-    const Sections = await window.electronAPI.getSections();
-    if (Sections.success ) {
-        sections.value = Sections.sections;     
-     } else {
-      errorMessage.value = 'Failed to fetch data.';
-    }
-  } catch (err) {
-    errorMessage.value = err.message;
-  } finally {
-    loading.value = false;
-  }
-}
+
 
 function isUpperCaseRoman(str) {
   return /^[IVXLCDM]+$/.test(str) && str === str.toUpperCase();
@@ -185,14 +200,20 @@ function isUpperCaseRoman(str) {
 const validClasses = ["Nursery", "KG-I", "KG-II", "Roman Numerals"];
 
 async function submitForm() {
+  const classId = newClassId.value.trim();
   const className = newClassName.value.trim();
+  const classTeacher = newClassTeacher.value.trim();
 
   if (!className) {
     addErrorMessage.value = 'Class Name is required.';
     return;
   }
+   if (!classId) {
+    addErrorMessage.value = 'Class Id is required.';
+    return;
+  }
 
-  const isValid = validClasses.includes(className) || isUpperCaseRoman(className);
+  const isValid = validClasses.includes(className) || isUpperCaseRoman(className) || validClasses.includes(classId);
 
   if (!isValid) {
     addErrorMessage.value =
@@ -201,12 +222,14 @@ async function submitForm() {
   }
 
   try {
-    const response = await window.electronAPI.insertClass(newClassName.value.trim());
+    const response = await window.electronAPI.insertClass(classId, className, classTeacher);
     if (response.success) {
       successMessage.value = 'Class added successfully.';
       addErrorMessage.value = '';
       showAddForm.value = false;
+      newClassId.value = '';
       newClassName.value = '';
+      newClassTeacher.value = '';
       fetchClasses();
       setTimeout(() => {
         successMessage.value = '';
@@ -220,22 +243,30 @@ async function submitForm() {
 }
 
 function resetForm() {
+  newClassId.value = '';
   newClassName.value = '';
+  newClassTeacher.value = '';
   addErrorMessage.value = '';
 }
 
 function editClass(classItem) {
   editingClass.value = classItem.Id;
+  editClassId.value = classItem.ClassId;
   editClassName.value = classItem.ClassName;
+  editClassTeacher.value = classItem.Teacher;
 }
 
 function cancelEdit() {
   editingClass.value = null;
+  editClassId.value = '';
   editClassName.value = '';
+  editClassTeacher.value = '';
 }
 
 async function saveEdit(classItem) {  // Changed parameter name to avoid shadowing
   const newName = editClassName.value.trim().toUpperCase();
+  const newTeacher = editClassTeacher.value.trim();
+  const newClassId = editClassId.value.trim();
   
   if (!newName) {
     errorMessage.value = 'Class Name cannot be empty.';
@@ -259,13 +290,16 @@ async function saveEdit(classItem) {  // Changed parameter name to avoid shadowi
   try {
     const response = await window.electronAPI.updateClass(
       classItem.Id,  // Pass the ID
-      newName        // Pass the new name
+      newName,
+      newTeacher       // Pass the new name
     );
     
     if (response.success) {
       successMessage.value = 'Class updated successfully.';
       editingClass.value = null;
+      editClassId.value = '';
       editClassName.value = '';
+      editClassTeacher.value = '';
       fetchClasses();
       setTimeout(() => {
         successMessage.value = '';
@@ -319,8 +353,8 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.tag {
-  margin-right: 0.25rem;
-  margin-bottom: 0.25rem;
+
+.buttons{
+  justify-content: center;
 }
 </style>

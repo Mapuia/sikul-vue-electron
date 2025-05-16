@@ -1,7 +1,29 @@
 const { ipcMain } = require('electron');
 const { db } = require('../database.cjs');
 
-  ///////////////////////////////////////////////////////////////////////////////////////Class Section mapping  Handle
+
+//Get Sections by Class 
+ipcMain.handle('get-sections-by-classId', async (event, ClassId) => {
+  try {
+    //console.log("Handler ClassId:(AdmissionHandler.cjs)", ClassId)
+    const stmt = db.prepare(`SELECT 
+      s.Id, s.SectionName FROM Sections AS s
+      JOIN
+      ClassSectionMapping AS m
+      ON
+      s.Id = m.SectionId
+      WHERE
+      m.ClassId = ?`);
+    const sections = stmt.all(ClassId);
+    //console.log("Handler Sections:", sections)
+    return { success: true, sections };
+  } catch (err) {
+    console.error('Failed to get subjects:', err);
+    return { success: false, message: err.message };
+  }
+});
+
+/////////////////////////////////////////////////////////////////////////////////////////Class Section mapping  Handle
 // Get class-section mappings
 ipcMain.handle('get-class-section-mappings', async () => {
   try {

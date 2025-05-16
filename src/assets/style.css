@@ -21,7 +21,6 @@
    width: 100%;
    margin:0;
  }
-
 .form-container{
   min-width: none;
   margin-top: 3.25rem;
@@ -136,7 +135,6 @@ button:focus-visible {
   right: 1rem;
   z-index: 9999;
   width: auto;
-  max-width: 300px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
 .is-square {
@@ -184,4 +182,72 @@ button:focus-visible {
 .fixed-width-table .grade-input {
   width: 100px;
   margin: 0 auto;
+}
+.title {
+  margin-bottom: 1rem;
+}
+
+.subtitle {
+  margin-bottom: 0.5rem;
+}
+
+.loader {
+  border: 4px solid #f3f3f3;
+  /* Light grey */
+  border-top: 4px solid #3699ff;
+  /* Blue */
+  border-radius: 50%;
+  width: 30px;
+  height: 30px;
+  animation: spin 2s linear infinite;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
+}
+.sikul-table{
+  border-collapse: collapse;
+  margin: 15px 0;
+  font-size: 16px;
+  min-width: 400px;
+  width: 100%;
+  border: 1px solid #2b2828;
+  
+  
+}
+.sikul-table th{
+ 
+  color: #dbd5d5;
+  padding: 12px 15px;
+  width: 180px;
+  font-weight:300;
+  
+}
+.sikul-table td {
+ 
+  padding: 12px 15px;
+  text-align: left;
+  font-weight: 600;
+}
+
+.sikul-table thead {
+ 
+  color: #fffdfd;
+}
+
+.sikul-table tbody tr:nth-child(even) {
+  background-color: #f3f3f3;
+}
+
+.sikul-table tbody tr:hover {
+  background-color: #f1f1f1;
+}
+.info-container{
+  width: 300px !important;
 }

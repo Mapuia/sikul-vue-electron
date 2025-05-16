@@ -3,16 +3,16 @@ import LandingPage from '../views/index.vue'
 import NewAdmission from '../views/Admission/new-admission.vue'
 import ReAdmission from '../views/Admission/re-admission.vue'
 import Transfer from '../views/Admission/transfer.vue'
-import ManageStudent from '../views/Manage/students.vue'
+import ManageStudent from '../views/Manage/studentsManagement.vue'
 import AcademicYear from '../views/Manage/academic-year.vue'
 import CreateExam from '../views/Manage/createExams.vue'
 import Result from '../views/Results/createResults.vue'
 import resultCriteria from '../views/Manage/resultCriteria.vue'
 import Report from '../views/Results/reportCard.vue'
-import marksEntry from '../views/Marks/marksEntry.vue'
+import MarksEntry from '../views/Marks/marksEntry.vue'
 import CoSCholasticEntry from '../views/Marks/coscholasticmarksEntry.vue'
 
-import marksViewEdit from '../views/Marks/marksViewEdit.vue'
+import MarksViewEdit from '../views/Marks/marksViewEdit.vue'
 import ClassSubjectMapping from '../views/Manage/mapClassSubject.vue'
 import ClassSectionMapping from '../views/Manage/mapClassSection.vue'
 import MasterClass from '../views/Master/MasterClass.vue'
@@ -85,14 +85,14 @@ const routes = [
   },
   {
     path: '/marks/view-edit-marks',
-    name: 'marksViewEdit',
-    component: marksViewEdit
+    name: 'MarksViewEdit',
+    component: MarksViewEdit
   },
  
   {
     path: '/marks/student-marks-entry',
-    name: 'marksEntry',
-    component: marksEntry
+    name: 'MarksEntry',
+    component: MarksEntry
   },
   {
     path: '/marks/student-marks-entry-coscholastic',

@@ -18,211 +18,116 @@ ipcMain.handle('get-students-by-class-and-section', (event, data) => {
   });
 
   /////////////////////////////////////////////////////////Getting Existing Marks
-  // In main process (electron)
-ipcMain.handle('get-marks-by-exam-subject', async (_, { examId, classId, sectionId, subjectId, academicYearId }) => {
+ ipcMain.handle('get-marks-by-exam-subject', async (event, { examId, subjectId, academicYearId }) => {
   const stmt = db.prepare(`
     SELECT StudentId, MarksObtained 
     FROM Marks
     WHERE 
       ActiveExamId = ? AND
       SubjectId = ? AND
-      AcademicYearId = ? AND
-      StudentId IN (
-        SELECT StudentId FROM Admissions 
-        WHERE ClassId = ? AND SectionId = ?
-      )
+      AcademicYearId = ? 
   `);
-  console.log(stmt.all(examId, subjectId, academicYearId, classId, sectionId));
-  return await stmt.all(examId, subjectId, academicYearId, classId, sectionId);
+  const rows = stmt.all(examId, subjectId, academicYearId);
+  console.log(rows);
+  return rows
 });
 
 
  ///////////////////////////////////////////////////////////////Save Marks
- ipcMain.handle('save-marks', async (event, marksData) => {
+ ipcMain.handle('save-marks', async (event, marksData, subjectData) => {
   if (!marksData || !Array.isArray(marksData) || marksData.length === 0) {
     return { success: false, error: "No marks data provided" };
   }
- 
-  let transaction;
 
-  try {
-    // Begin transaction
-    transaction = db.prepare('BEGIN TRANSACTION').run();
-    console.log('Transaction started');
+  const transaction = db.transaction(() => {
+    try {
+      // Prepare statements
+      const upsertMarkStmt = db.prepare(`
+        INSERT INTO Marks (
+          StudentId,
+          SubjectId,
+          ActiveExamId,
+          AcademicYearId,
+          MaxMark,
+          MarksObtained,
+          Status
+        ) VALUES (?, ?, ?, ?, ?, ?, ?)
+        ON CONFLICT(StudentId, SubjectId, ActiveExamId) 
+        DO UPDATE SET 
+          MarksObtained = excluded.MarksObtained,
+          MaxMark = excluded.MaxMark,
+          Status = excluded.Status,
+          Last_Modified_at = CURRENT_TIMESTAMP
+      `);
 
-    // Prepare statements
-    const upsertMarkStmt = db.prepare(`
-      INSERT INTO Marks (
-        StudentId,
-        SubjectId,
-        ActiveExamId,
-        AcademicYearId,
-        MarksObtained
-      ) VALUES (?, ?, ?, ?, ?)
-      ON CONFLICT(StudentId, SubjectId, ActiveExamId) 
-      DO UPDATE SET 
-        MarksObtained = excluded.MarksObtained,
-        Last_Modified_at = CURRENT_TIMESTAMP
-    `);
+      const entryStatus = db.prepare(`
+        INSERT INTO SubjectEntryStatus (
+          AcademicYearId,
+          ActiveExamId,
+          ClassId,
+          SectionId,
+          SubjectId,
+          Finished
+        ) VALUES (?, ?, ?, ?, ?, ?)
+        ON CONFLICT (AcademicYearId, ActiveExamId, ClassId, SectionId, SubjectId)
+        DO UPDATE SET
+          Finished = excluded.Finished,
+          Last_Modified_at = CURRENT_TIMESTAMP
+      `);
 
-    const calculateCumulativeStmt = db.prepare(`
-      SELECT SUM(MarksObtained) AS TotalMarks
-      FROM Marks
-      WHERE StudentId = ? 
-      AND ActiveExamId = ?
-      AND AcademicYearId = ?
-    `);
+      // Process each mark
+      for (const mark of marksData) {
+        // Convert all values to proper types
+        const values = [
+          mark.StudentId,
+          mark.SubjectId,
+          mark.ActiveExamId,
+          mark.AcademicYearId,
+          Number(mark.MaxMark),
+          Number(mark.MarksObtained),
+          mark.Status
+        ];
 
-    const upsertCumulativeStmt = db.prepare(`
-      INSERT INTO CumulativeMarks (
-        StudentId,
-        ActiveExamId,
-        TotalMarksObtained,
-        AcademicYearId
-      ) VALUES (?, ?, ?, ?)
-      ON CONFLICT(StudentId, ActiveExamId) 
-      DO UPDATE SET
-        TotalMarksObtained = excluded.TotalMarksObtained,
-        Last_Modified_at = CURRENT_TIMESTAMP
-    `);
+        // Check for invalid numbers
+        if (values.some(v => typeof v === 'number' && isNaN(v))) {
+          throw new Error(`Invalid numeric value in marks data for student ${mark.StudentId}`);
+        }
 
-    // First pass: Save all individual marks
-    for (const mark of marksData) {
-      // Validate mark
-      if (mark.MarksObtained === null || 
-          mark.MarksObtained === undefined || 
-          isNaN(mark.MarksObtained) ||
-          mark.MarksObtained < 0) {
-        throw new Error(`Invalid marks value for student ${mark.StudentId}`);
+        upsertMarkStmt.run(...values);
       }
 
-      console.log(`Saving mark for student ${mark.StudentId}, subject ${mark.SubjectId}: ${mark.MarksObtained}`);
-      upsertMarkStmt.run(
-        mark.StudentId,
-        mark.SubjectId,
-        mark.ActiveExamId,
-        mark.AcademicYearId,
-        mark.MarksObtained
-      );
-    }
-
-    // Second pass: Calculate and save cumulative marks
-    // Get unique student+exam combinations
-    const studentExamCombos = [...new Set(marksData.map(m => 
-      `${m.StudentId}-${m.ActiveExamId}-${m.AcademicYearId}`
-    ))];
-
-    for (const combo of studentExamCombos) {
-      const [studentId, examId, academicYearId] = combo.split('-');
-      
-      console.log(`Calculating cumulative for student ${studentId}, exam ${examId}`);
-      const result = calculateCumulativeStmt.get(
-        studentId,
-        examId,
-        academicYearId
+      // Update SubjectEntryStatus with properly typed values
+      console.log('Check Subjectdata', subjectData)
+      entryStatus.run(
+        Number(subjectData.YearId),
+        Number(subjectData.ExamId),
+        Number(subjectData.ClassId),
+        Number(subjectData.SectionId),
+        Number(subjectData.SubjectId),
+        subjectData.Finished ? 1 : 0 // Convert boolean to SQLite integer (1 or 0)
       );
 
-      const totalMarks = result?.TotalMarks || 0;
-      
-      console.log(`Saving cumulative total for student ${studentId}: ${totalMarks}`);
-      upsertCumulativeStmt.run(
-        studentId,
-        examId,
-        totalMarks,
-        academicYearId
-      );
+      return { 
+        success: true, 
+        message: `Successfully saved ${marksData.length} marks`
+      };
+
+    } catch (error) {
+      console.error('Error saving marks:', error);
+      return { 
+        success: false, 
+        error: error.message,
+        details: error 
+      };
     }
+  });
 
-    // Commit transaction
-    db.prepare('COMMIT').run();
-    console.log('Transaction committed');
-
-    return { 
-      success: true, 
-      message: `Successfully saved ${marksData.length} marks and updated cumulative totals`
-    };
-
-  } catch (error) {
-    // Rollback transaction if error occurs
-    if (transaction) {
-      db.prepare('ROLLBACK').run();
-      console.error('Transaction rolled back due to error');
-    }
-    
-    console.error('Error saving marks:', error);
-    return { 
-      success: false, 
-      error: error.message,
-      details: error 
-    };
-  }
+  return transaction();
 });
 
-//////////////////////////////////////////////////////////////////////////////Activity Grades
-ipcMain.handle('save-coscholastic-marks', async (event, gradesData) => {
-  if (!gradesData || !Array.isArray(gradesData)) {
-    return { success: false, error: "Invalid grades data format" };
-  }
 
-  let transaction;
-  try {
-    transaction = db.prepare('BEGIN TRANSACTION').run();
-
-    const stmt = db.prepare(`
-      INSERT INTO CoScholasticMarks (
-        StudentId,
-        SubjectId,
-        ActiveExamId,
-        AcademicYearId,
-        Score
-      ) VALUES (?, ?, ?, ?, ?)
-      ON CONFLICT(StudentId, SubjectId, ActiveExamId) 
-      DO UPDATE SET
-        Score = excluded.Score,
-        Last_Modified_at = CURRENT_TIMESTAMP
-    `);
-
-    for (const grade of gradesData) {
-      // Validate required fields
-      if (!grade.StudentId || !grade.SubjectId || !grade.ActiveExamId || !grade.AcademicYearId) {
-        throw new Error(`Missing required fields for student ${grade.StudentId}`);
-      }
-
-      // Validate grade value
-      const normalizedGrade = grade.Score?.toUpperCase();
-      if (!['A', 'B', 'C'].includes(normalizedGrade)) {
-        throw new Error(`Invalid grade (${grade.Score}) for student ${grade.StudentId}`);
-      }
-
-      stmt.run(
-        grade.StudentId,
-        grade.SubjectId,
-        grade.ActiveExamId,
-        grade.AcademicYearId,
-        normalizedGrade
-      );
-    }
-
-    db.prepare('COMMIT').run();
-    return { 
-      success: true, 
-      message: `${gradesData.length} co-scholastic marks saved successfully` 
-    };
-
-  } catch (error) {
-    if (transaction) db.prepare('ROLLBACK').run();
-    console.error('Error saving co-scholastic marks:', error);
-    return { 
-      success: false, 
-      error: error.message,
-      details: error 
-    };
-  }
-});
 
 ////////////////////////////////////////////////////////////////////View Marks
-
-
 ipcMain.handle('get-marks-by-class-section', async (event, { classId, sectionId, academicYearId, examId }) => {
   try {
     const stmt = db.prepare(`
@@ -252,4 +157,81 @@ ipcMain.handle('get-marks-by-class-section', async (event, { classId, sectionId,
   }
 });
 
+///////////////////////////////////////////////////////////////////////////
+ipcMain.handle('get-mark-entry-status', async (event, { academicYearId, examId }) => {
+  try {
+    // Get all class-section mappings with details
+    const classSections = db.prepare(`
+      SELECT 
+        c.Id as classId,
+        c.ClassName,
+        s.Id as sectionId,
+        s.SectionName
+      FROM ClassSectionMapping csm
+      JOIN Classes c ON csm.ClassId = c.Id
+      JOIN Sections s ON csm.SectionId = s.Id
+      ORDER BY c.Id, s.SectionName
+    `).all()
+
+    // Get total subjects count per class
+    const totalSubjectsStmt = db.prepare(`
+      SELECT ClassId, COUNT(*) as total 
+      FROM ClassSubjectMapping 
+      GROUP BY ClassId
+    `)
+
+    // Get finished subjects count per class-section
+    const finishedSubjectsStmt = db.prepare(`
+      SELECT 
+        ClassId,
+        SectionId,
+        COUNT(DISTINCT SubjectId) as finished
+      FROM SubjectEntryStatus
+      WHERE 
+        AcademicYearId = ? AND
+        ActiveExamId = ? AND
+        Finished = 1
+      GROUP BY ClassId, SectionId
+    `)
+
+    const totalSubjectsMap = new Map(
+      totalSubjectsStmt.all().map(row => [row.ClassId, row.total])
+    )
+
+    const finishedSubjectsMap = new Map(
+      finishedSubjectsStmt.all(academicYearId, examId)
+        .map(row => [`${row.ClassId}-${row.SectionId}`, row.finished])
+    )
+
+    // Prepare final result
+    const result = classSections.map(cs => {
+      const total = totalSubjectsMap.get(cs.classId) || 0
+      const finished = finishedSubjectsMap.get(`${cs.classId}-${cs.sectionId}`) || 0
+      
+      return {
+        classId: cs.classId,
+        sectionId: cs.sectionId,
+        className: cs.ClassName,
+        sectionName: cs.SectionName,
+        totalSubjects: total,
+        finishedSubjects: finished,
+        allFinished: finished >= total, // Using >= as safety check
+        completionPercentage: total > 0 ? Math.round((finished / total) * 100) : 0
+      }
+    })
+
+    return { 
+      success: true,
+      data: result 
+    }
+
+  } catch (error) {
+    console.error('Error in get-all-class-section-status:', error)
+    return { 
+      success: false,
+      error: error.message,
+      data: [] 
+    }
+  }
+})
 
