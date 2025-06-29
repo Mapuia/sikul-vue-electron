@@ -1,7 +1,7 @@
 <template>
   <div class="form-container full">
-    <h1 class="title has-text-centered">Active Exams</h1>
-    <h2 class="subtitle has-text-centered">Academic Year: {{ CurrentYear }}</h2>
+    <h1 class="title has-text-centered">Available Exams</h1>
+    <h2 class="subtitle has-text-centered">for Academic Year: {{ CurrentYear }}</h2>
 
     <div class="buttons mt-4">
       <button class="button is-primary" @click="prepareNewExam" :disabled="loading">
@@ -14,11 +14,11 @@
 
     <!-- Notifications -->
    
-    <div v-if="successMessage" class="notification is-success fixed-notification">
+    <div v-if="successMessage" class="notification is-success fixed-notification" @click="successMessage = ''">
       <button class="delete" @click="successMessage = ''"></button>
       {{ successMessage }}
     </div>
-    <div v-if="errorMessage" class="notification is-danger fixed-notification">
+    <div v-if="errorMessage" class="notification is-danger fixed-notification" @click="errorMessage = ''">
       <button class="delete" @click="errorMessage = ''"></button>
       {{ errorMessage }}
     </div>
@@ -33,21 +33,21 @@
         <table class="table is-fullwidth is-striped">
           <thead>
             <tr>
-              <th>Academic Year</th>
+              <th>Active Exam ID</th>
               <th>Exam Name</th>
               <th>Type</th>
               <th>Major Marks</th>
               <th>Minor Marks</th>
               <th>Passing %</th>
-              <th>Status</th>
+
               <th>Published?</th>
               <th>Actions</th>
             </tr>
           </thead>
-          <tbody>
+          <tbody class="has-text-centered">
             <tr v-for="exam in activeExams" :key="exam.Id">
-              <td>{{ exam.AcademicYearName || CurrentYear }}</td>
-              <td>{{ exam.ExamName }}</td>
+              <td>{{ exam.Id }}</td>
+              <td class="has-text-left">{{ exam.ExamName }}</td>
               <td>{{ exam.ExamType }}</td>
               
               <!-- MajorMaxMark -->
@@ -67,18 +67,12 @@
               <td v-else>
                 <input class="input is-small" type="number" v-model.number="editForm.PassingPercentage" min="0" max="100" step="1" required>
               </td>
-              
-              <!-- IsActive -->
-              <td>
-                <span class="tag" :class="exam.IsActive ? 'is-success' : 'is-dark'">
-                  {{ exam.IsActive ? 'Active' : 'Inactive' }}
-                </span>
-              </td>
+                          
               
               <!-- Result_Published -->
               <td>
                 <span class="tag" :class="exam.Result_Published ? 'is-success' : 'is-dark'">
-                  {{ exam.Result_Published ? 'Published' : 'Not Published' }}
+                  {{ exam.Result_Published ? 'Yes' : 'No' }}
                 </span>
               </td>
               
@@ -162,12 +156,7 @@
             </div>
           </div>
           
-          <div class="field">
-            <label class="checkbox">
-              <input type="checkbox" v-model="newExam.IsActive">
-              Set as active exam
-            </label>
-          </div>
+          
         </section>
         <footer class="modal-card-foot">
           <button class="button is-primary mr-3" @click="createNewExam" :disabled="saving">
@@ -220,7 +209,7 @@ async function fetchData() {
       window.electronAPI.getActiveExams(CurrentYearId.value),
       window.electronAPI.getExams()
     ]);
-    console.log("Year ID for fetching ActiveExams:",CurrentYearId.value)
+    //console.log("Year ID for fetching ActiveExams:",CurrentYearId.value)
     if (activeExamsRes.success && examsRes.success) {
       activeExams.value = activeExamsRes.exams;
 
@@ -367,6 +356,22 @@ async function confirmDelete(exam) {
     errorMessage.value = err.message;
   } finally {
     loading.value = false;
+  }
+}
+
+async function setActiveExam(Id){
+  try {
+    await window.electronAPI.deactivateAllActiveExams(CurrentYearId.value);
+    const response = window.electronAPI.activateExam(Id)
+    //console.log('Activate:', response)
+    if(response){
+      await fetchData();
+      successMessage.value = 'Exam activated successfully!';
+    }else{
+      errorMessage.value = response.message || 'Failed to activate exam';
+    }
+  }catch{
+    errorMessage.value = err.message;
   }
 }
 

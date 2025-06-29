@@ -2,8 +2,8 @@
   <div class="form-container single">
     <h1 class="title is-4 has-text-centered">Class-Subject Mapping</h1>
 
-    <div v-if="errorMessage" class="notification is-danger fixed-notification">{{ errorMessage }}</div>
-    <div v-if="successMessage" class="notification is-success fixed-notification">{{ successMessage }}</div>
+    <div v-if="errorMessage" class="notification is-danger fixed-notification" @click="errorMessage = ''">{{ errorMessage }}</div>
+    <div v-if="successMessage" class="notification is-success fixed-notification" @click="successMessage = ''">{{ successMessage }}</div>
 
     <div class="box">
       <!-- Select Class -->

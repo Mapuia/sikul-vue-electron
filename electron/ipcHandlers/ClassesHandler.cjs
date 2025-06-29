@@ -1,7 +1,7 @@
 const { ipcMain } = require('electron');
 const { db } = require('../database.cjs');
 
-console.log("Class Handler loaded Successfully");
+//console.log("Class Handler loaded Successfully");
 //////////////////////////////////////////////////////////////////////////////////////READ/GET
 ipcMain.handle('get-classes', () => {
   try {
@@ -15,10 +15,10 @@ ipcMain.handle('get-classes', () => {
 });
 
 //////////////////////////////////////////////////////////////////////////////////////INSERT
-ipcMain.handle('insert-class', async (event, classId, className, classTeacher) => {
+ipcMain.handle('insert-class', async (event, classId, className) => {
   try {
     const stmt = db.prepare('INSERT INTO Classes (ClassId, ClassName, Teacher) VALUES (?, ?, ?)');
-    stmt.run(classId, className, classTeacher);
+    stmt.run(classId, className);
     return { success: true };
   } catch (err) {
     console.error('Failed to insert class:', err);
@@ -27,13 +27,13 @@ ipcMain.handle('insert-class', async (event, classId, className, classTeacher) =
 });
   
 //////////////////////////////////////////////////////////////////////////////////////UPDATE
-ipcMain.handle('update-class', async (event, id, classId, newClassName, newClassTeacher) => {
+ipcMain.handle('update-class', async (event, id, classId, newClassName) => {
   try {
     const checkStmt = db.prepare(`
       SELECT COUNT(*) as count FROM Classes 
       WHERE ClassName = ? AND Teacher = ? AND ClassId = ? AND Id != ?
     `);
-    const exists = checkStmt.get(newClassName, newClassTeacher, classId, id);
+    const exists = checkStmt.get(newClassName, classId, id);
 
     if (exists.count > 0) {
       return { success: false, message: 'Class with same name, ID, and teacher already exists' };
@@ -44,7 +44,7 @@ ipcMain.handle('update-class', async (event, id, classId, newClassName, newClass
       SET ClassName = ?, Teacher = ?, ClassId = ?
       WHERE Id = ?
     `);
-    const result = updateStmt.run(newClassName, newClassTeacher, classId, id);
+    const result = updateStmt.run(newClassName, classId, id);
 
     return result.changes > 0
       ? { success: true }

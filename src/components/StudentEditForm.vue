@@ -110,8 +110,15 @@
 
         <div class="field">
           <label class="label">Caste</label>
-          <div class="control">
-            <input class="input" type="text" v-model="formData.Caste" />
+          <div class="control">            
+            <div class="select is-fullwidth">
+              <select v-model="formData.Caste">                
+                <option value="General">General</option>
+                <option value="SC/ST">ST/SC</option>
+                <option value="OBC">OBC</option>
+                <option value="Others">Others</option>               
+              </select>
+            </div>
           </div>
         </div>
       </div>
@@ -119,8 +126,15 @@
       <div class="column is-half">
         <div class="field">
           <label class="label">Religion</label>
-          <div class="control">
-            <input class="input" type="text" v-model="formData.Religion" />
+          <div class="control">            
+            <div class="select is-fullwidth">
+              <select v-model="formData.Religion">                
+                <option value="Christian">Christian</option>
+                <option value="Hindu">Hindu</option>
+                <option value="Muslim">Muslim</option>
+                <option value="Others">Others</option>               
+              </select>
+            </div>
           </div>
         </div>
 

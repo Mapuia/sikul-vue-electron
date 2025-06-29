@@ -9,10 +9,10 @@ ipcMain.handle('insert-student-admission', (event, form) => {
   //console.log("Student Insert:", form)
   const insertStudent = db.prepare(`
     INSERT INTO Students (
-      Name, Gender, FathersName, MothersName, DOB, Aadhaar, APAR, PEN, Contact, Address,
+      Name, Gender, FathersName, MothersName, DOB, Aadhaar, APAR, PEN, Contact, Address, PIN,
       FirstAdmissionDate, Status, Caste, Religion, Height, Weight, BloodGroup
     ) VALUES (
-      @Name, @Gender, @FathersName, @MothersName, @DOB, @Aadhaar, @APAR, @PEN, @Contact, @Address,
+      @Name, @Gender, @FathersName, @MothersName, @DOB, @Aadhaar, @APAR, @PEN, @Contact, @Address, @PIN,
       @FirstAdmissionDate, @Status, @Caste, @Religion, @Height, @Weight, @BloodGroup
     )
   `);
@@ -38,6 +38,7 @@ ipcMain.handle('insert-student-admission', (event, form) => {
       PEN: form.pen,
       Contact: form.contact,
       Address: form.address,
+      PIN: form.pin,
       FirstAdmissionDate: form.firstAdmissionDate,
       Status: form.status || 'Admitted',
       Caste: form.caste,
@@ -75,24 +76,64 @@ ipcMain.handle('insert-student-admission', (event, form) => {
   }
 });
 
+/////////////////////////////////////////////////////////////////////////////////////////GET ADMISSION DETAILS
 ipcMain.handle('get-admission-details', async (event, studentId, AcademicYearId) => {
   
   try {
     // Get admission details
     const admissionStmt = db.prepare(`
       SELECT 
-        c.ClassName, s.SectionName, a.RollNo, ay.YearName, a.AdmissionType, std.Name, std.FathersName, std.Gender, std.PEN, std.APAR
-      FROM Classes c
-      JOIN Admissions a ON a.ClassId = c.Id
-      JOIN Sections s ON s.Id = a.SectionId
-      JOIN AcademicYears ay ON ay.Id = a.AcademicYearId
-      JOIN Students std ON std.Id = a.StudentId
+        a.Id as admissionId,
+        c.Id as classId,
+        c.ClassName, 
+        s.SectionName, a.RollNo, ay.YearName, a.AdmissionType, std.Id, std.Name, std.FathersName, std.Gender, std.PEN, std.APAR
+      FROM Students std 
+      LEFT JOIN Admissions a ON a.StudentId = std.Id
+      LEFT JOIN Classes c ON c.Id = a.ClassId
+      LEFT JOIN Sections s ON s.Id = a.SectionId
+      JOIN AcademicYears ay ON ay.Id = a.AcademicYearId      
       WHERE a.StudentId = ? AND a.AcademicYearId = ?
     `);
 
   // Also fetch Some Details from Last Year Result
    const admission = admissionStmt.get(studentId, AcademicYearId);
-   console.log('AdmissionHandler- Fetch Addmission Details:', admission)
+   //console.log('AdmissionHandler- Fetch Addmission Details:', admission)
+    return { 
+      success: true, 
+      admission: {
+        ...admission
+      }
+    };
+  } catch (error) {
+    //console.log('Error:', error.message)
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('get-previous-admission', async (event, studentId, AcademicYearId) => {  
+  try {
+    // Get admission details
+    //console.log('Student and YearID:', studentId, AcademicYearId) 
+ 
+    const admissionStmt = db.prepare(`
+      SELECT s.Id as studentId, s.Name,
+        a.RollNo, a.AdmissionType, c.ClassName, sec.SectionName,
+        s.PEN, s.APAR,
+        r.ResultStatus, 
+        r.Rank
+      FROM Students s
+      LEFT JOIN Admissions a ON s.Id = a.StudentId
+      LEFT JOIN Classes c ON a.ClassId = c.Id
+      LEFT JOIN Sections sec ON a.SectionId = sec.Id 
+      LEFT JOIN Results r ON a.StudentId = r.StudentId      
+      WHERE s.Id = ? 
+        AND a.AcademicYearId = ? 
+        AND r.ResultType = 'final'
+        AND a.reAdmitted = 0     
+    `);
+    const admission = admissionStmt.get(studentId, AcademicYearId);
+
+   //console.log('AdmissionHandler- for ReAdmission:', admission)
     return { 
       success: true, 
       admission: {
@@ -100,7 +141,72 @@ ipcMain.handle('get-admission-details', async (event, studentId, AcademicYearId)
       } 
     };
   } catch (error) {
-    console.log('Error:', error.message)
+    //console.log('Error:', error.message)
     return { success: false, error: error.message };
   }
 });
+
+ipcMain.handle('promote-student', async (event, admissionData) => {
+  
+    // Get admission details
+    //console.log('Promoted:', admissionData)
+    try{
+
+
+      const promoteAdmission = db.prepare(`
+        INSERT OR REPLACE INTO Admissions
+        (StudentId, AcademicYearId, ClassId, SectionId, RollNo, AdmissionType)
+        VALUES
+        (?, ?, ?, ?, ?, ?)        
+
+      `);
+      const promoteAdmissionResult = promoteAdmission.run(
+        admissionData.StudentId,
+        admissionData.AcademicYearId,
+        admissionData.ClassId,
+        admissionData.SectionId,
+        admissionData.RollNo,
+        admissionData.AdmissionType
+      );
+
+      const updatePreviousAdmission = db.prepare(`
+        UPDATE Admissions
+        SET reAdmitted = 1
+        WHERE StudentId = ? AND AcademicYearId = ?
+      `);
+      updatePreviousAdmission.run(
+        admissionData.StudentId,
+        admissionData.PreviousYearId
+      );
+
+      //console.log('Promotion Result:', promoteAdmissionResult);
+      return { success: true };
+    } catch (error) {
+      console.error('Promotion Error:', error.message);
+      return { success: false, error: error.message };
+    }
+ 
+})
+
+ipcMain.handle('update-admission',(event,payload)=>{
+ // console.log('Admission Data:', payload)
+  try{
+    const updateAdmission = db.prepare(`
+      UPDATE Admissions
+      SET ClassId = ?, SectionId = ?, RollNo = ?, AdmissionType = ?
+      WHERE Id = ?
+    `);
+    const updateAdmissionResult = updateAdmission.run(
+      payload.ClassId,
+      payload.SectionId,
+      payload.RollNo,
+      payload.AdmissionType,
+      payload.AdmissionId
+    );
+   // console.log('Admission Update Result:', updateAdmissionResult);
+    return { success: true };
+  } catch (error) {
+    console.error('Update Error:', error.message);
+    return { success: false, error: error.message };
+  }
+})

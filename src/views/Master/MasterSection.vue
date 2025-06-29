@@ -104,10 +104,10 @@
         No sections found.
       </div>
     </div>
-        <div v-if="errorMessage" class="notification is-danger fixed-notification">
+        <div v-if="errorMessage" class="notification is-danger fixed-notification" @click="errorMessage = ''">
       {{ errorMessage }}
     </div>
-    <div v-if="successMessage" class="notification is-success fixed-notification">
+    <div v-if="successMessage" class="notification is-success fixed-notification" @click="successMessage = ''">
       {{ successMessage }}
     </div>
   </div>

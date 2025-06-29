@@ -2,9 +2,8 @@
     <section class="section">
       <div class="content container full">
         <img src="../assets/sikul_logo.png" alt="School Logo" class="logo" />
-        <h1 class="welcome">Welcome to Calvary Higher Secondary School</h1>
-        <h2 class="subtitle">Light to Enlight</h2>
-        <router-link to="/dashboard" class="enter-button">Dashboard</router-link>
+        <h1 class="welcome">Logged Out</h1>       
+        <router-link to="/login" class="enter-button">Login</router-link>
       </div>
     </section>
   </template>

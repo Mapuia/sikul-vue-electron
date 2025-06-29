@@ -1,10 +1,11 @@
 <template>
-  <div class="form-container wide">
-    <h1 class="title has-text-centered is-4 mb-4">New Admission {{ CurrentYear }}</h1>
-    <div v-if="message" class="notification is-primary fixed-notification">{{ message }}</div>
+  <div class="form-container mid my-2">
+    <h1 class="title has-text-centered is-4">New Student Entry</h1>
+    <h2 class="subtitle has-text-centered mb-4">Form</h2>
+    <div v-if="message" class="notification is-primary fixed-notification" @click="message = ''">{{ message }}</div>
 
     <!-- Personal Info -->
-    <div class="box">
+    <div class="box ">
       <legend class="title is-5">Personal Information</legend>
       <table class="sikul-table">
         <thead>
@@ -100,8 +101,9 @@
             <th>Address*</th>
             <td>
               <textarea 
+                type="input"
                 ref="address"
-                class="textarea" 
+                class="input" 
                 placeholder="H.No, Street, Village, City, District, State" 
                 v-model="form.address"
                 @keyup.enter="focusNext('pen')"
@@ -110,65 +112,23 @@
               <p v-if="errors.address" class="help is-danger">{{ errors.address }}</p>
             </td>
           </tr>
-        </thead>
-      </table>
-    </div>
-      
-    <!-- Unique ID -->
-    <div class="box">
-      <legend class="title is-5">Unique ID</legend>
-      <table class="sikul-table">
-        <thead>
-          <tr>
-            <th>PEN*</th>
-            <td>
-              <input 
-                ref="pen"
-                class="input" 
-                type="text" 
-                v-model="form.pen" 
-                maxlength="12" 
-                @keyup.enter="focusNext('apar')"
-                :class="{ 'is-danger': errors.pen }"
-              />
-              <p v-if="errors.pen" class="help is-danger">{{ errors.pen }}</p>
-            </td>
-          </tr>
-          <tr>
-            <th>APAR</th>
-            <td>
-              <input 
-                ref="apar"
-                class="input" 
-                type="text" 
-                v-model="form.apar" 
-                maxlength="12" 
-                @keyup.enter="focusNext('aadhaar')"
-              />
-            </td>
-          </tr>
-          <tr>
-            <th>Aadhaar</th>
-            <td>
-              <input 
-                ref="aadhaar"
-                class="input" 
-                type="text" 
-                v-model="form.aadhaar" 
-                maxlength="12" 
-                @keyup.enter="focusNext('caste')"
-              />
-            </td>
-          </tr>
-        </thead>
-      </table>
-    </div>      
 
-    <!-- Additional -->
-    <div class="box">
-      <legend class="title is-5">Additional Information</legend>
-      <table class="sikul-table">
-        <thead>
+          <tr>
+            <th>PIN</th>
+            <td>
+              <input 
+                ref="pin"
+                class="input" 
+                type="text" 
+                v-model="form.pin" 
+                maxlength="7" 
+                @keyup.enter="focusNext('religion')"
+                :class="{ 'is-danger': errors.pin }"
+              />
+              <p v-if="errors.pin" class="help is-danger">{{ errors.pin }}</p>
+            </td>
+          </tr>
+
           <tr>
             <th>Caste</th>
             <td>
@@ -254,9 +214,57 @@
         </thead>
       </table>
     </div>
-
-    <!--Action-->
-    <div class="box">
+      
+    <!-- Unique ID -->     
+    <div class="box ">
+      <legend class="title is-5">Unique ID</legend>
+      <table class="sikul-table">
+        <thead>
+          <tr>
+            <th>PEN</th>
+            <td>
+              <input 
+                ref="pen"
+                class="input" 
+                type="text" 
+                v-model="form.pen" 
+                maxlength="12" 
+                @keyup.enter="focusNext('apar')"
+                :class="{ 'is-danger': errors.pen }"
+              />
+              <p v-if="errors.pen" class="help is-danger">{{ errors.pen }}</p>
+            </td>
+          </tr>
+          <tr>
+            <th>APAR</th>
+            <td>
+              <input 
+                ref="apar"
+                class="input" 
+                type="text" 
+                v-model="form.apar" 
+                maxlength="12" 
+                @keyup.enter="focusNext('aadhaar')"
+              />
+            </td>
+          </tr>
+          <tr>
+            <th>Aadhaar</th>
+            <td>
+              <input 
+                ref="aadhaar"
+                class="input" 
+                type="text" 
+                v-model="form.aadhaar" 
+                maxlength="12" 
+                @keyup.enter="focusNext('caste')"
+              />
+            </td>
+          </tr>
+        </thead>
+      </table>
+    </div>   
+    <div class="box ">
       <legend class="title is-5">Admitted To</legend>
       <table class="sikul-table">
         <thead>
@@ -268,7 +276,7 @@
                   ref="classId"
                   v-model.number="form.classId" 
                   @change="updateSectionOptions"
-                  @keyup.enter="focusNext('sectionId')"
+                  @keyup.enter="focusNext('sectionId')"                  
                 >
                   <option disabled value="">Select Class</option>
                   <option v-for="cls in classes" :key="cls.Id" :value="cls.Id">
@@ -282,19 +290,21 @@
           <tr>
             <th>Section</th>
             <td>
-              <div class="select is-fullwidth" :class="{ 'is-danger': errors.sectionId }">
+              <div v-if="sectionOptions" class="select is-fullwidth" :class="{ 'is-danger': errors.sectionId }">
                 <select 
                   ref="sectionId"
                   v-model.number="form.sectionId" 
-                  :disabled="!form.classId"
+                  :disabled="!form.classId || sectionOptions.length === 0"
                   @keyup.enter="focusNext('rollNo')"
+                  
                 >
-                  <option disabled value="" selected>Select Section</option>
+                  <option disabled value="0" selected>Select Section</option>
                   <option v-for="sec in sectionOptions" :key="sec.Id" :value="sec.Id">
                     {{ sec.SectionName }}
                   </option>
                 </select>
               </div>
+              <div v-else class="select is-fullwidth">No Section</div>
               <p v-if="errors.sectionId" class="help is-danger">{{ errors.sectionId }}</p>
             </td>
           </tr>
@@ -318,15 +328,17 @@
         <button class="button is-light" @click="router.push('/dashboard')">Cancel</button>
       </div>
      
-    </div>
-  </div>
+ 
+    </div>   
+
+    <!--Action-->
 
   <!--Modal Confirm Submission-->
   <div class="modal" :class="{ 'is-active': showModal }">
     <div class="modal-background" @click="showModal = false"></div>
     <div class="modal-card" style="width: 80%; max-width: 800px;">
       <header class="modal-card-head">
-        <p class="modal-card-title">Confirm Admission Details</p>
+        <p class="modal-card-title">Confirm Student Details</p>
         <button class="delete" aria-label="close" @click="showModal = false"></button>
       </header>
       <section class="modal-card-body">
@@ -362,6 +374,10 @@
               <tr>
                 <th>Address</th>
                 <td>{{ form.address }}</td>
+              </tr>
+              <tr>
+                <th>PIN</th>
+                <td>{{ form.pin }}</td>
               </tr>
             </thead>
           </table>
@@ -448,6 +464,7 @@
       </footer>
     </div>
   </div>
+  </div>
 </template>
 
 <script setup>
@@ -470,6 +487,7 @@ const gender = ref(null);
 const dob = ref(null);
 const contact = ref(null);
 const address = ref(null);
+const pin = ref(null);
 const pen = ref(null);
 const apar = ref(null);
 const aadhaar = ref(null);
@@ -479,7 +497,7 @@ const height = ref(null);
 const weight = ref(null);
 const bloodGroup = ref(null);
 const classId = ref(null);
-const sectionId = ref(null);
+const sectionId = ref(0);
 const rollNo = ref(null);
 
 const errors = reactive({
@@ -489,9 +507,9 @@ const errors = reactive({
   dob: '',
   contact: '',
   address: '',
-  pen: '',
+  pin: '',
   classId: '',
-  sectionId: ''
+  sectionId: 0
 });
 
 const form = reactive({
@@ -502,6 +520,7 @@ const form = reactive({
   fathersName: '',
   mothersName: '',
   address: '',
+  pin: '',
   apar: '',
   aadhaar: '',
   pen: '',
@@ -512,7 +531,7 @@ const form = reactive({
   weight: null,
   bloodGroup: '',
   classId: null,
-  sectionId: null,
+  sectionId: 0,
   academicYearId: CurrentYearId.value,
   admissionType: 'New'
 });
@@ -561,20 +580,21 @@ function validateForm() {
     errors.address = 'Address is required';
     isValid = false;
   }
-  
-  if (!form.pen.trim()) {
-    errors.pen = 'PEN is required';
-    isValid = false;
-  }
-  
+
   if (!form.classId) {
     errors.classId = 'Class is required';
     isValid = false;
   }
   
   if (!form.sectionId) {
+    const isSection =  window.electronAPI.getSectionsByClassId(form.classId)
+    if(!isSection.success) {
+      isValid = true;
+      form.sectionId = 0;
+    }else{
     errors.sectionId = 'Section is required';
     isValid = false;
+    }
   }
   
   return isValid;
@@ -622,6 +642,7 @@ function focusNext(fieldName) {
     dob: dob,
     contact: contact,
     address: address,
+    pin: pin,
     pen: pen,
     apar: apar,
     aadhaar: aadhaar,
@@ -667,6 +688,7 @@ async function updateSectionOptions() {
   const response = await window.electronAPI.getSectionsByClassId(form.classId);
   if (response.success) {
     sectionOptions.value = response.sections;
+    //console.log('Sections for class', form.classId, ':', sectionOptions.value);
   } else {
     message.value = response.message || 'Failed to fetch sections.';
   }
@@ -682,14 +704,14 @@ async function handleSubmit() {
     return;
   }
 
-  console.log('Submitting form', form);
+  //console.log('Submitting form', form);
 
   try {
     const plainForm = JSON.parse(JSON.stringify(form));
-    console.log('Sanitized Form:', plainForm);
+    //console.log('Sanitized Form:', plainForm);
 
     const response = await window.electronAPI.insertStudentAndAdmission(plainForm);
-    console.log('Response:', response);
+    //console.log('Response:', response);
 
     if (response.success) {
       router.push({

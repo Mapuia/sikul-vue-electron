@@ -8,42 +8,31 @@
               <th>Name:</th> <td>{{formData.Name}}</td>
             </tr>
             <tr>
-              <th>Gender:</th> <td>{{formData.Gender}}</td>
-            </tr>
-            <tr>
-              <th>Father's Name:</th> <td>{{formData.FathersName}}</td>
-            </tr>
-            <tr>
-              <th>Class:</th> <td>{{formData.ClassName}} Section {{formData.SectionName}}</td>
-            </tr>
-            <tr>
-              <th>Roll No:</th> <td>{{formData.RollNo}}</td>
-            </tr>       
-            
-            </thead>
-        </table>
-      </div>    
-      <div class="column is-half">
-        <table class="sikul-table is-fullwidth">
-          <thead>  
-            <tr>
               <th>APAR:</th> <td>{{formData.APAR}}</td>
             </tr>
             <tr>
               <th>PEN:</th> <td>{{formData.PEN}}</td>
             </tr>
-   
             <tr>
-              <th>Previous Class Result:</th> <td>Pass</td>
-            </tr>
+              <th>Class:</th> <td>{{formData.ClassName}} {{formData.SectionName ? 'Section-' + formData.SectionName : ''}}</td>
+            </tr>    
             <tr>
-              <th>Rank:</th> <td>1</td>
+              <th>Previous Class Result:</th> <td>{{formData.ResultStatus}}</td>
             </tr>
-            
-          </thead> 
+            </thead>
         </table>
+      </div>    
+      <div class="column is-half">
+        <h2 class="subtitle is-6">Admit to:</h2>
+      <div class="control">
+        <select v-model = "newClassId" class="">
+          <option value="13">XI</option>
+        </select>
+        <input type="input" v-model="newRollNo" />
       </div>
-    </div>      
+      </div>
+    </div>
+  
   
     <div class="field is-grouped is-grouped-right">
       
@@ -77,8 +66,8 @@ const emit = defineEmits(['save', 'cancel']);
 
 const formData = ref({ ...props.readmission });
 const isSaving = ref(false);
-
-console.log('Students Data in Edit Page:', formData.value)
+const newRollNo = ref(formData.value.Rank)
+//console.log('Students Data in Edit Page:', formData.value)
 
 function formatDate(dateString) {
   if (!dateString || dateString === '-') return '-';

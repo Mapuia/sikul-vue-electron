@@ -27,7 +27,66 @@ ipcMain.handle('get-all-students', async () => {
   }
 });
 
+
+ipcMain.handle('get-students-by-class-sectionsId', async (event, params) => {
+// This is to get the previous years students
+  try {
+    const stmt = db.prepare(`
+      SELECT 
+        s.Id as id, 
+        s.Name as name, 
+        s.Gender as gender,
+        a.AdmissionType as AdmissionType,
+        a.RollNo as rollNo,
+        c.ClassName as className,
+        sec.SectionName as sectionName       
+      FROM Students s
+      LEFT JOIN Admissions a ON s.Id = a.StudentId
+      LEFT JOIN Classes c ON a.ClassId = c.Id
+      LEFT JOIN Sections sec ON a.SectionId = sec.Id      
+      WHERE a.ClassId = ? AND a.SectionId = ? AND a.AcademicYearId = ? AND a.reAdmitted = 0
+      ORDER BY s.Name
+    `);
+    //Rank will be used as Roll Number in the next year
+    const students = stmt.all(params.ClassId, params.SectionId, params.previousYearId);
+    return { success: true, students };
+  } catch (error) {
+    return { success: false, message: error.message, students: [] };
+  }
+})  
+
+//This will search students for a particular year
 ipcMain.handle('search-students', async (event, query) => {
+ // console.log('Students Handler- Search Students:', query)
+  try {
+    const stmt = db.prepare(`
+  SELECT 
+    s.Id as id,
+    s.Name as name,
+    s.Gender as gender,
+    s.Status as status,
+    a.RollNo as rollNo,
+    c.ClassName as className,
+    sec.SectionName as sectionName
+  FROM Students s
+  LEFT JOIN Admissions a ON s.Id = a.StudentId
+  LEFT JOIN Classes c ON a.ClassId = c.Id
+  LEFT JOIN Sections sec ON a.SectionId = sec.Id      
+  WHERE a.AcademicYearId = ? AND a.reAdmitted = 0
+  AND (s.Name LIKE ? OR s.PEN LIKE ? OR s.APAR LIKE ?)
+  ORDER BY s.Name
+`);
+    const searchTerm = `%${query.query}%`;
+    const students = stmt.all(query.yearId, searchTerm, searchTerm, searchTerm );
+    return { success: true, students };
+  } catch (error) {
+    return { success: false, message: error.message, students: [] };
+  }
+});
+
+
+//This will search all students for all years
+ipcMain.handle('search-all-students', async (event, query) => {
   try {
     const stmt = db.prepare(`
       SELECT 
@@ -37,13 +96,15 @@ ipcMain.handle('search-students', async (event, query) => {
         s.Status as status,
         a.RollNo as rollNo,
         c.ClassName as className,
-        sec.SectionName as sectionName
-      FROM Students s
+        sec.SectionName as sectionName,
+        ay.YearName as YearName
+      FROM Students s      
       LEFT JOIN Admissions a ON s.Id = a.StudentId
+      LEFT JOIN AcademicYears ay ON ay.Id = a.AcademicYearId
       LEFT JOIN Classes c ON a.ClassId = c.Id
-      LEFT JOIN Sections sec ON a.SectionId = sec.Id
+      LEFT JOIN Sections sec ON a.SectionId = sec.Id      
       WHERE s.Name LIKE ? OR s.PEN LIKE ? OR s.APAR LIKE ?
-      ORDER BY s.Name
+      ORDER BY a.Id DESC 
     `);
     const searchTerm = `%${query}%`;
     const students = stmt.all(searchTerm, searchTerm, searchTerm);
@@ -55,7 +116,7 @@ ipcMain.handle('search-students', async (event, query) => {
 
 // Get complete student details for editing
 ipcMain.handle('get-student-details', async (event, studentId, AcademicYearId) => {
-  console.log('Students Handler get student details- Student ID, AcademicYearID:',studentId, AcademicYearId)
+  //console.log('Students Handler get student details- Student ID, AcademicYearID:',studentId, AcademicYearId)
   try {
     // Get basic student info
     const studentStmt = db.prepare(`
@@ -78,17 +139,15 @@ ipcMain.handle('get-student-details', async (event, studentId, AcademicYearId) =
       WHERE a.StudentId = ? AND a.AcademicYearId = ?
     `);
     const admission = admissionStmt.get(studentId, AcademicYearId);
-    console.log("Student Handler get student detail- Admission:", admission)
+    //console.log("Student Handler get student detail- Admission:", admission)
 
     return { 
-      success: true, 
-      student: {
-        ...student,
-        ...admission
-      } 
+      success: true,       
+        student,
+        admission     
     };
   } catch (error) {
-    console.log('Error:', error.message)
+    //console.log('Error:', error.message)
     return { success: false, error: error.message };
   }
 });

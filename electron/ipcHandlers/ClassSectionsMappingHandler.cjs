@@ -2,7 +2,7 @@ const { ipcMain } = require('electron');
 const { db } = require('../database.cjs');
 
 
-//Get Sections by Class 
+//Get Sections by Class // to handle no section.
 ipcMain.handle('get-sections-by-classId', async (event, ClassId) => {
   try {
     //console.log("Handler ClassId:(AdmissionHandler.cjs)", ClassId)
@@ -24,7 +24,9 @@ ipcMain.handle('get-sections-by-classId', async (event, ClassId) => {
 });
 
 /////////////////////////////////////////////////////////////////////////////////////////Class Section mapping  Handle
-// Get class-section mappings
+// Get class-section mappings////
+
+
 ipcMain.handle('get-class-section-mappings', async () => {
   try {
     const stmt = db.prepare(`
@@ -40,8 +42,7 @@ ipcMain.handle('get-class-section-mappings', async () => {
       FROM ClassSectionMapping m
       JOIN Classes c ON m.ClassId = c.Id
       JOIN Sections s ON m.SectionId = s.Id
-      GROUP BY c.Id
-      ORDER BY c.Id DESC
+      GROUP BY c.Id      
     `)
     
     const results = stmt.all()

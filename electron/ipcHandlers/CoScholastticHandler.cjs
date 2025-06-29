@@ -3,14 +3,32 @@ const { db } = require('../database.cjs');
 
 
 //////////////////////////////////////////////////////////////////////////////Activity Grades
-ipcMain.handle('get-coscholastic-marks', async (event, { examId, subjectId, academicYearId }) => {
+ipcMain.handle('get-coscholastic-marks', async (event, { examId, subjectId }) => {
   try {
     const stmt = db.prepare(`
-      SELECT StudentId, Grade
+      SELECT StudentId, Grade, Appeared
       FROM CoScholasticMarks
-      WHERE ActiveExamId = ? AND SubjectId = ? AND AcademicYearId = ?
+      WHERE ActiveExamId = ? AND SubjectId = ? 
     `)
-    const grades = stmt.all(examId, subjectId, academicYearId)
+    const grades = stmt.all(examId, subjectId)
+    //console.log('Co-Scholastic Marks:', grades)
+    return { success: true, grades }
+  } catch (error) {
+    console.error('Error fetching Co-Scholastic Marks:', error)
+    return { success: false, error: error.message }
+  }
+})
+
+ipcMain.handle('get-coscholastic-marks-by-student', async (event, { examId, studentId }) => {
+  try {
+    const stmt = db.prepare(`
+      SELECT s.SubjectName as ActivityName, 
+      c.Grade, c.Appeared,
+      FROM CoScholasticMarks c
+      JOIN Subjects s ON c.SubjectId = s.Id
+      WHERE ActiveExamId = ? AND StudentId = ? 
+    `)
+    const grades = stmt.all(examId, studentId)
     return { success: true, grades }
   } catch (error) {
     console.error('Error fetching Co-Scholastic Marks:', error)
@@ -30,41 +48,40 @@ ipcMain.handle('save-coscholastic-marks', async (event, gradesData) => {
       StudentId,
       SubjectId,
       ActiveExamId,
-      AcademicYearId,
       Grade,
+      Appeared,
       Last_Modified_at
     ) VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
     ON CONFLICT(StudentId, SubjectId, ActiveExamId)
     DO UPDATE SET
       Grade = excluded.Grade,
+      Appeared = excluded.Appeared,
       Last_Modified_at = CURRENT_TIMESTAMP
   `);
 
-  const transaction = db.transaction((grades) => {
-    for (const grade of grades) {
+  const transaction = db.transaction((gradesData) => {
+    for (const grade of gradesData) {
       const {
         StudentId,
         SubjectId,
         ActiveExamId,
-        AcademicYearId,
-        Grade
+        Grade,
+        Appeared
       } = grade;
 
-      if (!StudentId || !SubjectId || !ActiveExamId || !AcademicYearId) {
+      if (!StudentId || !SubjectId || !ActiveExamId) {
         throw new Error(`Missing required fields for student ${StudentId}`);
       }
 
       const normalizedGrade = Grade?.toString().toUpperCase();
-      if (!['A', 'B', 'C'].includes(normalizedGrade)) {
-        throw new Error(`Invalid grade (${Grade}) for student ${StudentId}`);
-      }
+      const appeared = 1
 
       insertOrUpdate.run(
         StudentId,
         SubjectId,
         ActiveExamId,
-        AcademicYearId,
-        normalizedGrade
+        normalizedGrade,
+        appeared ? 1 : 0 // Convert to integer for SQLite
       );
     }
   });
@@ -84,3 +101,4 @@ ipcMain.handle('save-coscholastic-marks', async (event, gradesData) => {
     };
   }
 });
+

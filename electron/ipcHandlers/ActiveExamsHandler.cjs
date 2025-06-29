@@ -1,7 +1,14 @@
 const { ipcMain } = require('electron');
 const { db } = require('../database.cjs');
 
-// Get all available exams for dropdown
+function toCamelCase(obj) {
+  return Object.fromEntries(
+    Object.entries(obj).map(([key, val]) => [
+      key.charAt(0).toLowerCase() + key.slice(1),
+      val
+    ])
+  );
+}
 
 
 // Get active exams for current academic year
@@ -13,7 +20,7 @@ ipcMain.handle('get-active-exams', async (event, academicYearId) => {
       JOIN Exams e ON ae.ExamId = e.Id
       JOIN AcademicYears ay ON ae.AcademicYearId = ay.Id
       WHERE ae.AcademicYearId = ?
-      ORDER BY e.ExamName
+      ORDER BY e.Id
     `);
     const exams = stmt.all(academicYearId);
     return { success: true, exams };
@@ -117,18 +124,113 @@ ipcMain.handle('deactivate-all-active-exams', async (event, academicYearId) => {
 
 // Get Current Active exams for current academic year only
 ipcMain.handle('get-current-exam', async (event, yearId) => {
-  //console.log("Current Exam:",yearId)  
   try {
-    const stmt = db.prepare(`
+    // Prepare all statements first
+    const periodicStmt = db.prepare(`
       SELECT ae.*, e.ExamName, e.ExamType
       FROM ActiveExams ae
       JOIN Exams e ON ae.ExamId = e.Id
-      WHERE ae.AcademicYearId = ?
-      AND ae.IsActive = 1
+      WHERE ae.AcademicYearId = ? AND e.ExamType = 'periodic'
     `);
-    //console.log("Current Exam:",stmt.get(yearId))    
-    return stmt.get(yearId);
+    
+    const terminalStmt = db.prepare(`
+      SELECT ae.*, e.ExamName, e.ExamType
+      FROM ActiveExams ae
+      JOIN Exams e ON ae.ExamId = e.Id
+      WHERE ae.AcademicYearId = ? AND e.ExamType = 'terminal'
+    `);
+
+    const annualStmt = db.prepare(`
+      SELECT ae.*, e.ExamName, e.ExamType
+      FROM ActiveExams ae
+      JOIN Exams e ON ae.ExamId = e.Id
+      WHERE ae.AcademicYearId = ? AND e.ExamType = 'annual'
+    `);
+
+    // Execute queries
+    const periodic = periodicStmt.get(yearId) || {};
+    const terminal = terminalStmt.get(yearId) || {};
+    const annual = annualStmt.get(yearId) || {};
+
+    // Always include Result_Published with default false if not found
+    return {
+      periodic: {
+        MajorMaxMark: periodic.MajorMaxMark || null,
+        MinorMaxMark: periodic.MinorMaxMark || null,
+        Result_Published: periodic.Result_Published || false
+      },
+      terminal: {
+        MajorMaxMark: terminal.MajorMaxMark || null,
+        MinorMaxMark: terminal.MinorMaxMark || null,
+        PassingPercentage: terminal.PassingPercentage || null,
+        Result_Published: terminal.Result_Published || false
+      },
+      annual: {
+        Result_Published: annual.Result_Published || false
+      }
+    };
   } catch (err) {
-    return { success: false, message: err.message };
+    console.error('Error getting current exam:', err);
+    return { 
+      success: false, 
+      message: err.message,
+      // Provide fallback structure
+      periodic: { MajorMaxMark: null, MinorMaxMark: null, Result_Published: false },
+      terminal: { MajorMaxMark: null, MinorMaxMark: null, PassingPercentage: null, Result_Published: false },
+      annual: { Result_Published: false }
+    };
   }
 });
+
+ipcMain.handle('activate-exam', async (EventTarget, Id) => {
+  try{
+    const result = db.prepare('UPDATE ActiveExams SET IsActive = 1 WHERE Id = ?').run(Id);
+    //console.log('Activate Response:', result)
+    if (result.length > 0 ){
+      return { success: true}
+    }
+  }
+  catch(err){
+    return {
+      success: false, message: err.message
+    } 
+  }
+})
+
+
+ipcMain.handle('get-active-exam-by-type', async (event, examType, YearId) => {
+  try {
+    const exam = db.prepare(`
+      SELECT ae.Id, e.ExamType
+      FROM ActiveExams ae
+      JOIN Exams e ON ae.ExamId = e.Id
+      WHERE e.ExamType = ? AND ae.AcademicYearId = ?
+    `).get(examType, YearId)
+   // console.log(exam)
+    return { success: true, exam }
+  } catch (error) {
+    return { success: false, error: error.message }
+  }
+})
+
+
+ipcMain.handle('get-exam-by-type', async (event, examType, YearId) => {
+  try {
+    const exam = db.prepare(`
+      SELECT ae.Id, e.ExamName
+      FROM ActiveExams ae
+      JOIN Exams e ON ae.ExamId = e.Id
+      WHERE e.ExamType = ? AND ae.AcademicYearId = ?
+    `).get(examType, YearId)
+    
+    //console.log("Fetching exam ID from Active Exams", exam)
+    return { success: true, exam };
+  } catch (error) {
+    return { success: false, error: error.message }
+  }
+})
+
+
+
+
+

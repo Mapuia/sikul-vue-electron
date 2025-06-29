@@ -3,7 +3,7 @@
     <div class="navbar-container">
       <!-- Brand on the left -->
       <div>
-        <router-link to="/">
+        <router-link to="/home">
           <img class="logo navbar-logo" src="../assets/sikul_logo.png" alt="School Logo" />
         </router-link>
       </div>
@@ -15,81 +15,146 @@
       <!-- Menu on the right -->
       <div class="navbar-menu">
         <div class="navbar-end">
-          <div class="navbar-item has-dropdown"
-               :class="{ 'is-active': openDropdown === 'admission' }"
+          <!-- Students Menu -->
+          <div v-if="canAccess(['admin', 'deo', 'teacher'])" 
+               class="navbar-item has-dropdown"
+               :class="{ 'is-active': openDropdown === 'student' }"
                @mouseleave="closeDropdown">
-            <a class="navbar-link is-arrowless" @click="toggleDropdown('admission')">
-              <span class="fas fa-solid fa-id-badge"></span>Admission
+            <a class="navbar-link is-arrowless" @mouseover="toggleDropdown('student')" @click="toggleDropdown('student')">
+              <span class="fas fa-solid fa-id-badge"></span>Students
             </a>
             <div class="navbar-dropdown">
-              <router-link class="navbar-item" to="/admission/new" @click="closeDropdown">New Admission</router-link>
-              <router-link class="navbar-item" to="/admission/re" @click="closeDropdown">Re-Admission</router-link>
-              <router-link class="navbar-item" to="/admission/tr" @click="closeDropdown">Transfer</router-link>
+              <router-link v-if="canAccess(['admin', 'teacher', 'deo'])" class="navbar-item" to="/students/new" @click="closeDropdown">New Student</router-link>
+              <router-link v-if="canAccess(['admin', 'teacher', 'deo'])" class="navbar-item" to="/students/re" @click="closeDropdown">Enrol Existing Students</router-link>
+              <router-link v-if="canAccess(['admin', 'teacher'])" class="navbar-item" to="/manage/student" @click="closeDropdown">Manage Student</router-link>
             </div>
           </div>
 
-          <div class="navbar-item has-dropdown"
+          <!-- Marks Menu -->
+          <div v-if="canAccess(['admin', 'teacher'])" 
+               class="navbar-item has-dropdown"
                :class="{ 'is-active': openDropdown === 'marks' }"
                @mouseleave="closeDropdown">
-            <a class="navbar-link is-arrowless" @click="toggleDropdown('marks')">
+            <a class="navbar-link is-arrowless" @mouseover="toggleDropdown('marks')" @click="toggleDropdown('marks')">
               <span class="fas fa-solid fa-trophy"></span>Marks
             </a>
             <div class="navbar-dropdown">
-              <router-link class="navbar-item" to="/marks/student-marks-entry" @click="closeDropdown">Marks Entry Subjects</router-link>
-              <router-link class="navbar-item" to="/marks/student-marks-entry-coscholastic" @click="closeDropdown">Co-Scholastic Activities</router-link>
-              <router-link class="navbar-item" to="/marks/view-edit-marks" @click="closeDropdown">Review Marks</router-link>
+              <!-- Marks Entry Submenu -->
+              <div class="navbar-item has-subdropdown" @mouseenter="checkViewportEdge">
+                <span class="navbar-link">Marks Entry</span>
+                <div class="navbar-subdropdown">
+                  <router-link class="navbar-item" to="/marks/marks-entry?type=terminal" @click="closeDropdown">Half Yearly Exam</router-link>
+                  <router-link class="navbar-item" to="/marks/marks-entry?type=annual" @click="closeDropdown">Annual Exam</router-link>
+                </div>
+              </div>
+              
+              <!-- View Marks Submenu -->
+              <div class="navbar-item has-subdropdown" @mouseenter="checkViewportEdge">
+                <span class="navbar-link">View Marks</span>
+                <div class="navbar-subdropdown">
+                  <router-link class="navbar-item" to="/marks/view?type=terminal" @click="closeDropdown">Half Yearly Exam</router-link>
+                  <router-link class="navbar-item" to="/marks/view?type=annual" @click="closeDropdown">Annual Exam</router-link>
+                </div>
+              </div>
             </div>
           </div>
-
-          <div class="navbar-item has-dropdown"
+          
+          <!-- Result Menu -->
+          <div v-if="canAccess(['admin', 'teacher'])" 
+               class="navbar-item has-dropdown"
                :class="{ 'is-active': openDropdown === 'report' }"
                @mouseleave="closeDropdown">
-            <a class="navbar-link is-arrowless" @click="toggleDropdown('report')">
-              <span class="fa-solid fa-chart-pie"></span>Report
+            <a class="navbar-link is-arrowless" @mouseover="toggleDropdown('report')" @click="toggleDropdown('report')">
+              <span class="fa-solid fa-chart-pie"></span>Result
             </a>
             <div class="navbar-dropdown">
-              <router-link class="navbar-item" to="/result/create" @click="closeDropdown">Create Result</router-link>
-              <router-link class="navbar-item" to="/result/publish" @click="closeDropdown">Publish Result</router-link>
-              <router-link class="navbar-item" to="/result/report" @click="closeDropdown">School Report</router-link>
-              <router-link class="navbar-item" to="/result/report-card" @click="closeDropdown">Export Report Card</router-link>
+              <!-- Create Result Submenu -->
+              <div class="navbar-item has-subdropdown" @mouseenter="checkViewportEdge">
+                <span class="navbar-link">Create Result</span>
+                <div class="navbar-subdropdown">
+                  <router-link class="navbar-item" to="/result/create?type=terminal" @click="closeDropdown">Half Yearly</router-link>
+                  <router-link class="navbar-item" to="/result/create?type=annual" @click="closeDropdown">Final</router-link>
+                </div>
+              </div>
+              
+              <!-- View Result Summary Submenu -->
+              <div class="navbar-item has-subdropdown" @mouseenter="checkViewportEdge">
+                <span class="navbar-link">View Result Summary</span>
+                <div class="navbar-subdropdown">
+                  <router-link class="navbar-item" to="/result/summary?type=terminal" @click="closeDropdown">Half Yearly</router-link>
+                  <router-link class="navbar-item" to="/result/summary?type=annual" @click="closeDropdown">Final</router-link>
+                </div>
+              </div>
+              
+              <!-- Section-wise Result Submenu -->
+              <div class="navbar-item has-subdropdown" @mouseenter="checkViewportEdge">
+                <span class="navbar-link">Class-Section-Wise Result</span>
+                <div class="navbar-subdropdown">
+                  <router-link class="navbar-item" to="/result/section?type=terminal" @click="closeDropdown">Half Yearly</router-link>
+                  <router-link class="navbar-item" to="/result/section?type=annual" @click="closeDropdown">Final</router-link>
+                </div>
+              </div>
+              
+              <!-- Export Report Card Submenu -->
+              <div class="navbar-item has-subdropdown" @mouseenter="checkViewportEdge">
+                <span class="navbar-link">Report Card</span>
+                <div class="navbar-subdropdown">
+                  <router-link class="navbar-item" to="/result/report-card/halfyearly" @click="closeDropdown">Half Yearly</router-link>
+                  <router-link class="navbar-item" to="/result/report-card/final" @click="closeDropdown">Final</router-link>
+                </div>
+              </div>
             </div>
           </div>
 
-          <div class="navbar-item has-dropdown"
+          <!-- Settings Menu -->
+          <div v-if="canAccess(['admin'])" 
+               class="navbar-item has-dropdown"
                :class="{ 'is-active': openDropdown === 'manage' }"
                @mouseleave="closeDropdown">
-            <a class="navbar-link is-arrowless" @click="toggleDropdown('manage')">
-              <span class="fas fa-solid fa-gear"></span>Manage
+            <a class="navbar-link is-arrowless" @mouseover="toggleDropdown('manage')" @click="toggleDropdown('manage')">
+              <span class="fas fa-solid fa-gear"></span>Settings
             </a>
             <div class="navbar-dropdown">
-              <router-link class="navbar-item" to="/academic-year/create" @click="closeDropdown">Manage Academic Year</router-link>
-              <router-link class="navbar-item" to="/exam/create" @click="closeDropdown">Manage Exams</router-link>
-              <router-link class="navbar-item" to="/manage/student" @click="closeDropdown">Manage Student</router-link>
-              <router-link class="navbar-item" to="/result-criteria/set" @click="closeDropdown">Result Criteria</router-link>
+              <router-link class="navbar-item" to="/academic-year/create" @click="closeDropdown">Academic Session</router-link>
+              <router-link class="navbar-item" to="/exam/create" @click="closeDropdown">Examination</router-link>
+              <router-link class="navbar-item" to="/import/create" @click="closeDropdown">Import</router-link>
+              <router-link class="navbar-item" to="/export/create" @click="closeDropdown">Export</router-link>
+              <router-link class="navbar-item" to="/result-criteria/set" @click="closeDropdown">Result Criteria Info</router-link>
             </div>
           </div>
 
-          <div class="navbar-item has-dropdown"
-               :class="{ 'is-active': openDropdown === 'master' }"
+          <!-- Master Data Menu -->
+          <div v-if="canAccess(['admin', 'deo'])" 
+               class="navbar-item has-dropdown"
+               :class="{ 'is-active': openDropdown === 'master'}" 
                @mouseleave="closeDropdown">
-            <a class="navbar-link is-arrowless" @click="toggleDropdown('master')">
-              <span class="fas fa-solid fa-database"></span>Master
+            <a class="navbar-link is-arrowless" @mouseover="toggleDropdown('master')" @click="toggleDropdown('master')">
+              <span class="fas fa-solid fa-database"></span>Master Data
             </a>
             <div class="navbar-dropdown">
               <router-link class="navbar-item" to="/class/master" @click="closeDropdown">Master: Class</router-link>
               <router-link class="navbar-item" to="/section/master" @click="closeDropdown">Master: Section</router-link>
               <router-link class="navbar-item" to="/subject/master" @click="closeDropdown">Master: Subjects</router-link>
               <router-link class="navbar-item" to="/exam/master" @click="closeDropdown">Master: Exams</router-link>
+              <router-link class="navbar-item" to="/signatories/master" @click="closeDropdown">Master: Signatories</router-link>
               <router-link class="navbar-item" to="/class-subject/mapping" @click="closeDropdown">Mapping: Class - Subjects</router-link>
               <router-link class="navbar-item" to="/class-section/mapping" @click="closeDropdown">Mapping: Class - Sections</router-link>
             </div>
           </div>
 
-          <div class="navbar-item has-dropdown"
+          <!-- User Menu -->
+          <div class="navbar-item has-dropdown" 
                :class="{ 'is-active': openDropdown === 'user' }"
                @mouseleave="closeDropdown">
-            <a class="navbar-link is-arrowless" @click="toggleDropdown('user')">User</a>
+            <a class="navbar-link is-arrowless" @mouseover="toggleDropdown('user')" @click="toggleDropdown('user')">
+              <span class="icon is-left">
+                <i class="fas fa-user"></i>
+              </span>
+              {{ currentUser || "Guest" }}
+            </a>
             <div class="navbar-dropdown">
+              <router-link v-if="canAccess(['admin'])" class="navbar-item" to="/users/create" @click="closeDropdown">Create User</router-link>
+              <router-link class="navbar-item" to="/users/changepassword" @click="closeDropdown">Change Password</router-link>
               <router-link class="navbar-item" to="/logout" @click="handleLogout">Logout</router-link>
             </div>
           </div>
@@ -99,26 +164,36 @@
   </nav>
 </template>
 
-
-<script setup lang="ts">
+<script setup>
 import { ref, onMounted } from 'vue';
 import { useAcademicYear } from '../composables/useAcademicYear';
 
 const { CurrentYear, loadAcademicYear } = useAcademicYear();
 
-const handleAcademicYearChange = () => {
-  loadAcademicYear();
-};
+// User data
+const currentUser = ref('');
+const userRole = ref('');
 
+// Track dropdown state
+const openDropdown = ref('');
+
+// Load user data and academic year
 onMounted(async () => {
   await loadAcademicYear();
-  window.electronAPI.onAcademicYearChanged(handleAcademicYearChange);
+  const user = await window.electronAuth.getCurrentUser();
+  if (user) {
+    currentUser.value = user.username;
+    userRole.value = user.role;
+  }
 });
 
-// Track which dropdown is open
-const openDropdown = ref<string | null>(null);
+// Role-based access control
+const canAccess = (requiredRoles) => {
+  return requiredRoles.includes(userRole.value);
+};
 
-const toggleDropdown = (name: string) => {
+// Dropdown handlers
+const toggleDropdown = (name) => {
   openDropdown.value = openDropdown.value === name ? null : name;
 };
 
@@ -126,14 +201,24 @@ const closeDropdown = () => {
   openDropdown.value = null;
 };
 
-const handleLogout = () => {
-  closeDropdown();
-  window.electronAPI.logout();
+// Handle viewport edge detection for submenus
+const checkViewportEdge = (event) => {
+  const dropdown = (event.currentTarget).querySelector('.navbar-subdropdown');
+  if (dropdown) {
+    const rect = dropdown.getBoundingClientRect();
+    dropdown.classList.toggle('right-edge', rect.right > window.innerWidth);
+  }
+};
+
+// Logout handler
+const handleLogout = async () => {
+  await window.electronAuth.logout();
+  window.location.reload(); // Force full page reload to clear state
 };
 </script>
 
-
 <style scoped>
+/* Logo styles */
 .logo {
   height: 4.5em;
   padding: 0.5rem;
@@ -144,26 +229,23 @@ const handleLogout = () => {
 .logo:hover {
   filter: drop-shadow(0 0 2em #646cffaa);
 }
-.logo.vue:hover {
-  filter: drop-shadow(0 0 2em #42b883aa);
-}
 
+/* Title styles */
 .compact-title {
-  
   font-family: 'Oswald';
   font-weight: 600;
   font-size: x-large;
-  color:rgb(13, 13, 13);
-  
+  color: rgb(13, 13, 13);
 }
 .compact-subtitle {
   font-family: 'Oswald';
   font-weight: 500;
   font-size: medium;
   margin-bottom: 0.2rem;
-  color:rgb(13, 13, 13);
- 
+  color: rgb(13, 13, 13);
 }
+
+/* Navbar container */
 .navbar {
   width: 100%;
   box-shadow: 0 4px 4px -2px rgba(107, 107, 107, 0.2);
@@ -177,21 +259,57 @@ const handleLogout = () => {
   min-height: 3.25rem;
 }
 
-.navbar-item.title {
-  margin: 0;
-  padding-top: 0.25rem;
-  padding-bottom: 0.25rem;
-  display: flex;
-  
+/* Dropdown styles */
+.navbar-dropdown {
+  min-width: 220px;
 }
-
 .navbar-dropdown .navbar-item:hover {
   background-color: hsl(217, 71%, 53%);
   color: white;
 }
-
 .navbar-item.router-link-exact-active {
-  background-color: rgba(196, 123, 123, 0.885);
+  background-color: rgba(51, 61, 81, 0.885);
 }
 
+/* Subdropdown styles */
+.navbar-item.has-subdropdown {
+  position: relative;
+  padding: 0;  
+}
+.navbar-item.has-subdropdown > .navbar-link {
+  width: 100%;
+  padding: 0.5rem 1rem;
+  display: block;
+  color: #bebdbd;
+}
+.navbar-subdropdown {
+  display: none;
+  position: absolute;
+  left: 100%;
+  right: auto;
+  top: 0;
+  min-width: 200px;
+  background-color: white;
+  border: 1px solid #dbdbdb;
+  border-radius: 4px;
+  box-shadow: 0 2px 3px rgba(10, 10, 10, 0.1);
+  z-index: 20;
+}
+.navbar-item.has-subdropdown:hover .navbar-subdropdown {
+  display: block;
+  background-color: hsl(217, 71%, 53%);
+}
+.navbar-item.has-subdropdown:hover .navbar-subdropdown.right-edge {
+  left: auto;
+  right: 100%;
+}
+.navbar-subdropdown .navbar-item {
+  padding: 0.5rem 1.5rem;
+  white-space: nowrap;
+  color: black;
+}
+.navbar-subdropdown .navbar-item:hover {
+  background-color: hsl(217, 71%, 53%);
+  color: white;
+}
 </style>

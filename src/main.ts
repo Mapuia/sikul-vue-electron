@@ -6,8 +6,6 @@ import router from './router'
 import './assets/styles.scss'
 import './assets/style.css'
 
-
-
 const app = createApp(App)
 app.use(router)
 app.mount('#app')

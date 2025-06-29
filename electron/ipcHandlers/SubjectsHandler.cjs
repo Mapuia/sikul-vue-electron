@@ -88,3 +88,4 @@ ipcMain.handle('get-coscholastic', async () => {
     return { success: false, message: err.message };
   }
 });
+

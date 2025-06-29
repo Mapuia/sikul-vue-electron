@@ -21,7 +21,7 @@ ipcMain.handle('get-subjects-by-class', async (event, className) => {
     return { success: false, message: 'Failed to fetch subjects.' };
   }
 });
-ipcMain.handle('get-subjects-by-classId', async (event, ClassId) => {
+ipcMain.handle('get-subjects-by-classId', async (event, ClassId, category) => {
   try {
    // Get the database connection
     const stmt = db.prepare(`
@@ -29,16 +29,27 @@ ipcMain.handle('get-subjects-by-classId', async (event, ClassId) => {
       FROM Subjects s
       JOIN ClassSubjectMapping csm ON s.Id = csm.SubjectId
       JOIN Classes c ON csm.ClassId = c.Id
-      WHERE c.Id = ?
+      WHERE c.Id = ? 
     `);
    
-    const subjects = stmt.all(ClassId);
-    //console.log('Subjects at Handler:', subjects);
-  
+    let subjects = [];
+    // If category is 'coscholastic', fetch coscholastic subjects
+
+    if (category === 'Co-Scholastic') {
+      const coscholasticStmt = db.prepare(`
+        SELECT Id, SubjectName
+        FROM Subjects
+        WHERE SubjectCategory = ?
+      `);
+      subjects = coscholasticStmt.all(category);      
+     
+    }else{
+      subjects = stmt.all(ClassId);
+    }
     return { success: true, subjects };
   } catch (error) {
-    console.error('Error fetching subjects by classId:', error);
-    return { success: false, message: 'Failed to fetch subjects.' };
+    console.error('Error fetching subjects or Activities:', error);
+    return { success: false, message: 'Failed to fetch subjects or Activities.' };
   }
 });
 

@@ -1,5 +1,5 @@
 <template>
-  <div class="form-container wide">
+  <div class="form-container single">
     <h1 class="title has-text-centered">Class - Master Entry</h1>
 
     <div class="buttons mt-4">
@@ -37,18 +37,7 @@
             />
           </div>
         </div>
-        <div class="field">
-          <label class="label">Class Teacher</label>
-          <div class="control">
-            <input
-              class="input"
-              type="text"
-              v-model="newClassTeacher"
-              placeholder="Mr/Ms/Mrs XXXX"        
-            />
-          </div>
-        </div>
-
+        
         <div class="field is-grouped mt-4">
           <div class="control">
             <button type="submit" class="button is-primary">Submit</button>
@@ -58,16 +47,16 @@
           </div>
         </div>
 
-        <div v-if="addErrorMessage" class="notification is-danger fixed-notification">
+        <div v-if="addErrorMessage" class="notification is-danger fixed-notification" @click="addErrorMessage = ''">
           {{ addErrorMessage }}
         </div>
       </form>
     </div>
 
-    <div v-if="errorMessage" class="notification is-danger fixed-notification">
+    <div v-if="errorMessage" class="notification is-danger fixed-notification" @click="errorMessage = ''">
       {{ errorMessage }}
     </div>
-    <div v-if="successMessage" class="notification is-success fixed-notification">
+    <div v-if="successMessage" class="notification is-success fixed-notification" @click="successMessage = ''">
       {{ successMessage }}
     </div>
 
@@ -81,8 +70,7 @@
           <thead>
             <tr>
               <th>Class ID</th>
-              <th>Class Name</th>
-              <th>Class Teacher Name</th>
+              <th>Class Name</th>              
               <th class="has-text-right">Actions</th>
             </tr>
           </thead>
@@ -99,15 +87,8 @@
               </td>              
               <td v-else>
                 <input type="text" class="input" v-model="editClassName"  />
-              </td>
-              
-              <td v-if="editingClass !== classItem.Id"> 
-               {{ classItem.Teacher }}
-              </td>
-              <td v-else>
-                <input type="text" class="input" v-model="editClassTeacher"  />
-              </td>
-              
+              </td>              
+                    
               <td class="has-text-right">
                 <div class="buttons is-grouped is-justify-content-end">
                   <button
@@ -165,7 +146,6 @@ import { ref, onMounted } from 'vue';
 const classes = ref([]);
 const newClassName = ref('');
 const newClassId = ref('');
-const newClassTeacher = ref('');
 const successMessage = ref('');
 const errorMessage = ref('');
 const addErrorMessage = ref('');
@@ -173,7 +153,6 @@ const showAddForm = ref(false);
 const editingClass = ref(null);
 const editClassId = ref('');
 const editClassName = ref('');
-const editClassTeacher = ref('');
 const loading = ref(false);
 
 async function fetchClasses() {
@@ -202,7 +181,6 @@ const validClasses = ["Nursery", "KG-I", "KG-II", "Roman Numerals"];
 async function submitForm() {
   const classId = newClassId.value.trim();
   const className = newClassName.value.trim();
-  const classTeacher = newClassTeacher.value.trim();
 
   if (!className) {
     addErrorMessage.value = 'Class Name is required.';
@@ -222,14 +200,13 @@ async function submitForm() {
   }
 
   try {
-    const response = await window.electronAPI.insertClass(classId, className, classTeacher);
+    const response = await window.electronAPI.insertClass(classId, className);
     if (response.success) {
       successMessage.value = 'Class added successfully.';
       addErrorMessage.value = '';
       showAddForm.value = false;
       newClassId.value = '';
-      newClassName.value = '';
-      newClassTeacher.value = '';
+      newClassName.value = '';     
       fetchClasses();
       setTimeout(() => {
         successMessage.value = '';
@@ -244,8 +221,7 @@ async function submitForm() {
 
 function resetForm() {
   newClassId.value = '';
-  newClassName.value = '';
-  newClassTeacher.value = '';
+  newClassName.value = ''; 
   addErrorMessage.value = '';
 }
 
@@ -253,19 +229,18 @@ function editClass(classItem) {
   editingClass.value = classItem.Id;
   editClassId.value = classItem.ClassId;
   editClassName.value = classItem.ClassName;
-  editClassTeacher.value = classItem.Teacher;
+ 
 }
 
 function cancelEdit() {
   editingClass.value = null;
   editClassId.value = '';
   editClassName.value = '';
-  editClassTeacher.value = '';
+
 }
 
 async function saveEdit(classItem) {  // Changed parameter name to avoid shadowing
-  const newName = editClassName.value.trim().toUpperCase();
-  const newTeacher = editClassTeacher.value.trim();
+  const newName = editClassName.value.trim().toUpperCase(); 
   const newClassId = editClassId.value.trim();
   
   if (!newName) {
@@ -278,7 +253,7 @@ async function saveEdit(classItem) {  // Changed parameter name to avoid shadowi
 
   // Fixed validation logic
   const isValid = validClasses.includes(newName) || isUpperCaseRoman(newName);
-  console.log(newName);
+  //console.log(newName);
   if (!isValid) {
     errorMessage.value = 'Class Name must be KG-I, KG-II, or uppercase Roman numerals (e.g., I, II, III).';
     setTimeout(() => {
@@ -290,16 +265,14 @@ async function saveEdit(classItem) {  // Changed parameter name to avoid shadowi
   try {
     const response = await window.electronAPI.updateClass(
       classItem.Id,  // Pass the ID
-      newName,
-      newTeacher       // Pass the new name
+      newName        // Pass the new name
     );
     
     if (response.success) {
       successMessage.value = 'Class updated successfully.';
       editingClass.value = null;
       editClassId.value = '';
-      editClassName.value = '';
-      editClassTeacher.value = '';
+      editClassName.value = '';      
       fetchClasses();
       setTimeout(() => {
         successMessage.value = '';

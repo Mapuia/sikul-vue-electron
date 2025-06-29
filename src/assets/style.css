@@ -36,8 +36,13 @@
   max-width: 600px;
   margin: auto;
 }
+.mid{
+  padding: 2rem;
+  max-width: 800px;
+  margin: auto;
+}
 .full{
-  
+  padding: 2rem;
   margin:auto;
   width: 90%;
 }
@@ -131,11 +136,10 @@ button:focus-visible {
 
 .fixed-notification {
   position: fixed;
-  top: 5rem;
-  right: 1rem;
-  z-index: 9999;
-  width: auto;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  bottom: 20px;
+  right: 20px;
+  z-index: 100;
+  cursor: pointer
 }
 .is-square {
   width: 1.75rem;
@@ -251,3 +255,17 @@ button:focus-visible {
 .info-container{
   width: 300px !important;
 }
+
+.print-page{
+  padding: 3rem;
+  background: white;
+  color:black;
+}
+.print-title{
+  color: black;
+}
+.print-subtitle{
+  color: black;
+}
+
+

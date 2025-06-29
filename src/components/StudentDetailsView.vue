@@ -60,8 +60,8 @@
       <h3 class="title is-5">Physical Attributes</h3>
       <table class="sikul-table is-fullwidth">
         <thead>
-          <tr><th>Height:</th><td>{{ student.Height || '-' }}</td></tr>
-          <tr><th>Weight:</th><td>{{ student.Weight || '-' }}</td></tr>
+          <tr><th>Height:</th><td>{{ student.Height || '-' }} cm</td></tr>
+          <tr><th>Weight:</th><td>{{ student.Weight || '-' }} Kg</td></tr>
         </thead>
       </table>
     </div>

@@ -1,6 +1,6 @@
 <template>
   <div class="form-container wide">
-    <h1 class="title has-text-centered">Exams - Master Entry</h1>
+    <h1 class="title has-text-centered">Exams - Master Data</h1>
 
     <div class="buttons mt-3">
       <button class="button is-primary " @click="showAddForm = true" v-if="!showAddForm">
@@ -59,16 +59,16 @@
           </div>
         </div>
 
-        <div v-if="addErrorMessage" class="notification is-danger fixed-notification">
+        <div v-if="addErrorMessage" class="notification is-danger fixed-notification" @click="addErrorMessage = ''">
           {{ addErrorMessage }}
         </div>
       </form>
     </div>
 
-    <div v-if="errorMessage" class="notification is-danger fixed-notification">
+    <div v-if="errorMessage" class="notification is-danger fixed-notification" @click="errorMessage = ''">
       {{ errorMessage }}
     </div>
-    <div v-if="successMessage" class="notification is-success fixed-notification">
+    <div v-if="successMessage" class="notification is-success fixed-notification" @click="successMessage = ''">
       {{ successMessage }}
     </div>
 
@@ -102,9 +102,10 @@
                 <div class="select is-fullwidth">
                   <select v-model="editExamType" required>
                     <option disabled value="">-- Select Exam Type --</option>                    
-                    <option value="Periodic">Periodic</option>
-                    <option value="Term">Term</option>
-                    <option value="Annual">Annual</option>
+                    <option >periodic</option>
+                    <option >terminal</option>
+                    <option >annual</option>
+                   
                   </select>
                 </div>
               </td>

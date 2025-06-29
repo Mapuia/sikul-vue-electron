@@ -5,64 +5,60 @@ const { db } = require('../database.cjs');
 async function runMigrations() {
   try {
     // Check if the column already exists
-    const columnExists = db.prepare(`
-      PRAGMA table_info(ActiveExam);
-    `).all().some(col => col.name === 'PublishedResult');
+    
 
-    if (!columnExists) {
-      console.log('Migrating ActiveExam table to add PublishedResult column...');
+   
+      //console.log('Migrating ReportCards table to add TotalMaxmarks column...');
 
       // Start transaction
       db.prepare('BEGIN TRANSACTION').run();
 
-      // Rename the old table
-      db.prepare('ALTER TABLE ActiveExam RENAME TO ActiveExam_old').run();
+      // Rename the existing table
+     db.prepare('ALTER TABLE Marks RENAME TO Marks_old').run();
+     
 
-      // Create new table with PublishedResult column
+      // Create new table with NotAppeared column
       db.prepare(`
-        CREATE TABLE ActiveExam (
-          Id INTEGER PRIMARY KEY AUTOINCREMENT,   
-          AcademicYearId INTEGER,
-          ExamId INTEGER,
-          ExamName TEXT,
-          MajorMaxMark REAL,
-          MinorMaxMark REAL,
-          CoScholasticMaxMark REAL,    
-          IsActive INTEGER CHECK(IsActive IN (0, 1)),
-          PublishedResult INTEGER DEFAULT 0 CHECK(PublishedResult IN (0, 1)),
-          Creation_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-          Modified_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-          FOREIGN KEY (ExamId) REFERENCES Exams(Id),
-          FOREIGN KEY (AcademicYearId) REFERENCES AcademicYears(Id),
-          UNIQUE(AcademicYearId, ExamId)
-        )
+
+CREATE TABLE IF NOT EXISTS Marks (
+    Id INTEGER PRIMARY KEY AUTOINCREMENT,
+    ActiveExamId INTEGER NOT NULL,
+    StudentId INTEGER NOT NULL,
+    SubjectId INTEGER NOT NULL,
+    PeriodicMaxMark DECIMAL(5,2),
+    TerminalMaxMark DECIMAL(5,2),
+    TotalMaxMarks DECIMAL(5,2),
+    PeriodicMarksObtained DECIMAL(5,2),    
+    TerminalMarksObtained DECIMAL(5,2),
+    TotalMarksObtained DECIMAL(5,2),
+    SubjectResult TEXT,   
+    Creation_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    Last_Modified_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (StudentId) REFERENCES Students(Id) ON DELETE CASCADE,
+    FOREIGN KEY (SubjectId) REFERENCES Subjects(Id) ON DELETE CASCADE,
+    FOREIGN KEY (ActiveExamId) REFERENCES ActiveExams(Id) ON DELETE CASCADE,
+    UNIQUE(StudentId, SubjectId, ActiveExamId)
+);
+
       `).run();
 
-      // Migrate existing data into new table, default PublishedResult to 0
+      // Copy data from old table to new table
       db.prepare(`
-        INSERT INTO ActiveExam (
-          Id, AcademicYearId, ExamName, MajorMaxMark, MinorMaxMark, CoScholasticMaxMark,
-          IsActive, Creation_at, Modified_at
-        )
-        SELECT
-          Id, AcademicYearId, ExamName, MajorMaxMark, MinorMaxMark, CoScholasticMaxMark,
-          IsActive, Creation_at, Modified_at
-        FROM ActiveExam_old
+        INSERT INTO Marks (ActiveExamId, StudentId, SubjectId, PeriodicMaxMark, TerminalMaxMark, TotalMaxMarks, PeriodicMarksObtained, TerminalMarksObtained, TotalMarksObtained, SubjectResult, Creation_at, Last_Modified_at)
+        SELECT ActiveExamId, StudentId, SubjectId, PeriodicMaxMark, TerminalMaxMark, TotalMaxMarks, PeriodicMarksObtained, TerminalMarksObtained, TotalMarksObtained, SubjectResult, Creation_at, Last_Modified_at FROM Marks_old
       `).run();
 
       // Drop old table
-      db.prepare('DROP TABLE ActiveExam_old').run();
+      db.prepare('DROP TABLE Marks_old').run();
 
       // Commit transaction
       db.prepare('COMMIT').run();
 
-      console.log('ActiveExam migration completed successfully.');
-    } else {
-      console.log('PublishedResult column already exists. Skipping migration.');
-    }
+      console.log('Marks migration completed successfully.');
+
   } catch (error) {
     db.prepare('ROLLBACK').run();
-    console.error('ActiveExam migration failed:', error);
+    console.error('Marks migration failed:', error);
     throw error;
   }
 }
