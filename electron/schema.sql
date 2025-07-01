@@ -1,6 +1,6 @@
 -- Users Table
 CREATE TABLE IF NOT EXISTS Users (
-    Id INTEGER PRIMARY KEY AUTOINCREMENT,
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
     username TEXT NOT NULL UNIQUE,
     password_hash TEXT NOT NULL,
     role TEXT NOT NULL,    
@@ -158,6 +158,8 @@ CREATE TABLE IF NOT EXISTS Marks (
     Appeared BOOLEAN,
     Creation_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     Last_Modified_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    CreatedBy INTEGER REFERENCES Users(Id),
+    ModifiedBy INTEGER REFERENCES Users(Id),
     FOREIGN KEY (StudentId) REFERENCES Students(Id) ON DELETE CASCADE,
     FOREIGN KEY (SubjectId) REFERENCES Subjects(Id) ON DELETE CASCADE,
     FOREIGN KEY (ActiveExamId) REFERENCES ActiveExams(Id) ON DELETE CASCADE,
@@ -174,7 +176,7 @@ CREATE TABLE IF NOT EXISTS MarkEntryStatus (
     FinishedEntry BOOLEAN DEFAULT 0,
     Remarks TEXT DEFAULT '',
     Creation_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    Last_Modified_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    Last_Modified_at DATETIME DEFAULT CURRENT_TIMESTAMP,    
     FOREIGN KEY (ClassId) REFERENCES Classes(Id) ON DELETE CASCADE,    
     FOREIGN KEY (ActiveExamId) REFERENCES ActiveExams(Id) ON DELETE CASCADE,    
     FOREIGN KEY (SubjectId) REFERENCES Subjects(Id) ON DELETE CASCADE,  
@@ -192,6 +194,7 @@ CREATE TABLE IF NOT EXISTS CoScholasticMarks (
     Remark TEXT,
     Creation_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     Last_Modified_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    CreatedBy INTEGER REFERENCES Users(Id),
     ModifiedBy INTEGER REFERENCES Users(Id),
     FOREIGN KEY (StudentId) REFERENCES Students(Id) ON DELETE CASCADE,
     FOREIGN KEY (SubjectId) REFERENCES Subjects(Id) ON DELETE CASCADE,
@@ -245,8 +248,7 @@ CREATE TABLE IF NOT EXISTS Results (
     ResultType TEXT NOT NULL, --terminal, final
     ReportCard BOOLEAN DEFAULT 0,
     Creation_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    Last_Modified_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    PublishedBy INTEGER REFERENCES Users(Id),
+    Last_Modified_at DATETIME DEFAULT CURRENT_TIMESTAMP,    
     FOREIGN KEY (StudentId) REFERENCES Students(Id) ON DELETE CASCADE,
     FOREIGN KEY (AcademicYearId) REFERENCES AcademicYears(Id) ON DELETE CASCADE,
     UNIQUE(AcademicYearId, StudentId, ResultType)
@@ -283,7 +285,7 @@ CREATE TABLE IF NOT EXISTS ReportCards (
     Last_Modified_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (StudentId) REFERENCES Students(Id) ON DELETE CASCADE,
     FOREIGN KEY (AcademicYearId) REFERENCES AcademicYears(Id) ON DELETE CASCADE,
-    UNIQUE (StudentId, ActiveExamId, Version)
+    UNIQUE (StudentId, ActiveExamId, ReportCardType)
 );
 
 -- Signatories Table
@@ -296,16 +298,9 @@ CREATE TABLE IF NOT EXISTS Signatories (
     Name TEXT NOT NULL,
     SignatureImage TEXT,
     IsActive BOOLEAN DEFAULT TRUE,
-    Creation_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    Creation_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN key (ClassId) REFERENCES Classes(Id) ON DELETE CASCADE   
 );
-
-CREATE TRIGGER Update_Last_Modified
-BEFORE UPDATE ON Students
-FOR EACH ROW
-BEGIN
-  UPDATE Students SET Last_Modified_at = CURRENT_TIMESTAMP WHERE Id = OLD.Id;
-END;
 
 -- Foreign Key Indexes
 -- Users
@@ -382,7 +377,7 @@ INSERT INTO Sections (SectionName) VALUES ('A'), ('B');
 -- Insert Class-Section Mappings (for all classes)
 INSERT INTO ClassSectionMapping (ClassId, SectionId)
 SELECT c.Id, s.Id FROM Classes c, Sections s
-WHERE c.ClassName IN ('KG-I', 'KG-II', 'I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI')
+WHERE c.ClassName IN ('KG-I', 'KG-II', 'I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X')
 ORDER BY c.Id, s.Id;
 
 -- Insert Subjects
@@ -512,7 +507,7 @@ SELECT
 INSERT INTO ActiveExams (AcademicYearId, ExamId, MajorMaxMark, MinorMaxMark, PassingPercentage, IsActive, Result_Published)
 SELECT 
     (SELECT Id FROM AcademicYears WHERE IsActive = 1),
-    (SELECT Id FROM Exams WHERE ExamName = 'Half Yearly Exam'),
+    (SELECT Id FROM Exams WHERE ExamName = 'Half Yearly Examination'),
     80, 20, 40, 0, 0;
 
 INSERT INTO ActiveExams (AcademicYearId, ExamId, MajorMaxMark, MinorMaxMark, PassingPercentage, IsActive, Result_Published)
@@ -524,7 +519,7 @@ SELECT
 INSERT INTO ActiveExams (AcademicYearId, ExamId, MajorMaxMark, MinorMaxMark, PassingPercentage, IsActive, Result_Published)
 SELECT 
     (SELECT Id FROM AcademicYears WHERE IsActive = 1),
-    (SELECT Id FROM Exams WHERE ExamName = 'Annual Exam'),
+    (SELECT Id FROM Exams WHERE ExamName = 'Annual Examination'),
     80, 20, 40, 0, 0;
 
 

@@ -1,6 +1,6 @@
 const bcrypt = require('bcryptjs');
 const keytar = require('keytar');
-const { db } = require('../../electron/database.cjs');
+const { db } = require('../database.cjs');
 
 const SERVICE_NAME = 'sikul-app';
 const SALT_ROUNDS = 10;

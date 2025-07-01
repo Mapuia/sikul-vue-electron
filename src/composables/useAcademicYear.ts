@@ -9,8 +9,7 @@ const PreviousYear = ref('');
 export const useAcademicYear = () => {
 
   const loadAcademicYear = async () => {
-    const response = await window.electronAPI.getCurrentAcademicYear(); // Renamed 'result' to 'response' for clarity
-    //console.log('Result from IPC:', response);
+    const response = await window.electronAPI.getCurrentAcademicYear(); 
     const previousYearResponse = await window.electronAPI.getPreviousYear();
     if (previousYearResponse?.success && previousYearResponse?.previousYear) {
       PreviousYearId.value = previousYearResponse.previousYearId;

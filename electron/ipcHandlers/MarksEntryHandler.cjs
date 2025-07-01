@@ -1,10 +1,11 @@
 const { ipcMain } = require('electron');
 const { db } = require('../database.cjs');
+const authService  = require('./auth.cjs');
 
 ipcMain.handle('get-students-by-class-and-section', (event, data) => {
 
-    const { classId, sectionId } = data;
-    //console.log('Fetching students for class:', classId, 'and section:', sectionId);
+    const { classId, sectionId, AcademicYearId } = data;
+  //  console.log('Fetching students for class:', classId, 'and year:', AcademicYearId);
     const stmt = db.prepare(`
       SELECT
         s.Id as StudentId,
@@ -13,9 +14,10 @@ ipcMain.handle('get-students-by-class-and-section', (event, data) => {
       FROM Students s
       JOIN Admissions a ON s.Id = a.StudentId
       WHERE a.ClassId = ? AND a.SectionId = ?
+      AND a.AcademicYearId = ?
       ORDER BY a.RollNo ASC
     `);
-    const rows = stmt.all(classId, sectionId); // Correct parameters
+    const rows = stmt.all(classId, sectionId, AcademicYearId); // Correct parameters
    //console.log("Students by class in MarksEntryHandler :", rows);
     return { success: true, students: rows }; // Also return the result
   });
@@ -48,10 +50,16 @@ ipcMain.handle('save-marks', async (event, { marksData, subjectData }) => {
   if (!subjectData || typeof subjectData !== 'object') {
     return { success: false, error: "No subject data provided" };
   }
-//console.log('Check examtype:', subjectData.ExamType);
+
+console.log('Check MarksData:', marksData);
   // Prepare all statements outside transaction first
   let upsertMarkStmt, upsertEntryStatusStmt, upsertTotalMarksStmt, studentTotalsStmt, finalTotalsStmt, finalCumulativeStmt;
-    
+    const currentUser = await authService.getCurrentUser();
+    //console.log("currentUser:", currentUser);
+    if (!currentUser || !currentUser.id) {
+      return { success: false, error: "User not authenticated" };
+    }
+
   try {
     // Prepare statements
     upsertMarkStmt = db.prepare(`
@@ -65,8 +73,10 @@ ipcMain.handle('save-marks', async (event, { marksData, subjectData }) => {
         PeriodicMarksObtained,
         TerminalMarksObtained,
         TotalMarksObtained,
-        SubjectResult        
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        SubjectResult,
+        CreatedBy,
+        ModifiedBy       
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       ON CONFLICT(StudentId, SubjectId, ActiveExamId) 
       DO UPDATE SET
         PeriodicMaxMark = excluded.PeriodicMaxMark,
@@ -76,7 +86,8 @@ ipcMain.handle('save-marks', async (event, { marksData, subjectData }) => {
         TerminalMarksObtained = excluded.TerminalMarksObtained,
         TotalMarksObtained = excluded.TotalMarksObtained,
         SubjectResult = excluded.SubjectResult,        
-        Last_Modified_at = CURRENT_TIMESTAMP
+        Last_Modified_at = CURRENT_TIMESTAMP,
+        ModifiedBy = excluded.ModifiedBy
     `);
 
     upsertEntryStatusStmt = db.prepare(`
@@ -158,9 +169,12 @@ ipcMain.handle('save-marks', async (event, { marksData, subjectData }) => {
           mark.PeriodicMarksObtained,
           mark.TerminalMarksObtained,
           mark.TotalMarksObtained,
-          mark.SubjectResult         
+          mark.SubjectResult,
+          currentUser.id,
+          currentUser.id
+
         );
-       // console.log(`Saved marks for StudentId: ${mark.StudentId}, SubjectId: ${subjectData.SubjectId}`);
+    //console.log(`Saved marks for StudentId: ${mark.StudentId}, SubjectId: ${subjectData.SubjectId}`);
       }
 
       // 2. Update entry status
@@ -171,7 +185,6 @@ ipcMain.handle('save-marks', async (event, { marksData, subjectData }) => {
         subjectData.SubjectId,
         1
       );
-
       
       let studentTotals = [];
 
@@ -231,7 +244,7 @@ ipcMain.handle('save-marks', async (event, { marksData, subjectData }) => {
     }
       // Commit transaction
       db.prepare('COMMIT').run();
-
+    
       return { 
         success: true,
         message: 'Marks saved successfully',

@@ -1,30 +1,7 @@
-// main.cjs
 const { app, BrowserWindow, ipcMain, dialog } = require('electron');
 const path = require('path');
-const { runMigrations } = require('./utils/databaseMigrations.cjs');
-
-// Import database and handlers
 const db = require('./database.cjs');
-const authService = require('../src/services/auth.cjs');
-
-require('./ipcHandlers/AcademicYearHandler.cjs');
-require('./ipcHandlers/ClassesHandler.cjs');
-require('./ipcHandlers/SectionsHandler.cjs');
-require('./ipcHandlers/SubjectsHandler.cjs');
-require('./ipcHandlers/ExamsHandler.cjs');
-require('./ipcHandlers/ActiveExamsHandler.cjs');
-require('./ipcHandlers/SignatoriesHandler.cjs');
-require('./ipcHandlers/ClassSubjectsMappingHandler.cjs');
-require('./ipcHandlers/ClassSectionsMappingHandler.cjs');
-require('./ipcHandlers/AdmissionHandler.cjs');
-require('./ipcHandlers/StudentsHandler.cjs');
-require('./ipcHandlers/MarksEntryHandler.cjs');
-require('./ipcHandlers/CoScholastticHandler.cjs');
-require('./ipcHandlers/StatsHandler.cjs');
-require('./ipcHandlers/ResultsHandler.cjs');
-require('./ipcHandlers/ReportCardHandler.cjs');
-//require('./ipcHandlers/PDFHandler.cjs');
-
+const authService = require('./ipcHandlers/auth.cjs');
 
 let mainWindow;
 let splash;
@@ -52,11 +29,11 @@ function createSplashWindow() {
 
 function createMainWindow() {
   mainWindow = new BrowserWindow({
-    //fullscreen: true,
     width: 1400,
     height: 900,
     autoHideMenuBar: true,
-    show: false, // wait until content is ready
+    show: false,
+    icon: path.join(__dirname, 'app_icon.ico'),
     webPreferences: {
       preload: path.join(__dirname, 'preload.cjs'),
       contextIsolation: true,
@@ -67,95 +44,117 @@ function createMainWindow() {
   const devUrl = process.env.VITE_DEV_SERVER_URL;
   if (devUrl) {
     mainWindow.loadURL(devUrl);
-    // mainWindow.webContents.openDevTools();
+    // mainWindow.webContents.openDevTools(); // Uncomment for debugging
   } else {
     mainWindow.loadFile(path.join(__dirname, '../dist/index.html'));
   }
 
   mainWindow.webContents.on('did-finish-load', () => {
-    if (splash && !splash.isDestroyed()) {
-      splash.close();
-    }
+    if (splash && !splash.isDestroyed()) splash.close();
     mainWindow.show();
   });
 }
 
-app.whenReady().then(async() => {
-  try {   
-    //await runMigrations();
+async function loadHandlers() {
+  const handlers = [
+    'AcademicYearHandler',
+    'ClassesHandler',
+    'SectionsHandler',
+    'SubjectsHandler',
+    'ExamsHandler',
+    'ActiveExamsHandler',
+    'SignatoriesHandler',
+    'ClassSubjectsMappingHandler',
+    'ClassSectionsMappingHandler',
+    'AdmissionHandler',
+    'StudentsHandler',
+    'MarksEntryHandler',
+    'CoScholastticHandler',
+    'StatsHandler',
+    'ResultsHandler',
+    'ReportCardHandler',
+    'ExportHandler',
+    'ImportHandler'
+  ];
+
+  for (const handler of handlers) {
+    await import(`./ipcHandlers/${handler}.cjs`);
+  }
+}
+
+app.whenReady().then(async () => {
+  try {
     await authService.initialize();
+    await loadHandlers();
     createSplashWindow();
     createMainWindow();
   } catch (err) {
-    console.error("Database initialization failed:", err);
+    console.error("Initialization failed:", err);
     app.quit();
   }
 });
 
-//user authentication
+ipcMain.handle('open-dialog', async (event, options) => {
+  const win = BrowserWindow.getFocusedWindow()
+  return await dialog.showOpenDialog(win, options)
+})
+
+// Authentication IPC handlers
 ipcMain.handle('auth-login', async (_, username, password) => {
   try {
-    const user = await authService.login(username, password)
-    return { success: true, user }
+    const user = await authService.login(username, password);
+    return { success: true, user };
   } catch (error) {
-    return { success: false, message: error.message }
+    return { success: false, message: error.message };
   }
-})
+});
 
 ipcMain.handle('auth-logout', async () => {
   try {
     return await authService.logout();
   } catch (error) {
-    console.error('Logout handler error:', error);
+    console.error('Logout error:', error);
     return false;
   }
 });
 
-ipcMain.handle('auth-check', async () => {
-  return await authService.checkAuth()
-})
+ipcMain.handle('auth-check', async () => await authService.checkAuth());
 
 ipcMain.handle('register-user', async (_, username, password, role) => {
   try {
-    await authService.register(username, password, role)
-    return { success: true }
+    await authService.register(username, password, role);
+    return { success: true };
   } catch (error) {
-    return { success: false, message: error.message }
-  }
-})
-
-
-ipcMain.handle('auth-change-password', async (_, username, oldPassword, newPassword) => {
-  try {
-    await authService.changePassword(username, oldPassword, newPassword)
-    return { success: true }
-  } catch (error) {
-    return { success: false, message: error.message }
-  }
-})
-
-ipcMain.handle('auth-get-current-user', async () => {
-  return await authService.getCurrentUser()
-})
-ipcMain.handle('get-user-role', async () => {
-  const user = await authService.getCurrentUser()
-  return user?.role || null
-})
-
-// IPC: Notify UI of new Academic Year
-ipcMain.on('academic-year-added', () => {
-  try {
-    const [win] = BrowserWindow.getAllWindows();
-    if (win && !win.isDestroyed()) {
-      win.webContents.send('refresh-academic-year');
-    }
-  } catch (error) {
-    console.error('Error sending academic year update:', error);
+    return { success: false, message: error.message };
   }
 });
 
-// IPC: Show confirmation dialog
-ipcMain.handle('show-confirmation-dialog', async (event, message) => {
+ipcMain.handle('auth-change-password', async (_, username, oldPassword, newPassword) => {
+  try {
+    await authService.changePassword(username, oldPassword, newPassword);
+    return { success: true };
+  } catch (error) {
+    return { success: false, message: error.message };
+  }
+});
+
+ipcMain.handle('auth-get-current-user', async () => await authService.getCurrentUser());
+
+ipcMain.handle('get-user-role', async () => {
+  const user = await authService.getCurrentUser();
+  return user?.role || null;
+});
+
+// UI Sync: Notify when Academic Year is added
+ipcMain.on('academic-year-added', () => {
+  const [win] = BrowserWindow.getAllWindows();
+  if (win && !win.isDestroyed()) {
+    win.webContents.send('refresh-academic-year');
+  }
+});
+
+// Confirmation dialog
+ipcMain.handle('show-confirmation-dialog', async (_, message) => {
   const result = await dialog.showMessageBox(mainWindow, {
     type: 'question',
     buttons: ['Yes', 'No'],
@@ -166,12 +165,13 @@ ipcMain.handle('show-confirmation-dialog', async (event, message) => {
   return result.response === 0;
 });
 
-
-// IPC: Logout and quit
+// Quit handling with cleanup
 let isSafeToQuit = false;
+
 ipcMain.on('logout', () => app.quit());
 
 app.on('before-quit', (event) => {
+   authService.logout();
   if (!isSafeToQuit) {
     event.preventDefault();
     performCleanup().then(() => {
@@ -186,7 +186,7 @@ app.on('before-quit', (event) => {
 async function performCleanup() {
   try {
     console.log("Performing cleanup...");
-    db.closeDatabase(); // sync in better-sqlite3
+    db.closeDatabase(); // better-sqlite3 uses sync close
     console.log("Cleanup done.");
   } catch (err) {
     console.error("Error during DB cleanup:", err);
@@ -194,9 +194,7 @@ async function performCleanup() {
 }
 
 app.on('activate', () => {
-  if (BrowserWindow.getAllWindows().length === 0) {
-    createMainWindow();
-  }
+  if (BrowserWindow.getAllWindows().length === 0) createMainWindow();
 });
 
 app.on('window-all-closed', () => {

@@ -4,7 +4,11 @@
         <img src="../assets/sikul_logo.png" alt="School Logo" class="logo" />
         <h1 class="welcome">Welcome {{currentUser}} to Calvary Higher Secondary School</h1>
         <h2 class="subtitle">Light to Enlight</h2>
-        <router-link to="/dashboard" class="enter-button">Dashboard</router-link>
+        <router-link to="/home" class="enter-button" title="Additional Feature">Dashboard</router-link>
+                
+        <div class="mt-5 pt-5">
+          <span class="help is-dark">Developed by Mapuia Kamikaze, Capritech IT Solutions. ell.rpa@gmail.com</span>
+        </div>
       </div>
     </section>
   </template>
@@ -37,7 +41,7 @@ import { onMounted } from 'vue'
     border-radius: 12px;
     box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
     color: rgb(65, 60, 60);
-    height: 500px;
+    min-height: 500px;
   }
   
   .logo {

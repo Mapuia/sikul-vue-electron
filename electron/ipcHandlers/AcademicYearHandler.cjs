@@ -1,6 +1,6 @@
 const { ipcMain } = require('electron');
 const { db } = require('../database.cjs');
-const { errorMessages } = require('vue/compiler-sfc');
+
 
 function toCamelCase(obj) {
   return Object.fromEntries(
@@ -27,15 +27,16 @@ ipcMain.handle('get-current-academic-year', () => {
 });
 
 ipcMain.handle('get-previous-year', () => {
+  
   try {
     const stmt = db.prepare(`
-      SELECT Id,YearName FROM AcademicYears
+      SELECT Id, YearName FROM AcademicYears
       WHERE IsActive = 0 
       ORDER BY StartDate DESC
       LIMIT 1
     `);
-    const previousYearId = stmt.get();
-    return { success: true, previousYearId: previousYearId?.Id, previousYear: previousYearId?.YearName };
+    const previousYear = stmt.get();
+    return { success: true, previousYearId: previousYear?.Id, previousYear: previousYear?.YearName };
   } catch (err) {
     console.error('DB error (getPreviousYear):', err);
     return { success: false, error: err.message };

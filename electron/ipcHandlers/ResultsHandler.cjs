@@ -231,9 +231,8 @@ ipcMain.handle('generate-results', async (event, { academicYearId, resultType, e
           Rank, 
           ResultStatus,
           ResultType,
-          Last_Modified_at, 
-          PublishedBy
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, ?)
+          Last_Modified_at          
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
       `);
 
       // 5. Rank calculation
@@ -331,7 +330,7 @@ ipcMain.handle('generate-results', async (event, { academicYearId, resultType, e
         insertResult.run(
           academicYearId, studentId, examId,
           TotalMaxMarks, TotalMarksObtained, Percentage,
-          division, rank, resultStatus, resultType, 1 // Assuming 1 is the ID of the user generating results
+          division, rank, resultStatus, resultType // Assuming 1 is the ID of the user generating results
         );
       }
 

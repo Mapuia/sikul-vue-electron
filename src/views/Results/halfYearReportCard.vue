@@ -364,10 +364,9 @@ import { useRoute } from 'vue-router'
 import { useAcademicYear } from '../../composables/useAcademicYear'
 import { useActiveExam } from '../../composables/useActiveExam'
 import html2pdf from 'html2pdf.js'
-import { isConstructorDeclaration } from 'typescript'
+
 
 const { CurrentYearId, CurrentYear } = useAcademicYear()
-const { PassingPercentage, loadActiveExam } = useActiveExam()
 
 const route = useRoute()
 
@@ -458,7 +457,6 @@ async function fetchClassTeacherInfo() {
 
 
 onMounted(async () => {
-  await loadActiveExam()
   await fetchClasses()
   await getExam()  
 })

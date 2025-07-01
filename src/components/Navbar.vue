@@ -31,7 +31,7 @@
           </div>
 
           <!-- Marks Menu -->
-          <div v-if="canAccess(['admin', 'teacher'])" 
+          <div v-if="canAccess(['admin', 'teacher', 'deo'])" 
                class="navbar-item has-dropdown"
                :class="{ 'is-active': openDropdown === 'marks' }"
                @mouseleave="closeDropdown">
@@ -60,7 +60,7 @@
           </div>
           
           <!-- Result Menu -->
-          <div v-if="canAccess(['admin', 'teacher'])" 
+          <div v-if="canAccess(['admin', 'teacher', 'deo'])" 
                class="navbar-item has-dropdown"
                :class="{ 'is-active': openDropdown === 'report' }"
                @mouseleave="closeDropdown">
@@ -95,7 +95,7 @@
                 </div>
               </div>
               
-              <!-- Export Report Card Submenu -->
+              <!-- Report Card Submenu -->
               <div class="navbar-item has-subdropdown" @mouseenter="checkViewportEdge">
                 <span class="navbar-link">Report Card</span>
                 <div class="navbar-subdropdown">
@@ -105,9 +105,8 @@
               </div>
             </div>
           </div>
-
           <!-- Settings Menu -->
-          <div v-if="canAccess(['admin'])" 
+          <div v-if="canAccess(['admin','teacher'])" 
                class="navbar-item has-dropdown"
                :class="{ 'is-active': openDropdown === 'manage' }"
                @mouseleave="closeDropdown">
@@ -116,15 +115,16 @@
             </a>
             <div class="navbar-dropdown">
               <router-link class="navbar-item" to="/academic-year/create" @click="closeDropdown">Academic Session</router-link>
-              <router-link class="navbar-item" to="/exam/create" @click="closeDropdown">Examination</router-link>
-              <router-link class="navbar-item" to="/import/create" @click="closeDropdown">Import</router-link>
-              <router-link class="navbar-item" to="/export/create" @click="closeDropdown">Export</router-link>
+              <router-link class="navbar-item" to="/exam/create" @click="closeDropdown">Examination</router-link>              
               <router-link class="navbar-item" to="/result-criteria/set" @click="closeDropdown">Result Criteria Info</router-link>
+              <router-link class="navbar-item" to="/export" @click="closeDropdown"><i class="fas fa-file-export mr-2"></i>Export</router-link>
+              <router-link class="navbar-item" to="/import" @click="closeDropdown"><i class="fas fa-file-import mr-2"></i>Import</router-link>
+
             </div>
           </div>
 
           <!-- Master Data Menu -->
-          <div v-if="canAccess(['admin', 'deo'])" 
+          <div v-if="canAccess(['admin'])" 
                class="navbar-item has-dropdown"
                :class="{ 'is-active': openDropdown === 'master'}" 
                @mouseleave="closeDropdown">

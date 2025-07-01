@@ -669,10 +669,11 @@ watch(selectedSubjectId, async (subjectId) => {
 // Data loading functions
 async function loadStudentsBySectionId() {
   try {
-    //console.log("Load Student by Section ID:", selectedClassId.value, "section:", selectedSectionId.value)
+    console.log("Load Student by Section ID:", selectedClassId.value, "Year:", CurrentYearId.value)
     const result = await window.electronAPI.getStudentsByClassAndSection({ 
       classId: selectedClassId.value,
-      sectionId: selectedSectionId.value
+      sectionId: selectedSectionId.value,
+      AcademicYearId: CurrentYearId.value,
     })
 
     if (result.success) {

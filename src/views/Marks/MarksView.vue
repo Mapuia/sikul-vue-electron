@@ -600,7 +600,8 @@ async function loadStudentsBySectionId() {
   try {
     const result = await window.electronAPI.getStudentsByClassAndSection({ 
       classId: selectedClassId.value,
-      sectionId: selectedSectionId.value
+      sectionId: selectedSectionId.value,
+      AcademicYearId: CurrentYearId.value
     })
 
     if (result.success) {
@@ -628,8 +629,8 @@ async function loadExistingMarks() {
     termMarks.value = {}
     
     result.forEach(mark => {
-      periodicMarks.value[mark.StudentId] = mark.PeriodicMarksObtained || ''
-      termMarks.value[mark.StudentId] = mark.TerminalMarksObtained || ''
+      periodicMarks.value[mark.StudentId] = mark.PeriodicMarksObtained || 'No Entry'
+      termMarks.value[mark.StudentId] = mark.TerminalMarksObtained || 'No Entry'
       statuses.value[mark.StudentId] = mark.SubjectResult || "N.A."
       appeared.value[mark.StudentId] = mark.SubjectResult === 'N.A.' ? 0 : 1
     })
@@ -734,12 +735,12 @@ async function saveMarks() {
 
     const result = await window.electronAPI.saveMarks({marksData, subjectData});
     if (result.success) {
-      successMessage.value = 'Marks submitted successfully!';
+      successMessage.value = 'Marks updated successfully!';
       setTimeout(() => successMessage.value = '', 3000);
       marksEntered.value = true;
       studentloaded.value = true
     } else {
-      throw new Error(result.message || 'Failed to save marks'); 
+      throw new Error(result.message || 'Failed to update marks'); 
     }
   } catch (err) {
     errorMessage.value = err.message;

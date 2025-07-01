@@ -14,7 +14,7 @@
                     v-model="username" 
                     class="input" 
                     type="text" 
-                    placeholder="e.g. admin123"
+                    placeholder="username"
                     @keyup.enter="handleLogin"
                   >
                   <span class="icon is-small is-left">

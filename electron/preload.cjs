@@ -170,6 +170,17 @@ contextBridge.exposeInMainWorld('electronAuth', {
 
   getHeadSignatory:() => ipcRenderer.invoke('get-head-signatory'),
   getTeacherSignatory:(params) => ipcRenderer.invoke('get-teacher-signatory', params),
+
+  exportStudentData: (params) => ipcRenderer.invoke('export-student-data', params),
+  exportMarksData: (params) => ipcRenderer.invoke('export-marks-data', params),
+  exportSettings: (yearId) => ipcRenderer.invoke('export-settings', yearId),
+  exportMasterData: () => ipcRenderer.invoke('export-master-data'),
+
+  importStudentData: (filepath) => ipcRenderer.invoke('import-student-data', filepath),
+  importMarksData: (filepath) => ipcRenderer.invoke('import-marks-data', filepath),
+  importSettings: (filepath) => ipcRenderer.invoke('import-settings', filepath),
+  importMasterData: (filepath) => ipcRenderer.invoke('import-master-data', filepath),
+  openDialog: (options) => ipcRenderer.invoke('open-dialog', options),
     
 });
 

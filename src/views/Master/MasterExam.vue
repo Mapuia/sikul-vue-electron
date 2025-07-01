@@ -29,11 +29,10 @@
           <div class="control">
             <div class="select is-fullwidth">
               <select v-model="newExamType" required>
-                <option disabled value="">-- Select Exam Type --</option>
-                <option>Periodic1</option>
-                <option>Periodic2</option>
-                <option>Term</option>
-                <option>Annual</option>
+                <option disabled value="">-- Select Exam Type --</option>                
+                <option>periodic</option>
+                <option>term</option>
+                <option>annual</option>
               </select>
             </div>
           </div>
