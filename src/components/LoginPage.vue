@@ -1,12 +1,15 @@
 <template>
   <section class="hero">
     <div class="hero-body">
-      <div class="container">
-        <div class="columns is-centered">
-          <div class="column is-5-tablet is-4-desktop is-3-widescreen">
-            <div class="box">
-              <h1 class="title has-text-centered mb-5">Welcome Back</h1>
-              
+      <div class="container ">
+        <div class="columns is-centered ">
+          <div class="column is-3-desktop is-4-tablet is-4-widescreen">
+            <div class="box " >
+    
+              <div class="is-flex is-justify-content-center">
+              <img class="logo has-text-centered" src="../assets/sikul_logo.png" alt="School Logo"/>
+              </div>
+              <h1 class="title has-text-centered  mb-5">Login</h1>
               <div class="field">
                 <label class="label">Username</label>
                 <div class="control has-icons-left">
@@ -113,17 +116,24 @@ export default {
 
 <style scoped>
 .hero {
-  
-  height: calc(100vh - 60px);
+  height: calc(100vh - 60px);  
+}
+.title{
+  color: rgb(78, 85, 101);
 }
 
-.box {
-  border-radius: 8px;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+.logo {
+  height: 4.5em;
+  padding: 0.5rem;
+  will-change: filter;
+  transition: filter 300ms;
+  vertical-align: middle;
 }
-
-.title {
-  color: #363636;
+.logo:hover {
+  filter: drop-shadow(0 0 1em #c12121aa);
+}
+.box{
+  vertical-align: middle;
 }
 
 .button.is-primary {
@@ -136,13 +146,5 @@ export default {
 .button.is-primary:hover {
   background-color: #5a6fd1;
   transform: translateY(-1px);
-}
-
-.notification {
-  border-radius: 6px;
-}
-
-.is-fullwidth {
-  width: 100%;
 }
 </style>

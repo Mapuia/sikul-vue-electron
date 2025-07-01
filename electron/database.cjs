@@ -6,12 +6,17 @@ const { app } = require('electron');
 const dbName = 'sikuldb.db';
 const schemaFileName = 'schema.sql';
 
+// Determine DB and schema paths
 const devDbPath = path.join(__dirname, dbName);
-const schemaFilePath = path.join(__dirname, schemaFileName);
 const userDataDir = app.getPath('userData');
 const prodDbPath = path.join(userDataDir, dbName);
-
 const isDev = !app.isPackaged;
+
+// Correct schema path for dev and production
+const schemaFilePath = isDev
+  ? path.join(__dirname, schemaFileName)
+  : path.join(process.resourcesPath, schemaFileName); // Handles asar-packed builds
+
 let db = null;
 
 function initializeDatabase() {
@@ -19,29 +24,24 @@ function initializeDatabase() {
     const dbPath = isDev ? devDbPath : prodDbPath;
     const isNewDatabase = !fs.existsSync(dbPath);
 
-    if (isNewDatabase) {
-      // Load schema
-      if (!fs.existsSync(schemaFilePath)) {
-        throw new Error('Schema file not found.');
-      }
-      const schemaSQL = fs.readFileSync(schemaFilePath, 'utf-8');
+    // Create or open the database
+    db = new Database(dbPath);
+    db.pragma('journal_mode = WAL');
+    db.pragma('foreign_keys = ON');
 
-      // Create new database and apply schema
-      db = new Database(dbPath);
-      db.pragma('journal_mode = WAL');
-      db.pragma('foreign_keys = ON');
-      db.pragma('timezone = +05:30');
+    if (isNewDatabase) {
+      if (!fs.existsSync(schemaFilePath)) {
+        throw new Error(`Schema file not found at: ${schemaFilePath}`);
+      }
+
+      const schemaSQL = fs.readFileSync(schemaFilePath, 'utf-8');
       db.exec(schemaSQL);
-      console.log(`New ${isDev ? 'development' : 'production'} DB created and schema applied at: ${dbPath}`);
+      console.log(`New ${isDev ? 'development' : 'production'} database created and schema applied at: ${dbPath}`);
     } else {
-      // Open existing database
-      db = new Database(dbPath);
-      db.pragma('journal_mode = WAL');
-      db.pragma('foreign_keys = ON');
-      console.log(`Existing DB loaded from: ${dbPath}`);
+      console.log(`Existing database loaded from: ${dbPath}`);
     }
 
-    // Validate DB connection
+    // Simple query to validate DB connection
     db.prepare('SELECT 1').get();
     return db;
   } catch (error) {
@@ -50,9 +50,8 @@ function initializeDatabase() {
   }
 }
 
-
 function getDatabase() {
-  if (!db) throw new Error('Call initializeDatabase() first.');
+  if (!db) throw new Error('Database not initialized. Call initializeDatabase() first.');
   return db;
 }
 
@@ -60,17 +59,19 @@ function closeDatabase() {
   if (db) {
     try {
       db.close();
-      console.log('Database closed.');
+      console.log('Database connection closed.');
     } catch (err) {
-      console.error('Error closing DB:', err);
+      console.error('Error closing the database:', err);
     } finally {
       db = null;
     }
   }
 }
 
+// Initialize database on load
 initializeDatabase();
 
+// Handle process exit to close DB
 process.on('exit', closeDatabase);
 process.on('SIGINT', () => process.exit());
 process.on('SIGTERM', () => process.exit());

@@ -42,6 +42,7 @@
     "appId": "com.sikulapp.desktop",
     "productName": "SikulApp",
     "asar": true,
+    "asarUnpack": "electron/schema.sql",   
     "directories": {
       "buildResources": "build",
       "output": "dist"
@@ -50,14 +51,29 @@
       "dist/**/*",
       "electron/**/*",
       "node_modules/**/*",
-      "package.json"
+      "package.json",
+      "schema.sql"
     ],
+    "extraFiles": [
+    {
+      "from": "schema.sql",
+      "to": "schema.sql"
+    }
+  ],
     "extraResources": [
       {
         "from": "assets/",
         "to": "assets"
-      }
+      },
+      {
+      "from": "electron/schema.sql",
+      "to": "schema.sql",
+      "filter": ["**/*"]
+    }
+      
     ],
+    
+  
     "extraMetadata": {
       "main": "electron/main.cjs"
     },
@@ -71,7 +87,7 @@
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
-      "shortcutName": "SikulApp"
+      "shortcutName": "Sikul"
     },
     "mac": {
       "target": "dmg",
