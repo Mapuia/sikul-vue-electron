@@ -182,15 +182,16 @@
                 </div>
               </div>
             </div>  
-          </div>           
+          </div> 
+          <div class="has-text-centered mt-4">
+            <button class="button is-primary" @click="downloadPDF">Download PDF</button>
+        </div>          
         </div>          
      
-        <div v-else-if="!isLoading" class="notification is-warning mt-4">
+        <div v-else-if="!isLoading" class="notification is-danger mt-4">
           No results found for Class {{ className }}{{ sectionName? ' Section ' + sectionName : '' }}.
         </div>
-        <div class="has-text-centered mt-4">
-            <button class="button is-primary" @click="downloadPDF">Download PDF</button>
-        </div> 
+         
       </div>
     </div>
   </div>

@@ -256,6 +256,8 @@ ipcMain.handle('import-master-data', async (event, filePath) => {
 
 // Import Settings Handler
 ipcMain.handle('import-settings', async (event, { academicYearId, filePath }) => {
+  let transactionStarted = false;
+
   try {
     if (!filePath || typeof filePath !== 'string') {
       return { success: false, message: 'Invalid file path provided.' };
@@ -269,31 +271,18 @@ ipcMain.handle('import-settings', async (event, { academicYearId, filePath }) =>
       return { success: false, message: 'Missing academicYearId in settings file.' };
     }
 
-    if (parseInt(fileYearId) !== parseInt(academicYearId)) {
-      return {
-        success: false,
-        message: `Academic Year mismatch. Expected ${academicYearId}, but found ${fileYearId} in file.`,
-      };
-    }
-
     const { academicYear, activeExams } = parsed.data || {};
     if (!academicYear || !Array.isArray(activeExams)) {
       return { success: false, message: 'Invalid or incomplete settings file.' };
     }
 
-    // Gather all unique Exams from ActiveExams if nested
-    const examSet = new Map();
-    for (const ae of activeExams) {
-      if (ae.Exam && ae.Exam.ExamName) {
-        examSet.set(ae.Exam.ExamName, ae.Exam);
-      }
-    }
-
     db.exec('BEGIN TRANSACTION');
+    transactionStarted = true;
 
-    // Insert Academic Year
+    db.prepare('UPDATE AcademicYears SET IsActive = 0 WHERE IsActive = 1').run();
+
     const insertAcademicYear = db.prepare(`
-      INSERT OR IGNORE INTO AcademicYears
+      INSERT OR REPLACE INTO AcademicYears
       (Id, YearName, StartDate, EndDate, IsActive, Creation_at)
       VALUES
       (@Id, @YearName, @StartDate, @EndDate, @IsActive, @Creation_at)
@@ -303,37 +292,19 @@ ipcMain.handle('import-settings', async (event, { academicYearId, filePath }) =>
       YearName: academicYear.YearName,
       StartDate: academicYear.StartDate,
       EndDate: academicYear.EndDate,
-      IsActive: academicYear.IsActive || 0,
+      IsActive: academicYear.IsActive,
       Creation_at: academicYear.Creation_at || new Date().toISOString(),
     });
 
-    // Insert Exams
-    const insertExam = db.prepare(`
-      INSERT OR IGNORE INTO Exams
-      (Id, ExamName, ExamType, Description, Creation_at, Modified_at)
-      VALUES
-      (@Id, @ExamName, @ExamType, @Description, @Creation_at, @Modified_at)
-    `);
-    for (const exam of examSet.values()) {
-      insertExam.run({
-        Id: exam.Id,
-        ExamName: exam.ExamName,
-        ExamType: exam.ExamType,
-        Description: exam.Description || '',
-        Creation_at: exam.Creation_at || new Date().toISOString(),
-        Modified_at: exam.Modified_at || new Date().toISOString(),
-      });
-    }
-
-    // Insert ActiveExams
     const insertActiveExam = db.prepare(`
-      INSERT OR IGNORE INTO ActiveExams
+      INSERT OR REPLACE INTO ActiveExams
       (Id, AcademicYearId, ExamId, MajorMaxMark, MinorMaxMark, PassingPercentage,
        IsActive, Result_Published, PublishDate, Creation_at, Modified_at)
       VALUES
       (@Id, @AcademicYearId, @ExamId, @MajorMaxMark, @MinorMaxMark, @PassingPercentage,
        @IsActive, @Result_Published, @PublishDate, @Creation_at, @Modified_at)
     `);
+
     for (const ae of activeExams) {
       insertActiveExam.run({
         Id: ae.Id,
@@ -351,18 +322,26 @@ ipcMain.handle('import-settings', async (event, { academicYearId, filePath }) =>
     }
 
     db.exec('COMMIT');
+    transactionStarted = false;
 
     return {
       success: true,
-      message: 'Settings imported successfully.',
+      message: 'Year and Active Exam Settings imported successfully.',
       inserted: {
         academicYear: academicYear.Id,
-        exams: examSet.size,
+        exams: new Set(activeExams.map(a => a.ExamId)).size,
         activeExams: activeExams.length,
       },
     };
+
   } catch (err) {
-    db.exec('ROLLBACK');
+    if (transactionStarted) {
+      try {
+        db.exec('ROLLBACK');
+      } catch (rollbackErr) {
+        console.error('Rollback failed:', rollbackErr.message);
+      }
+    }
     console.error('Import settings error:', err);
     return {
       success: false,
@@ -374,12 +353,7 @@ ipcMain.handle('import-settings', async (event, { academicYearId, filePath }) =>
 
 
 // Import Student Data Handler
-ipcMain.handle('import-student-data', async (event, {
-  classId,
-  sectionId,
-  academicYearId,
-  filePath
-}) => {
+ipcMain.handle('import-student-data', async (event, { academicYearId, filePath }) => {
   try {
     const fileContent = fs.readFileSync(filePath, 'utf-8');
     const studentData = JSON.parse(fileContent);
@@ -389,6 +363,9 @@ ipcMain.handle('import-student-data', async (event, {
     }
 
     
+    if(studentData.academicYearId != academicYearId){
+      return { success: false, message: 'The student Data is not for Current Session. Check Current AcademicYear' };
+    }
 
     db.exec('BEGIN TRANSACTION');
 
@@ -435,15 +412,13 @@ ipcMain.handle('import-student-data', async (event, {
       // Prepare upsert for Admissions
       const admissionUpsertStmt = db.prepare(`
         INSERT INTO Admissions (
-          Id, StudentId, AcademicYearId, ClassId, SectionId, RollNo,
+          StudentId, AcademicYearId, ClassId, SectionId, RollNo,
           AdmissionType, reAdmitted, Creation_at, Last_Modified_at
         ) VALUES (
-          @Id, @StudentId, @AcademicYearId, @ClassId, @SectionId, @RollNo,
+          @StudentId, @AcademicYearId, @ClassId, @SectionId, @RollNo,
           @AdmissionType, @reAdmitted, @Creation_at, @Last_Modified_at
         )
-        ON CONFLICT(Id) DO UPDATE SET
-          StudentId = excluded.StudentId,
-          AcademicYearId = excluded.AcademicYearId,
+        ON CONFLICT(StudentId, AcademicYearId) DO UPDATE SET          
           ClassId = excluded.ClassId,
           SectionId = excluded.SectionId,
           RollNo = excluded.RollNo,
@@ -471,7 +446,6 @@ ipcMain.handle('import-student-data', async (event, {
     return { success: false, message: 'An error occurred while importing student data' };
   }
 });
-
 
 // Import Marks Data Handler
 ipcMain.handle('import-marks-data', async (event, { academicYearId, filePath }) => {

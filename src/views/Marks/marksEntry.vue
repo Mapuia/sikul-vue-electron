@@ -14,11 +14,11 @@
     </div>
     <div v-else>
       <!--selected Tabs-->
-      <div class="box columns">
+      <div class="box columns mb-4">
         <div class="column">
           <div
             class="tab-button has-text-centered is-clickable p-3"
-            :class="selected === 'Scholastic' ? 'has-background-success has-text-black' : ''"
+            :class="selected === 'Scholastic' ? 'has-background-success' : ''"
             @click="selected = 'Scholastic'"
           >
             Scholastic Subjects
@@ -27,7 +27,7 @@
         <div class="column">
           <div
             class="tab-button has-text-centered is-clickable p-3"
-            :class="selected === 'Co-Scholastic' ? 'has-background-primary has-text-black' : ''"
+            :class="selected === 'Co-Scholastic' ? 'has-background-primary ' : ''"
             @click="selected = 'Co-Scholastic'"
           >
             Co-Scholastic Activities
@@ -98,8 +98,7 @@
               <div class="tags are-medium">
                 <span class="tag ml-2">Pass Mark ({{ PassingPercentage }}%)</span>
               </div>
-            </div>
-            <div class="help pb-2 is-flex is-justify-content-center"><p>Check 'Appeared' to enable Mark Entry</p></div>
+            </div>            
           
             <div v-if="students.length > 0 || students.length === 1" class="is-flex is-flex-direction-column">
               <table class="table is-bordered is-striped is-fullwidth">
@@ -348,10 +347,9 @@
                 No students found for this section.
               </p>       
             </div>
-            <div v-else class="button is-dark column has-text-centered is-flex is-align-items-center is-flex-direction-column p-5">
+            <div v-else class="button is-info has-text-centered is-flex is-align-items-center is-flex-direction-column p-5">
               Select Class, Section and Co-Scholastic Activity to enter Grades
-            </div>
-         
+            </div>         
         </div>
         <!--End of Marks Entry-->
       </div>     
@@ -885,10 +883,8 @@ async function saveMarks() {
 }
 
 .tab-button{
-  background:rgb(12, 42, 66)
-}
-.tab-heading{
-  padding: 0.15 rem;
+ border: 1px solid rgb(126, 126, 126);
+ border-radius: 10px;
 }
 
 .thin-line {

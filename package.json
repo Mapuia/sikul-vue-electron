@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "main": "electron/main.cjs",
-  "author": "Mapuia Kamikaze",
+  "author": "Capritech IT Solutions",
   "description": "Electron-Vue App for Student Admission and Report Card ",
   "scripts": {
     "dev": "concurrently \"vite\" \"wait-on http://localhost:5173 && cross-env VITE_DEV_SERVER_URL=http://localhost:5173 electron .\"",
@@ -60,20 +60,14 @@
       "to": "schema.sql"
     }
   ],
-    "extraResources": [
-      {
-        "from": "assets/",
-        "to": "assets"
-      },
+    "extraResources": [      
       {
       "from": "electron/schema.sql",
       "to": "schema.sql",
       "filter": ["**/*"]
-    }
-      
+      }      
     ],
-    
-  
+      
     "extraMetadata": {
       "main": "electron/main.cjs"
     },

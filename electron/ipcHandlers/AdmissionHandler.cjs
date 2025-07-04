@@ -9,10 +9,10 @@ ipcMain.handle('insert-student-admission', (event, form) => {
   //console.log("Student Insert:", form)
   const insertStudent = db.prepare(`
     INSERT INTO Students (
-      Name, Gender, FathersName, MothersName, DOB, Aadhaar, APAR, PEN, Contact, Address, PIN,
+      Id, Name, Gender, FathersName, MothersName, DOB, Aadhaar, APAR, PEN, Contact, Address, PIN,
       FirstAdmissionDate, Status, Caste, Religion, Height, Weight, BloodGroup
     ) VALUES (
-      @Name, @Gender, @FathersName, @MothersName, @DOB, @Aadhaar, @APAR, @PEN, @Contact, @Address, @PIN,
+      @Id, @Name, @Gender, @FathersName, @MothersName, @DOB, @Aadhaar, @APAR, @PEN, @Contact, @Address, @PIN,
       @FirstAdmissionDate, @Status, @Caste, @Religion, @Height, @Weight, @BloodGroup
     )
   `);
@@ -28,6 +28,7 @@ ipcMain.handle('insert-student-admission', (event, form) => {
   const transaction = db.transaction((form) => {
     // Step 1: Insert into Students table
     const studentResult = insertStudent.run({
+      Id: crypto.randomUUID(),
       Name: form.name,
       Gender: form.gender,
       FathersName: form.fathersName,

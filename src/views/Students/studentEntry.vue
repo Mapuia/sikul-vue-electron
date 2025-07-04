@@ -7,7 +7,7 @@
     <!-- Personal Info -->
     <div class="box ">
       <legend class="title is-5">Personal Information</legend>
-      <table class="sikul-table">
+      <table class="table is-fullwidth student-entry">
         <thead>
           <tr>
             <th>Full Name*</th>
@@ -218,7 +218,7 @@
     <!-- Unique ID -->     
     <div class="box ">
       <legend class="title is-5">Unique ID</legend>
-      <table class="sikul-table">
+      <table class="table is-fullwidth student-entry">
         <thead>
           <tr>
             <th>PEN</th>
@@ -266,7 +266,7 @@
     </div>   
     <div class="box ">
       <legend class="title is-5">Admitted To</legend>
-      <table class="sikul-table">
+      <table class="table is-fullwidth student-entry">
         <thead>
           <tr>
             <th>Class</th>

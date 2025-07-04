@@ -1,65 +1,58 @@
 <template>
-    <section class="section">
-      <div class="content container full">
-        <img src="../assets/sikul_logo.png" alt="School Logo" class="logo" />
-        <h1 class="welcome">Welcome {{currentUser}} to Calvary Higher Secondary School</h1>
-        <h2 class="subtitle">Light to Enlight</h2>
-        <router-link to="/home" class="enter-button" title="Additional Feature">Dashboard</router-link>
-                
-        <div class="mt-5 pt-5">
-          <span class="help is-dark">Developed by Mapuia Kamikaze, Capritech IT Solutions. ell.rpa@gmail.com</span>
+  <div class="page-wrapper is-flex is-flex-direction-column is-justify-content-space-between">
+    <!-- Centered Content -->
+    <section class="section is-flex-grow-1 is-flex is-flex-direction-column is-justify-content-center is-align-items-center has-text-centered">
+      <figure class="image is-96x96 mb-4">
+        <img src="../assets/sikul_logo.png" alt="School Logo" />
+      </figure>
+
+      <h1 class="subtitle is-4">
+        Hello {{ currentUser }}                         
+      </h1>
+      <h1 class="title is-4">
+        Welcome to Calvary Higher Secondary School
+      </h1>
+      <h2 class="subtitle is-5 mt-5">Light to Enlight</h2>      
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer has-background-light py-3">
+      <div class="columns is-mobile is-vcentered px-4 is-size-7">
+        <div class="column has-text-left">
+          Developed by Capritech IT Solutions.
+        </div>
+        <div class="column has-text-centered">
+          &copy; {{ currentYear }} Calvary Higher Secondary School. All rights reserved.
+        </div>
+        <div class="column has-text-right">
+          <a href="mailto:ell.rpa@gmail.com" class="button is-small is-light">email: ell.rpa@gmail.com</a>
         </div>
       </div>
-    </section>
-  </template>
-  
+    </footer>
+  </div>
+</template>
+
 <script setup>
-import { ref } from 'vue'
-import { onMounted } from 'vue'
+import { ref, onMounted } from 'vue'
 
-  const currentUser = ref('')
- 
-  onMounted(async () => {
-    const user = await window.electronAuth.getCurrentUser()
-    currentUser.value = user.username
-  })
-  
-  </script>
+const currentUser = ref('')
+const currentYear = new Date().getFullYear()
 
-  <style scoped>
-  .welcome{
-    color: rgb(144, 139, 147);
-  }
- 
-  
-  .content {
-    margin-top: 3rem;
-    text-align: center;
-    backdrop-filter: blur(6px);
-    background-color: rgba(51, 48, 48, 0.8);
-    padding: 4rem 3rem;
-    border-radius: 12px;
-    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
-    color: rgb(65, 60, 60);
-    min-height: 500px;
-  }
-  
-  .logo {
-    width: 100px;
-    height: 95px;
-    margin-bottom: 1rem;
-  }
-  
-  .enter-button {
-    display: inline-block;
-    margin-top: 1.5rem;
-    padding: 0.5rem 1.5rem;
-    background-color: hsl(217, 71%, 53%);
-    color: white;
-    border-radius: 6px;
-    text-decoration: none;
-  }
-  .enter-button:hover {
-    background-color: hsl(217, 71%, 43%);
-  }
-  </style>
+onMounted(async () => {
+  const user = await window.electronAuth.getCurrentUser()
+  currentUser.value = user.username.charAt(0).toUpperCase() + user.username.slice(1);;
+})
+</script>
+
+<style scoped>
+.page-wrapper {
+  min-height: calc(100vh - 3.25rem);
+}
+.image img {
+  width: 96px;
+  height: 96px;
+}
+.footer{
+  color: rgb(35, 35, 73);
+}
+</style>

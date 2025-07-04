@@ -182,10 +182,11 @@ onMounted(async () => {
   await loadAcademicYear();
   const user = await window.electronAuth.getCurrentUser();
   if (user) {
-    currentUser.value = user.username;
+    currentUser.value = user.username.charAt(0).toUpperCase() + user.username.slice(1);;
     userRole.value = user.role;
   }
 });
+
 
 // Role-based access control
 const canAccess = (requiredRoles) => {
@@ -263,6 +264,9 @@ const handleLogout = async () => {
 .navbar-dropdown {
   min-width: 220px;
 }
+.navbar-item.has-dropdown:hover{
+  background-color: hsl(217, 74%, 84%)
+}
 .navbar-dropdown .navbar-item:hover {
   background-color: hsl(217, 71%, 53%);
   color: white;
@@ -272,15 +276,21 @@ const handleLogout = async () => {
 }
 
 /* Subdropdown styles */
-.navbar-item.has-subdropdown {
+.navbar-item .has-subdropdown {
   position: relative;
   padding: 0;  
 }
+
+.navbar-item .has-subdropdown:hover {
+  background-color: hsl(217, 71%, 53%) !important;
+  color: white;
+}
+
 .navbar-item.has-subdropdown > .navbar-link {
   width: 100%;
   padding: 0.5rem 1rem;
   display: block;
-  color: #bebdbd;
+  color: var(--text-color);
 }
 .navbar-subdropdown {
   display: none;
@@ -289,15 +299,15 @@ const handleLogout = async () => {
   right: auto;
   top: 0;
   min-width: 200px;
-  background-color: white;
-  border: 1px solid #dbdbdb;
+  border: 1px solid #838282;
   border-radius: 4px;
   box-shadow: 0 2px 3px rgba(10, 10, 10, 0.1);
   z-index: 20;
 }
 .navbar-item.has-subdropdown:hover .navbar-subdropdown {
   display: block;
-  background-color: hsl(217, 71%, 53%);
+ background-color: var(--hover-bg-color);
+  color: var(--hover-text-color);
 }
 .navbar-item.has-subdropdown:hover .navbar-subdropdown.right-edge {
   left: auto;
@@ -306,10 +316,16 @@ const handleLogout = async () => {
 .navbar-subdropdown .navbar-item {
   padding: 0.5rem 1.5rem;
   white-space: nowrap;
-  color: black;
+  color: var(--text-color);
 }
 .navbar-subdropdown .navbar-item:hover {
-  background-color: hsl(217, 71%, 53%);
-  color: white;
+  background-color: hsl(217, 71%, 53%) !important;
+  color: var(--hover-text-color);
+}
+
+.navbar-item.has-dropdown:hover > .navbar-link,
+.navbar-link:hover {
+  background-color: hsl(217, 71%, 53%) !important;
+  color: white !important;
 }
 </style>

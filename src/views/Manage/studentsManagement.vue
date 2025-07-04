@@ -45,7 +45,7 @@
                 <th>Class</th>
                 <th>Section</th>
                 <th>Roll No</th>
-                <th>Year</th>
+                
                 <th>Status</th>
                 <th class="has-text-right">Actions</th>
               </tr>
@@ -57,7 +57,7 @@
                 <td>{{ student.className || '-' }}</td>
                 <td>{{ student.sectionName || '-' }}</td>                
                 <td>{{ student.rollNo || '-' }}</td>
-                <td>{{ student.YearName }}</td>
+                
                 <td>
                   <span class="tag" :class="statusTagClass(student.status)">
                     {{ student.status }}

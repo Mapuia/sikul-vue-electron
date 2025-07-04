@@ -146,6 +146,9 @@ async function importSettings() {
     const filePath = await openImportDialog(['json'])
     if (!filePath) return
 
+    if (!confirm('Are you sure you want to import settings? This will overwrite existing data.')) {
+      return
+    }
     const response = await window.electronAPI.importSettings({
       academicYearId: CurrentYearId.value,
       filePath: filePath
@@ -153,6 +156,7 @@ async function importSettings() {
 
     if (response.success) {
       showSuccess('Settings imported successfully!')
+      location.reload()
     } else {
       showError(`Failed to import settings: ${response.message}`)
     }
@@ -168,6 +172,10 @@ async function importStudentData() {
     
     const filePath = await openImportDialog(['json'])
     if (!filePath) return
+
+    if (!confirm('Are you sure you want to import students data? This will overwrite existing data.')) {
+      return
+    }
 
     const response = await window.electronAPI.importStudentData({      
       academicYearId: CurrentYearId.value,

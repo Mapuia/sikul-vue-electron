@@ -188,7 +188,7 @@
                         <td class="">{{ studentData.RollNo }}</td>
                       </tr>
                       <tr>
-                        <th class="">Father's Name:</th>
+                        <th class="" style="width:120px">Father's Name:</th>
                         <td class="">{{ studentData.FathersName }}</td>
                         <th class="">PEN:</th>
                         <td class="">{{ studentData.PEN }}</td>
@@ -327,12 +327,9 @@
                               <th class="bottom" style="text-align: center;">Signature of Parents</th>
                               <th class="bottom" style="text-align: center;">Signature of Headmistress</th>
                             </tr>
-
-
                           </tbody>
                         </table>
                       </div>
-
 
                 <div class="mb-2" style="position: relative;">
                   <p class="is-size-6">Date: {{ currentDate }}</p>
@@ -818,11 +815,11 @@ function closeModal() {
   font-size: 14px;
   color: black;
   font-weight: 420;
-  padding: 0.1rem;
+  padding: 0;
   text-align: left;
 }
 .student-table td{ 
-  padding: 0.1rem;
+  padding: 0;
   font-size: 14px;
   text-align: left;
   color: black;

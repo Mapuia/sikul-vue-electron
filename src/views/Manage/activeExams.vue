@@ -211,11 +211,8 @@ async function fetchData() {
     ]);
     //console.log("Year ID for fetching ActiveExams:",CurrentYearId.value)
     if (activeExamsRes.success && examsRes.success) {
-      activeExams.value = activeExamsRes.exams;
-
-      availableExams.value = examsRes.exams.filter(exam => 
-        !activeExams.value.some(ae => ae.ExamId === exam.Id)
-      );
+      activeExams.value = activeExamsRes.exams
+      availableExams.value = examsRes.exams
     } else {
       errorMessage.value = activeExamsRes.message || examsRes.message || 'Failed to load data';
     }
@@ -274,7 +271,7 @@ async function createNewExam() {
     });
 
     if (response.success) {
-      successMessage.value = 'Exam created successfully!';
+      successMessage.value = 'Active Exam created successfully!';
       showNewExamModal.value = false;
       await fetchData();
     } else {
@@ -324,7 +321,7 @@ async function saveEdit() {
     });
 
     if (response.success) {
-      successMessage.value = 'Exam updated successfully!';
+      successMessage.value = 'Active Exam updated successfully!';
       editingId.value = null;
       await fetchData();
     } else {

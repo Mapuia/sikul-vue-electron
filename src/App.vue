@@ -6,11 +6,12 @@
     <div v-else>
       <Navbar @logout="logout" />
       <router-view />
+      
     </div>
   </div>
 </template>
 
-<script lang="ts">
+<script>
 import { defineComponent } from 'vue'
 import { useRouter } from 'vue-router'
 import Navbar from './components/Navbar.vue'
@@ -39,7 +40,7 @@ export default defineComponent({
     }
   },
   methods: {
-    async handleLoginSuccess(user: any) {
+    async handleLoginSuccess(user) {
       try {
         this.authenticated = true
         await this.$nextTick() // Ensure reactivity update

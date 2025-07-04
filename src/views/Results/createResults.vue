@@ -4,10 +4,10 @@
       <h1 class="title is-4 has-text-centered mb-4">{{ resultName }} Result for Academic Session {{ CurrentYear }}</h1>
       
     </div>
-    <div v-if="!isGenerating" class="notification is-dark has-text-centered mb-5">
+    <div v-if="!isGenerating" class="notification is-light has-text-centered mb-5">
       <div class="is-flex">
         <!-- Marks Entry Status Table -->
-        <section class="box column mr-2">
+        <section class="box column mr-5">
           <div class="table-container">
             <table class="table is-fullwidth is-striped is-hoverable">
               <thead>

@@ -192,7 +192,7 @@
                         <td class="">{{ studentData.RollNo }}</td>
                       </tr>
                       <tr>
-                        <th class="">Father's Name:</th>
+                        <th class="" style="width:120px">Father's Name:</th>
                         <td class="">{{ studentData.FathersName }}</td>
                         <th class="">PEN:</th>
                         <td class="">{{ studentData.PEN }}</td>

@@ -5,11 +5,11 @@
    
     <div>
       <!--selected Tabs-->
-      <div class="box columns">
+      <div class="box columns mb-4">
         <div class="column">
           <div
             class="tab-button has-text-centered is-clickable p-3"
-            :class="selected === 'Scholastic' ? 'has-background-success has-text-black' : ''"
+            :class="selected === 'Scholastic' ? 'has-background-primary has-text-black' : ''"
             @click="selected = 'Scholastic'"
           >
             Scholastic Subjects
@@ -242,7 +242,7 @@
                 No students found for this section.
               </p>       
             </div>
-            <div v-else class="button is-dark column has-text-centered is-flex is-align-items-center is-flex-direction-column p-5">
+            <div v-else class="button is-info column has-text-centered is-flex is-align-items-center is-flex-direction-column p-5">
               Select Class, Section and Co-Scholastic Activity to enter Grades
             </div>
         </div>
@@ -816,7 +816,8 @@ async function submitGrades() {
   margin: 0;
 }
 .tab-button{
-  background:rgb(12, 42, 66)
+ border: 1px solid rgb(126, 126, 126);
+ border-radius: 10px;
 }
 .tab-heading{
   padding: 0.15 rem;

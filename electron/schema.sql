@@ -99,10 +99,10 @@ CREATE TABLE IF NOT EXISTS ActiveExams (
 );
 
 -- Students Table
-CREATE TABLE IF NOT EXISTS Students (
-    Id INTEGER PRIMARY KEY AUTOINCREMENT,
+CREATE TABLE IF NOT EXISTS Students (    
+    Id TEXT PRIMARY KEY,
     Name TEXT NOT NULL,
-    Gender TEXT CHECK(Gender IN ('Male', 'Female', 'Other')),
+    Gender TEXT CHECK(Gender IN ('Male', 'Female')),
     FathersName TEXT,
     MothersName TEXT,
     DOB DATE,
@@ -127,7 +127,7 @@ CREATE TABLE IF NOT EXISTS Students (
 -- Admission Table
 CREATE TABLE IF NOT EXISTS Admissions (
     Id INTEGER PRIMARY KEY AUTOINCREMENT,
-    StudentId INTEGER NOT NULL,
+    StudentId TEXT NOT NULL,
     AcademicYearId INTEGER NOT NULL,
     ClassId INTEGER NOT NULL,
     SectionId INTEGER NOT NULL,
@@ -139,14 +139,14 @@ CREATE TABLE IF NOT EXISTS Admissions (
     FOREIGN KEY (StudentId) REFERENCES Students(Id) ON DELETE CASCADE,
     FOREIGN KEY (ClassId) REFERENCES Classes(Id) ON DELETE CASCADE,    
     FOREIGN KEY (AcademicYearId) REFERENCES AcademicYears(Id) ON DELETE CASCADE,
-    UNIQUE (AcademicYearId, ClassId, SectionId, RollNo)
+    UNIQUE (AcademicYearId, StudentId)
 );
 
 -- Marks Table
 CREATE TABLE IF NOT EXISTS Marks (
     Id INTEGER PRIMARY KEY AUTOINCREMENT,
     ActiveExamId INTEGER NOT NULL,
-    StudentId INTEGER NOT NULL,
+    StudentId TEXT NOT NULL,
     SubjectId INTEGER NOT NULL,
     PeriodicMaxMark DECIMAL(5,2),
     TerminalMaxMark DECIMAL(5,2),
@@ -187,7 +187,7 @@ CREATE TABLE IF NOT EXISTS MarkEntryStatus (
 CREATE TABLE IF NOT EXISTS CoScholasticMarks (
     Id INTEGER PRIMARY KEY AUTOINCREMENT,
     ActiveExamId INTEGER NOT NULL,
-    StudentId INTEGER NOT NULL,
+    StudentId TEXT NOT NULL,
     SubjectId INTEGER NOT NULL,    
     Grade TEXT NOT NULL,
     Appeared BOOLEAN  DEFAULT 0,
@@ -207,7 +207,7 @@ CREATE TABLE IF NOT EXISTS CumulativeTotalMarks (
     Id INTEGER PRIMARY KEY AUTOINCREMENT,
     AcademicYearId INTEGER NOT NULL,
     ActiveExamId INTEGER NOT NULL,    
-    StudentId INTEGER NOT NULL,
+    StudentId TEXT NOT NULL,
     TotalMaxMarks DECIMAL(5,2) NOT NULL,
     TotalMarksObtained DECIMAL(5,2) NOT NULL DEFAULT 0,
     Percentage DECIMAL(5,2),    
@@ -222,7 +222,7 @@ CREATE TABLE IF NOT EXISTS CumulativeTotalMarks (
 CREATE TABLE IF NOT EXISTS FinalCumulativeTotalMarks (
     Id INTEGER PRIMARY KEY AUTOINCREMENT,
     AcademicYearId INTEGER NOT NULL,
-    StudentId INTEGER NOT NULL,
+    StudentId TEXT NOT NULL,
     TotalMaxMarks DECIMAL(5,2) NOT NULL,
     TotalMarksObtained DECIMAL(5,2) NOT NULL DEFAULT 0,
     Percentage DECIMAL(5,2),    
@@ -237,7 +237,7 @@ CREATE TABLE IF NOT EXISTS FinalCumulativeTotalMarks (
 CREATE TABLE IF NOT EXISTS Results (
     Id INTEGER PRIMARY KEY AUTOINCREMENT,
     AcademicYearId INTEGER NOT NULL,
-    StudentId INTEGER NOT NULL,
+    StudentId TEXT NOT NULL,
     ActiveExamId INTEGER NOT NULL,
     TotalMaxMarks DECIMAL(5,2) NOT NULL,
     TotalMarksObtained DECIMAL(5,2) NOT NULL,
@@ -274,7 +274,7 @@ CREATE TABLE IF NOT EXISTS ResultStatus (
 -- ReportCards Table with Versioning
 CREATE TABLE IF NOT EXISTS ReportCards (
     Id INTEGER PRIMARY KEY AUTOINCREMENT,
-    StudentId INTEGER NOT NULL,
+    StudentId TEXT NOT NULL,
     AcademicYearId INTEGER NOT NULL,
     ActiveExamId INTEGER,  
     TotalWorkingDays INTEGER, 
@@ -285,7 +285,7 @@ CREATE TABLE IF NOT EXISTS ReportCards (
     Last_Modified_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (StudentId) REFERENCES Students(Id) ON DELETE CASCADE,
     FOREIGN KEY (AcademicYearId) REFERENCES AcademicYears(Id) ON DELETE CASCADE,
-    UNIQUE (StudentId, ActiveExamId, ReportCardType)
+    UNIQUE (StudentId, ReportCardType)
 );
 
 -- Signatories Table
@@ -298,8 +298,7 @@ CREATE TABLE IF NOT EXISTS Signatories (
     Name TEXT NOT NULL,
     SignatureImage TEXT,
     IsActive BOOLEAN DEFAULT TRUE,
-    Creation_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN key (ClassId) REFERENCES Classes(Id) ON DELETE CASCADE   
+    Creation_at DATETIME DEFAULT CURRENT_TIMESTAMP       
 );
 
 -- Foreign Key Indexes
@@ -310,6 +309,7 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_users_username ON Users(Username);
 CREATE INDEX IF NOT EXISTS idx_academicyears_isactive ON AcademicYears(IsActive);
 
 -- Students
+CREATE UNIQUE INDEX IF NOT EXISTS idx_students_Id ON Students(Id);
 CREATE UNIQUE INDEX IF NOT EXISTS idx_students_pen ON Students(PEN);
 CREATE UNIQUE INDEX IF NOT EXISTS idx_students_aadhaar ON Students(Aadhaar);
 CREATE UNIQUE INDEX IF NOT EXISTS idx_students_apar ON Students(APAR);
@@ -339,6 +339,9 @@ CREATE INDEX IF NOT EXISTS idx_coscholasticmarks_active_exam_id ON CoScholasticM
 -- CumulativeTotalMarks
 CREATE INDEX IF NOT EXISTS idx_cumulativemarks_student_id ON CumulativeTotalMarks(StudentId);
 CREATE INDEX IF NOT EXISTS idx_cumulativemarks_active_exam_id ON CumulativeTotalMarks(ActiveExamId);
+-- FinalCumulativeTotalMarks
+CREATE INDEX IF NOT EXISTS idx_finalcumulativemarks_student_id ON FinalCumulativeTotalMarks(StudentId);
+
 
 -- Results
 CREATE INDEX IF NOT EXISTS idx_results_student_id ON Results(StudentId);
@@ -502,7 +505,7 @@ INSERT INTO ActiveExams (AcademicYearId, ExamId, MajorMaxMark, MinorMaxMark, Pas
 SELECT 
     (SELECT Id FROM AcademicYears WHERE IsActive = 1),
     (SELECT Id FROM Exams WHERE ExamName = 'First Periodic Test'),
-    20, 10, 40, 0, 0;
+    40, 10, 40, 0, 0;
 
 INSERT INTO ActiveExams (AcademicYearId, ExamId, MajorMaxMark, MinorMaxMark, PassingPercentage, IsActive, Result_Published)
 SELECT 
@@ -514,7 +517,7 @@ INSERT INTO ActiveExams (AcademicYearId, ExamId, MajorMaxMark, MinorMaxMark, Pas
 SELECT 
     (SELECT Id FROM AcademicYears WHERE IsActive = 1),
     (SELECT Id FROM Exams WHERE ExamName = 'Second Periodic Test'),
-    20, 10, 40, 0, 0;
+    40, 10, 40, 0, 0;
 
 INSERT INTO ActiveExams (AcademicYearId, ExamId, MajorMaxMark, MinorMaxMark, PassingPercentage, IsActive, Result_Published)
 SELECT 
@@ -526,9 +529,9 @@ SELECT
 -- Students for Classes X, Sections A, B
 
 -- Student 2 - X A
-INSERT INTO Students (Name, Gender, FathersName, MothersName, DOB, Aadhaar, APAR, PEN, Contact, Address, Status, Caste, Religion, Height, Weight, BloodGroup)
+INSERT INTO Students (Id, Name, Gender, FathersName, MothersName, DOB, Aadhaar, APAR, PEN, Contact, Address, Status, Caste, Religion, Height, Weight, BloodGroup)
 VALUES 
-('Aarav Mehta', 'Male', 'Ramesh Mehta', 'Sunita Mehta', '2010-03-21', '111122223333', '111122223333', '10100000001', '9998887771', '5 MG Road, Delhi', 'Admitted', 'OBC', 'Hindu', 142, 40.0, 'A+');
+('3f4c9a55-1d4e-4b90-b019-4f177654a1cb ','Aarav Mehta', 'Male', 'Ramesh Mehta', 'Sunita Mehta', '2010-03-21', '111122223333', '111122223333', '10100000001', '9998887771', '5 MG Road, Delhi', 'Admitted', 'OBC', 'Hindu', 142, 40.0, 'A+');
 
 INSERT INTO Admissions (StudentId, AcademicYearId, ClassId, SectionId, RollNo, AdmissionType)
 VALUES (
@@ -541,9 +544,9 @@ VALUES (
 );
 
 -- Student 2 - X A
-INSERT INTO Students (Name, Gender, FathersName, MothersName, DOB, Aadhaar, APAR, PEN, Contact, Address, Status, Caste, Religion, Height, Weight, BloodGroup)
+INSERT INTO Students (Id,Name, Gender, FathersName, MothersName, DOB, Aadhaar, APAR, PEN, Contact, Address, Status, Caste, Religion, Height, Weight, BloodGroup)
 VALUES 
-('Aryan Singh', 'Male', 'Ravi Singh', 'Meera Singh', '2010-03-15', '222233334444', '222233334444', '10100000003', '9998877665', '21 Rose Park, Delhi', 'Admitted', 'OBC', 'Hindu', 142, 39.0, 'A+');
+('7c85a85e-95a4-46d0-b94a-1c7b6a616c15', 'Aryan Singh', 'Male', 'Ravi Singh', 'Meera Singh', '2010-03-15', '222233334444', '222233334444', '10100000003', '9998877665', '21 Rose Park, Delhi', 'Admitted', 'OBC', 'Hindu', 142, 39.0, 'A+');
 
 INSERT INTO Admissions (StudentId, AcademicYearId, ClassId, SectionId, RollNo, AdmissionType)
 VALUES (
@@ -556,9 +559,9 @@ VALUES (
 );
 
 -- Student 3 - X A
-INSERT INTO Students (Name, Gender, FathersName, MothersName, DOB, Aadhaar, APAR, PEN, Contact, Address, Status, Caste, Religion, Height, Weight, BloodGroup)
+INSERT INTO Students (Id, Name, Gender, FathersName, MothersName, DOB, Aadhaar, APAR, PEN, Contact, Address, Status, Caste, Religion, Height, Weight, BloodGroup)
 VALUES 
-('Sneha Nair', 'Female', 'Rajeev Nair', 'Latha Nair', '2010-07-20', '333344445555', '333344445555', '10100000004', '9998866554', '11 Green Avenue, Delhi', 'Admitted', 'General', 'Hindu', 139, 37.2, 'B+');
+('05b476e6-baad-4c8a-86ed-b00d5b9fa7f4', 'Sneha Nair', 'Female', 'Rajeev Nair', 'Latha Nair', '2010-07-20', '333344445555', '333344445555', '10100000004', '9998866554', '11 Green Avenue, Delhi', 'Admitted', 'General', 'Hindu', 139, 37.2, 'B+');
 
 INSERT INTO Admissions (StudentId, AcademicYearId, ClassId, SectionId, RollNo, AdmissionType)
 VALUES (
@@ -571,9 +574,9 @@ VALUES (
 );
 
 -- Student 4 - X A
-INSERT INTO Students (Name, Gender, FathersName, MothersName, DOB, Aadhaar, APAR, PEN, Contact, Address, Status, Caste, Religion, Height, Weight, BloodGroup)
+INSERT INTO Students (Id, Name, Gender, FathersName, MothersName, DOB, Aadhaar, APAR, PEN, Contact, Address, Status, Caste, Religion, Height, Weight, BloodGroup)
 VALUES 
-('Rohit Das', 'Male', 'Anil Das', 'Sunita Das', '2010-01-25', '444455556666', '444455556666', '10100000005', '9998855443', '5 Mango Street, Delhi', 'Admitted', 'SC/ST', 'Hindu', 143, 38.0, 'O+');
+('f65792f7-30a3-48a6-8fd3-828e8f5ff4a2', 'Rohit Das', 'Male', 'Anil Das', 'Sunita Das', '2010-01-25', '444455556666', '444455556666', '10100000005', '9998855443', '5 Mango Street, Delhi', 'Admitted', 'SC/ST', 'Hindu', 143, 38.0, 'O+');
 
 INSERT INTO Admissions (StudentId, AcademicYearId, ClassId, SectionId, RollNo, AdmissionType)
 VALUES (
@@ -587,9 +590,9 @@ VALUES (
 
 -- Section B
 -- Student 1 - X B
-INSERT INTO Students (Name, Gender, FathersName, MothersName, DOB, Aadhaar, APAR, PEN, Contact, Address, Status, Caste, Religion, Height, Weight, BloodGroup)
+INSERT INTO Students (Id, Name, Gender, FathersName, MothersName, DOB, Aadhaar, APAR, PEN, Contact, Address, Status, Caste, Religion, Height, Weight, BloodGroup)
 VALUES 
-('Ishita Verma', 'Female', 'Vikas Verma', 'Neha Verma', '2010-06-10', '111122224444', '111122224444', '10100000002', '9998887772', '9 Lotus Lane, Delhi', 'Admitted', 'General', 'Hindu', 140, 38.5, 'O+');
+('68fa9a5b-5d82-4a0d-bbbc-d3a7d1745dd7', 'Ishita Verma', 'Female', 'Vikas Verma', 'Neha Verma', '2010-06-10', '111122224444', '111122224444', '10100000002', '9998887772', '9 Lotus Lane, Delhi', 'Admitted', 'General', 'Hindu', 140, 38.5, 'O+');
 
 INSERT INTO Admissions (StudentId, AcademicYearId, ClassId, SectionId, RollNo, AdmissionType)
 VALUES (
@@ -601,9 +604,9 @@ VALUES (
     'New'
 );
 
-INSERT INTO Students (Name, Gender, FathersName, MothersName, DOB, Aadhaar, APAR, PEN, Contact, Address, Status, Caste, Religion, Height, Weight, BloodGroup)
+INSERT INTO Students (Id, Name, Gender, FathersName, MothersName, DOB, Aadhaar, APAR, PEN, Contact, Address, Status, Caste, Religion, Height, Weight, BloodGroup)
 VALUES 
-('Kavya Sharma', 'Female', 'Amit Sharma', 'Pooja Sharma', '2010-08-05', '555566667777', '555566667777', '10100000006', '9998844332', '17 Palm View, Delhi', 'Admitted', 'General', 'Hindu', 141, 36.8, 'A-');
+('4e166f67-04c7-4e09-8c52-b8a5f733bf0f', 'Kavya Sharma', 'Female', 'Amit Sharma', 'Pooja Sharma', '2010-08-05', '555566667777', '555566667777', '10100000006', '9998844332', '17 Palm View, Delhi', 'Admitted', 'General', 'Hindu', 141, 36.8, 'A-');
 
 -- Student 2 - X B
 INSERT INTO Admissions (StudentId, AcademicYearId, ClassId, SectionId, RollNo, AdmissionType)
@@ -617,9 +620,9 @@ VALUES (
 );
 
 -- Student 3 - X B
-INSERT INTO Students (Name, Gender, FathersName, MothersName, DOB, Aadhaar, APAR, PEN, Contact, Address, Status, Caste, Religion, Height, Weight, BloodGroup)
+INSERT INTO Students (Id, Name, Gender, FathersName, MothersName, DOB, Aadhaar, APAR, PEN, Contact, Address, Status, Caste, Religion, Height, Weight, BloodGroup)
 VALUES 
-('Mohammed Arif', 'Male', 'Salman Arif', 'Nasreen Arif', '2010-12-11', '666677778888', '666677778888', '10100000007', '9998833221', '3 Crescent Road, Delhi', 'Admitted', 'OBC', 'Muslim', 140, 37.5, 'B+');
+('0e49b063-9090-466f-bb13-bb45860b66e7', 'Mohammed Arif', 'Male', 'Salman Arif', 'Nasreen Arif', '2010-12-11', '666677778888', '666677778888', '10100000007', '9998833221', '3 Crescent Road, Delhi', 'Admitted', 'OBC', 'Muslim', 140, 37.5, 'B+');
 
 INSERT INTO Admissions (StudentId, AcademicYearId, ClassId, SectionId, RollNo, AdmissionType)
 VALUES (
@@ -632,9 +635,9 @@ VALUES (
 );
 
 -- Student 4 - X B
-INSERT INTO Students (Name, Gender, FathersName, MothersName, DOB, Aadhaar, APAR, PEN, Contact, Address, Status, Caste, Religion, Height, Weight, BloodGroup)
+INSERT INTO Students (Id, Name, Gender, FathersName, MothersName, DOB, Aadhaar, APAR, PEN, Contact, Address, Status, Caste, Religion, Height, Weight, BloodGroup)
 VALUES 
-('Priya Das', 'Female', 'Subhash Das', 'Anita Das', '2010-09-30', '777788889999', '777788889999', '10100000008', '9998822110', '8 Lily Road, Delhi', 'Admitted', 'SC/ST', 'Hindu', 138, 36.2, 'O+');
+('9545ab7f-4293-41fd-bcc6-e2f73b8c3098', 'Priya Das', 'Female', 'Subhash Das', 'Anita Das', '2010-09-30', '777788889999', '777788889999', '10100000008', '9998822110', '8 Lily Road, Delhi', 'Admitted', 'SC/ST', 'Hindu', 138, 36.2, 'O+');
 
 INSERT INTO Admissions (StudentId, AcademicYearId, ClassId, SectionId, RollNo, AdmissionType)
 VALUES (
