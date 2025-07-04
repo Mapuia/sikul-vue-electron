@@ -53,7 +53,7 @@
           </div>
         </div>        
       </div>
-      </div>  
+    </div>  
     <!-- No Results Message -->
     <div v-if="hasSearched && students.length === 0" class="box has-text-centered">
       <p>No students found matching your search criteria.</p>
@@ -126,11 +126,11 @@
       <div class="modal-background" @click="closeModal"></div>
       <div class="modal-card" style="width: 80%; max-width: 1000px;">
         <header class="modal-card-head">
-          <p class="modal-card-title">Admission Details</p>
+          <p class="title modal-card-title">Student Details</p>
           <button class="delete" aria-label="close" @click="closeModal"></button>
         </header>
         <section class="modal-card-body">
-          <StudentDetailsView v-if="selectedStudent && modalMode === 'view'" :student="selectedStudent" />
+          <StudentDetailsView v-if="selectedStudent && modalMode === 'view'" :student="selectedStudent" :admission="selectedAdmission" />
         </section>
         <footer class="modal-card-foot" v-if="modalMode === 'view'">
           <button class="button" @click="closeModal">Close</button>
@@ -263,6 +263,7 @@ const isSearching = ref(false);
 const hasSearched = ref(false);
 const showDetailsModal = ref(false);
 const selectedStudent = ref(null);
+const selectedAdmission = ref(null);
 const errorMessage = ref('');
 const successMessage = ref('')
 const modalMode = ref('view');
@@ -350,7 +351,7 @@ async function fetchExistingStudents() {
   try {
     isSearching.value = true;
     const response = await window.electronAPI.getStudentsByClassSectionsId({
-      previousYearId: PreviousYearId.value,
+      YearId: PreviousYearId.value,
       ClassId: selectedClassId.value,
       SectionId: selectedSectionId.value
     });
@@ -406,6 +407,7 @@ async function viewStudentDetails(studentId) {
     const response = await window.electronAPI.getStudentDetails(studentId, PreviousYearId.value);
     if (response.success) {
       selectedStudent.value = response.student;
+      selectedAdmission.value = response.admission;
       modalMode.value = 'view';
       showDetailsModal.value = true;
       errorMessage.value = '';

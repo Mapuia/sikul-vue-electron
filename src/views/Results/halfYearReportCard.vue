@@ -168,7 +168,7 @@
                   <h2 class="subtitle print-subtitle is-7 m-0">Mission Compound, Tuidu. Gomati District, Tripura – 799101 </h2>
                   <h2 class="subtitle print-subtitle is-7 m-0">Phone No: (+91) 8787793883, email: calvaryhighschool2019@gmail.com</h2>
                   <h2 class="subtitle print-subtitle is-6">Academic Session : {{ CurrentYear }}</h2>
-                  <h1 class="title print-title is-5 mt-2">REPORT CARD (Half Yealy)</h1>
+                  <h1 class="title print-title is-5 mt-2 mb-7">REPORT CARD (Half Yealy)</h1>
 
                 </div>
 
@@ -180,18 +180,18 @@
                         <td class="">{{ studentData.Name }}</td>
                     
                         <th class="">Class:</th>
-                        <td class="">{{className}}</td>
+                        <td class="">{{className}} {{sectionName ? 'Section '+ sectionName : ''}}</td>
                       
-                        <th class="">Section:</th>
-                        <td class="">{{sectionName ? sectionName : ''}}</td>
+                     
                         <th class="">Roll No:</th>
-                        <td class="">{{ studentData.RollNo }}</td>
+                        <td class="has-content-left" style="text-align: left !important;">{{ studentData.RollNo }}</td>
                       </tr>
                       <tr>
                         <th class="" style="width:120px">Father's Name:</th>
                         <td class="">{{ studentData.FathersName }}</td>
                         <th class="">PEN:</th>
                         <td class="">{{ studentData.PEN }}</td>
+                        
                         <th class="">APAR:</th>
                         <td class="">{{ studentData.APAR }}</td>
 
@@ -199,7 +199,7 @@
                     </tbody>
                   </table>
 
-                  <table class="marks-table">
+                  <table class="marks-table mb-4">
                     <thead>
                       <tr>
                         <th>SUBJECTS</th>
@@ -282,7 +282,7 @@
                             </tr>
                             <tr>
                               <th class = "summary">Percentage</th>
-                              <td>{{resultData.Percentage}}</td>
+                              <td>{{ Number(resultData.Percentage).toFixed(2) }}</td>
                             </tr>
                             <tr>
                               <th class = "summary">Division</th>
@@ -362,7 +362,7 @@ import { useAcademicYear } from '../../composables/useAcademicYear'
 import { useActiveExam } from '../../composables/useActiveExam'
 import html2pdf from 'html2pdf.js'
 
-
+const { PassingPercentage, loadActiveExam } = useActiveExam()
 const { CurrentYearId, CurrentYear } = useAcademicYear()
 
 const route = useRoute()
@@ -575,7 +575,9 @@ async function generateReportCard(studentId, totalWorkingDays, attendance, remar
     })
     
     if (results?.success) { 
-      await fetchReportCard(studentId, Name)
+      await window.electronAPI.showSuccessDialog('Report card generated successfully!');
+      await fetchReportCard(studentId, selectedStudentName.value)
+      
     } else {
       window.alert('Failed to generate report card. Please try again.')
     }
@@ -627,10 +629,6 @@ function closeModal() {
 .table-container {
   overflow-x: auto;
   margin-top: 1rem;
-}
-
-.notification {
-  margin-bottom: 0;
 }
 
 .tag {
@@ -685,7 +683,6 @@ function closeModal() {
   font-family: 'Oswald';
   font-weight: 500;
 }
-
 
 .smaller-header {
   font-size: 11px;
@@ -809,7 +806,8 @@ function closeModal() {
 .student-table{
   color: black;
   width:100%;
-  margin-bottom: 5px;
+  margin-bottom: 1rem;
+  margin-top: 1rem;
 }
 .student-table th{
   font-size: 14px;
@@ -820,8 +818,8 @@ function closeModal() {
 }
 .student-table td{ 
   padding: 0;
-  font-size: 14px;
-  text-align: left;
+  font-size: 16px;
+  text-align: left !important;
   color: black;
   text-align: left;
   font-weight: 700;

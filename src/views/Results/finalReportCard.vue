@@ -184,10 +184,8 @@
                         <td class="">{{ studentData.Name }}</td>
                     
                         <th class="">Class:</th>
-                        <td class="">{{className}}</td>
+                        <td class="">{{className}} {{sectionName ? 'Section '+ sectionName : ''}}</td>
                       
-                        <th class="">Section:</th>
-                        <td class="">{{sectionName ? sectionName : ''}}</td>
                         <th class="">Roll No:</th>
                         <td class="">{{ studentData.RollNo }}</td>
                       </tr>
@@ -203,7 +201,7 @@
                     </tbody>
                   </table>
 
-                  <table class="marks-table">
+                  <table class="marks-table mb-4">
                     <thead>
                     <tr>
                       <th rowspan="2" >SUBJECTS</th>
@@ -322,7 +320,7 @@
                             </tr>  
                             <tr>
                               <th >Percentage</th>
-                              <td>{{resultData.Percentage}}</td>
+                              <td>{{ Number(resultData.Percentage).toFixed(2) }}</td>
                               
                             </tr>
                             <tr>
@@ -621,7 +619,9 @@ async function generateReportCard(studentId, totalWorkingDays, attendance, remar
     })
     
     if (results?.success) { 
-      await fetchReportCard(studentId, Name)
+      await window.electronAPI.showSuccessDialog('Report card generated successfully!');
+      await fetchReportCard(studentId, selectedStudentName.value)
+      
     } else {
       window.alert('Failed to generate report card. Please try again.')
     }
@@ -860,7 +860,8 @@ function closeModal() {
 .student-table{
   color: black;
   width:100%;
-  margin-bottom: 5px;
+  margin-bottom: 1rem;
+  margin-top: 1rem;
 }
 .student-table th{
   font-size: 14px;
@@ -872,7 +873,7 @@ function closeModal() {
 }
 .student-table td{ 
   padding: 0.2rem;
-  font-size: 14px;
+  font-size: 16px;
   color: black;
   text-align: left;
   font-weight: 700;

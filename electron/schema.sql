@@ -285,7 +285,8 @@ CREATE TABLE IF NOT EXISTS ReportCards (
     Last_Modified_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (StudentId) REFERENCES Students(Id) ON DELETE CASCADE,
     FOREIGN KEY (AcademicYearId) REFERENCES AcademicYears(Id) ON DELETE CASCADE,
-    UNIQUE (StudentId, ReportCardType)
+    FOREIGN KEY (ActiveExamId) REFERENCES ActiveExamId(Id) ON DELETE CASCADE,
+    UNIQUE (StudentId, AcademicYearId, ActiveExamId, ReportCardType)
 );
 
 -- Signatories Table

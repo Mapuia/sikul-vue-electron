@@ -79,12 +79,8 @@ button:focus-visible {
   display: flex;
   align-items: flex-start;
   gap: 1rem;
-  width: 100%;
-  
+  width: 100%;  
 }
-
-
-
 .main-content {
   flex-grow: 1;
   overflow-x: auto;

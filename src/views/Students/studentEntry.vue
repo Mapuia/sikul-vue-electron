@@ -758,5 +758,8 @@ onMounted(async() => {
 .is-danger {
   border-color: #ff3860 !important;
 }
+.table th{
+  width: 300px;
+}
 
 </style>

@@ -25,11 +25,11 @@
       <h3 class="title is-5">Academic Information</h3>
       <table class="sikul-table is-fullwidth">
         <thead>
-          <tr><th>Academic Year:</th><td>{{ student.YearName || '-' }}</td></tr>
-          <tr><th>Current Class:</th><td>{{ student.ClassName || '-' }}</td></tr>
-          <tr><th>Section:</th><td>{{ student.SectionName || '-' }}</td></tr>
-          <tr><th>Roll No:</th><td>{{ student.RollNo || '-' }}</td></tr>
-          <tr><th>Admission Type:</th><td>{{ student.AdmissionType || '-' }}</td></tr>
+          <tr><th>Academic Year:</th><td>{{ admission.YearName || '-' }}</td></tr>
+          <tr><th>Current Class:</th><td>{{ admission.ClassName || '-' }}</td></tr>
+          <tr><th>Section:</th><td>{{ admission.SectionName || '-' }}</td></tr>
+          <tr><th>Roll No:</th><td>{{ admission.RollNo || '-' }}</td></tr>
+          <tr><th>Admission Type:</th><td>{{ admission.AdmissionType || '-' }}</td></tr>
           <tr><th>First Admission:</th><td>{{ formatDate(student.FirstAdmissionDate) }}</td></tr>
           <tr>
             <th>Current Status:</th>
@@ -75,6 +75,10 @@ const props = defineProps({
   student: {
     type: Object,
     required: true
+  },
+  admission: {
+    type: Object,
+    required: true
   }
 });
 
@@ -112,5 +116,8 @@ function statusTagClass(status) {
 }
 .tag {
   margin-left: 0.5rem;
+}
+.sikul-table th{
+width: 250px;
 }
 </style>

@@ -18,7 +18,7 @@
         <div class="column">
           <div
             class="tab-button has-text-centered is-clickable p-3"
-            :class="selected === 'Scholastic' ? 'has-background-success' : ''"
+            :class="selected === 'Scholastic' ? 'has-background-success has-text-black' : ''"
             @click="selected = 'Scholastic'"
           >
             Scholastic Subjects
@@ -27,7 +27,7 @@
         <div class="column">
           <div
             class="tab-button has-text-centered is-clickable p-3"
-            :class="selected === 'Co-Scholastic' ? 'has-background-primary ' : ''"
+            :class="selected === 'Co-Scholastic' ? 'has-background-primary has-text-black' : ''"
             @click="selected = 'Co-Scholastic'"
           >
             Co-Scholastic Activities

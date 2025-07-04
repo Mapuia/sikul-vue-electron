@@ -45,10 +45,10 @@ ipcMain.handle('get-students-by-class-sectionsId', async (event, params) => {
       LEFT JOIN Classes c ON a.ClassId = c.Id
       LEFT JOIN Sections sec ON a.SectionId = sec.Id      
       WHERE a.ClassId = ? AND a.SectionId = ? AND a.AcademicYearId = ? AND a.reAdmitted = 0
-      ORDER BY s.Name
+      ORDER BY a.RollNo
     `);
     //Rank will be used as Roll Number in the next year
-    const students = stmt.all(params.ClassId, params.SectionId, params.previousYearId);
+    const students = stmt.all(params.ClassId, params.SectionId, params.YearId);
     return { success: true, students };
   } catch (error) {
     return { success: false, message: error.message, students: [] };
@@ -131,7 +131,7 @@ ipcMain.handle('get-student-details', async (event, studentId, AcademicYearId) =
     // Get admission details
     const admissionStmt = db.prepare(`
       SELECT 
-        c.ClassName, s.SectionName, a.RollNo, ay.YearName, a.AdmissionType
+        c.ClassName, s.SectionName, a.RollNo, ay.YearName as YearName, a.AdmissionType
       FROM Classes c
       JOIN Admissions a ON a.ClassId = c.Id
       JOIN Sections s ON s.Id = a.SectionId

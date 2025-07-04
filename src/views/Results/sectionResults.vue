@@ -65,7 +65,7 @@
             </div>
             <div class="mt-4" v-if="results.length > 0">
             <div class="table-container">
-              <table class="result-table is-fullwidth is-striped is-bordered">
+              <table class="result-table is-fullwidth is-striped is-bordered mb-2">
                 <thead>
                   <tr>
                     <th>Rank</th>

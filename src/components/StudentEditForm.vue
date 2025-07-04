@@ -1,7 +1,7 @@
 <template>
   <div class="student-edit-form">
     <div class="columns is-multiline">
-      <!-- Basic Information -->
+      <!-- Basic Info -->
       <div class="column is-half">
         <div class="field">
           <label class="label">Name</label>
@@ -30,7 +30,7 @@
         </div>
       </div>
 
-      <!-- Identification -->
+      <!-- Identity -->
       <div class="column is-half">
         <div class="field">
           <label class="label">Aadhaar Number</label>
@@ -54,7 +54,7 @@
         </div>
       </div>
 
-      <!-- Parent Information -->
+      <!-- Parents -->
       <div class="column is-half">
         <div class="field">
           <label class="label">Father's Name</label>
@@ -73,7 +73,7 @@
         </div>
       </div>
 
-      <!-- Contact Information -->
+      <!-- Contact -->
       <div class="column is-half">
         <div class="field">
           <label class="label">Contact Number</label>
@@ -92,7 +92,7 @@
         </div>
       </div>
 
-      <!-- Additional Information -->
+      <!-- Additional -->
       <div class="column is-half">
         <div class="field">
           <label class="label">Status</label>
@@ -110,13 +110,13 @@
 
         <div class="field">
           <label class="label">Caste</label>
-          <div class="control">            
+          <div class="control">
             <div class="select is-fullwidth">
-              <select v-model="formData.Caste">                
+              <select v-model="formData.Caste">
                 <option value="General">General</option>
                 <option value="SC/ST">ST/SC</option>
                 <option value="OBC">OBC</option>
-                <option value="Others">Others</option>               
+                <option value="Others">Others</option>
               </select>
             </div>
           </div>
@@ -126,13 +126,13 @@
       <div class="column is-half">
         <div class="field">
           <label class="label">Religion</label>
-          <div class="control">            
+          <div class="control">
             <div class="select is-fullwidth">
-              <select v-model="formData.Religion">                
+              <select v-model="formData.Religion">
                 <option value="Christian">Christian</option>
                 <option value="Hindu">Hindu</option>
                 <option value="Muslim">Muslim</option>
-                <option value="Others">Others</option>               
+                <option value="Others">Others</option>
               </select>
             </div>
           </div>
@@ -144,21 +144,17 @@
             <div class="select is-fullwidth">
               <select v-model="formData.BloodGroup">
                 <option value="">Select Blood Group</option>
-                <option value="A+">A+</option>
-                <option value="A-">A-</option>
-                <option value="B+">B+</option>
-                <option value="B-">B-</option>
-                <option value="AB+">AB+</option>
-                <option value="AB-">AB-</option>
-                <option value="O+">O+</option>
-                <option value="O-">O-</option>
+                <option>A+</option><option>A-</option>
+                <option>B+</option><option>B-</option>
+                <option>AB+</option><option>AB-</option>
+                <option>O+</option><option>O-</option>
               </select>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- Physical Attributes -->
+      <!-- Physical -->
       <div class="column is-half">
         <div class="field">
           <label class="label">Height (cm)</label>
@@ -178,12 +174,11 @@
       </div>
     </div>
 
-    <div class="field is-grouped is-grouped-right">      
+    <!-- Actions -->
+    <div class="field is-grouped is-grouped-right">
       <div class="control">
         <button class="button is-primary" @click="saveChanges" :disabled="isSaving">
-          <span v-if="isSaving" class="icon is-small">
-            <i class="fas fa-spinner fa-spin"></i>
-          </span>
+          <span v-if="isSaving" class="icon is-small"><i class="fas fa-spinner fa-spin"></i></span>
           <span>Save Changes</span>
         </button>
       </div>
@@ -191,35 +186,40 @@
         <button class="button is-light" @click="$emit('cancel')">Cancel</button>
       </div>
     </div>
+
+    <!-- Error -->
+    <div v-if="errorMessage" class="notification is-danger mt-2" @click="errorMessage = ''">
+      {{ errorMessage }}
+    </div>
   </div>
 </template>
 
 <script setup>
 import { ref, watch } from 'vue';
-const errorMessage = ref('')
+
 const props = defineProps({
-  student: {
-    type: Object,
-    required: true
-  }
+  student: { type: Object, required: true },
+  admission: { type: Object, required: true }
 });
 
 const emit = defineEmits(['save', 'cancel']);
 
-const formData = ref({ ...props.student });
+const formData = ref({ ...props.student }); // flatten structure
 const isSaving = ref(false);
+const errorMessage = ref('');
+
+watch(() => props.student, (newVal) => {
+  formData.value = { ...newVal };
+});
 
 async function saveChanges() {
   isSaving.value = true;
-  
   try {
     const response = await window.electronAPI.updateStudent(formData.value);
-    
     if (response.success) {
-      emit('save', formData.value); // Notify parent of successful save
-      successMessage.value = 'Student updated successfully!';
+      emit('save', formData.value);
     } else {
-      throw new Error(response.error || 'Failed to update student');
+      throw new Error(response.message || 'Failed to update student');
     }
   } catch (error) {
     errorMessage.value = error.message;

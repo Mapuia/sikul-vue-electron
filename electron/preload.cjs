@@ -28,6 +28,7 @@ contextBridge.exposeInMainWorld('electronAuth', {
         
 
   showConfirmationDialog: async (message) => await ipcRenderer.invoke('show-confirmation-dialog', message),
+  showSuccessDialog: (message) => ipcRenderer.invoke('show-success-dialog', message),
       
   //Classes API
   getClasses: () => ipcRenderer.invoke('get-classes'),
