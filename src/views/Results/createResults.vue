@@ -80,7 +80,7 @@
                   <td v-else-if ="!item.resultStatus.isPublished && item.finishedSubjects < item.totalSubjects" class="has-text-centered">
                     <button                 
                       class="button is-small is-danger"
-                      @click="goToMarkEntry( examType)"                      
+                      @click="goToMarkEntry(examType)"                      
                     >
                       Go to Mark Entry
                     </button>
@@ -217,7 +217,7 @@ async function getExam() {
 
 function goToMarkEntry(examType) {
   router.push({
-    name: 'MarksEntry',
+    path: '/marks/marks-entry',
     query: {  
       type: examType,
     }
