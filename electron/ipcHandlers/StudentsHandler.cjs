@@ -131,7 +131,7 @@ ipcMain.handle('get-student-details', async (event, studentId, AcademicYearId) =
     // Get admission details
     const admissionStmt = db.prepare(`
       SELECT 
-        c.ClassName, s.SectionName, a.RollNo, ay.YearName as YearName, a.AdmissionType
+        a.AcademicYearId, a.ClassId, c.ClassName, a.SectionId, s.SectionName, a.RollNo, ay.YearName as YearName, a.AdmissionType
       FROM Classes c
       JOIN Admissions a ON a.ClassId = c.Id
       JOIN Sections s ON s.Id = a.SectionId
@@ -139,7 +139,7 @@ ipcMain.handle('get-student-details', async (event, studentId, AcademicYearId) =
       WHERE a.StudentId = ? AND a.AcademicYearId = ?
     `);
     const admission = admissionStmt.get(studentId, AcademicYearId);
-    //console.log("Student Handler get student detail- Admission:", admission)
+   // console.log("Student Handler get student detail- Admission:", admission)
 
     return { 
       success: true,       
@@ -154,8 +154,41 @@ ipcMain.handle('get-student-details', async (event, studentId, AcademicYearId) =
 
 // Update student information
 ipcMain.handle('update-student', async (event, studentData) => {
+
+  console.log("Students Data:", studentData)
   const transaction = db.transaction(() => {
-    try {     
+    try {
+      // Check for duplicate RollNo if relevant fields are being changed
+      const currentAdmission = db.prepare(`
+        SELECT ClassId, SectionId, RollNo FROM Admissions WHERE StudentId = ?
+      `).get(studentData.Id);
+
+      if (studentData.RollNo !== currentAdmission.RollNo || 
+          studentData.ClassId !== currentAdmission.ClassId ||
+          studentData.SectionId !== currentAdmission.SectionId) {
+        
+        const duplicateCheck = db.prepare(`
+          SELECT COUNT(*) as count 
+          FROM Admissions 
+          WHERE ClassId = ? AND SectionId = ? AND RollNo = ? AND StudentId != ? AND AcademicYearId = ?
+        `).get(
+          studentData.ClassId,
+          studentData.SectionId,
+          studentData.RollNo,
+          studentData.Id,
+          studentData.AcademicYearId
+        );
+        console.log("Duplicate", duplicateCheck.count)
+        if (duplicateCheck.count > 0) {
+          
+          return { 
+            success: false, 
+            message: "Duplicate Roll Number detected in the same Class & Section",
+            duplicate: true
+          };
+        }
+      }
+
       // Update Students table
       const studentStmt = db.prepare(`
         UPDATE Students SET
@@ -179,7 +212,7 @@ ipcMain.handle('update-student', async (event, studentData) => {
         WHERE Id = ?
       `);
 
-      studentStmt.run(
+      const studentUpdate = studentStmt.run(
         studentData.Name,
         studentData.Gender,
         studentData.FathersName,
@@ -198,9 +231,51 @@ ipcMain.handle('update-student', async (event, studentData) => {
         studentData.BloodGroup,
         studentData.Id
       );
-    return { success: true };
+
+      // Update Admissions table
+      const admissionStmt = db.prepare(`
+        UPDATE Admissions 
+        SET
+          AcademicYearId = ?,
+          ClassId = ?,
+          SectionId = ?,
+          RollNo = ?,
+          AdmissionType = ?
+        WHERE
+          StudentId = ?
+      `);
+
+      const admissionUpdate = admissionStmt.run(
+        studentData.AcademicYearId,
+        studentData.ClassId,
+        studentData.SectionId,
+        studentData.RollNo,
+        studentData.AdmissionType,
+        studentData.Id
+      );
+
+      // Return appropriate response
+      if (studentUpdate.changes === 0 && admissionUpdate.changes === 0) {
+        return { 
+          success: true, 
+          message: "No changes detected - student data remains unchanged" 
+        };
+      }
+
+      return { 
+        success: true,
+        message: "Student record updated successfully",
+        student: studentData // Return updated student data
+      };
+
     } catch (error) {
-      return { success: false, error: error.message };
+      console.error("Update error:", error);
+      return { 
+        success: false, 
+        message: error.message.includes("UNIQUE") 
+          ? "Duplicate Roll Number detected" 
+          : "Failed to update student record" 
+      };
     }
   });
 

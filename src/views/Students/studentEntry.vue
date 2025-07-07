@@ -136,11 +136,11 @@
                 <select 
                   ref="caste"
                   v-model="form.caste"
-                  @keyup.enter="focusNext('religion')"
-                >
-                  <option value="">Select Caste</option>
-                  <option value="General">General</option>
-                  <option value="SC/ST">SC/ST</option>
+                  @keyup.enter="focusNext('religion')"                >
+                  <option value="" disabled>Select Caste</option>
+                  <option >General</option>
+                  <option >ST</option>
+                  <option >SC</option>
                   <option value="OBC">OBC</option>
                 </select>
               </div>

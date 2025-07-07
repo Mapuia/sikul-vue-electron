@@ -95,7 +95,6 @@ import { useAcademicYear } from '../../composables/useAcademicYear'
 
 const { CurrentYearId, CurrentYear } = useAcademicYear()
 
-
 const route = useRoute()
 
 const isLoading = ref(false)

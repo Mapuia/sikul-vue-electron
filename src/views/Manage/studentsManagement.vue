@@ -21,7 +21,7 @@
           <div class="column">
             <label class="label is-normal">Section</label>
             <div class="select is-fullwidth">
-              <select v-model="selectedSectionId" :disabled="!selectedClassId" @change="fetchExistingStudents">
+              <select v-model="selectedSectionId" :disabled="!selectedClassId || sections.length ===0" @change="fetchExistingStudents">
                 <option disabled value="">-- Select Section --</option>
                 <option v-for="sec in sections" :key="sec.Id" :value="sec.Id">{{ sec.SectionName }}</option>
               </select>
@@ -62,9 +62,11 @@
     <div v-if="errorMessage" class="notification is-danger fixed-notifications" @click="errorMessage = ''">
       {{ errorMessage }}
     </div>
+
     <div v-if="successMessage" class="notification is-success fixed-notifications" @click="successMessage = ''">
-      {{ successMessage }}
+    {{ successMessage }}
     </div>
+    
 
     <!-- Student Table -->
     <div v-if="students.length > 0" class="mt-2">
@@ -74,23 +76,24 @@
           <table class="table is-fullwidth is-striped is-hoverable">
             <thead>
               <tr>
-                <th>Roll No</th>
+                <th v-if="!hasSearched">Roll No</th>
                 <th>Name</th>
                 <th>Gender</th>
                 <th>Class</th>
                 <th>Section</th>
+                <th v-if="hasSearched">RollNo</th>
                 
                 <th class="has-text-right">Actions</th>
               </tr>
             </thead>
             <tbody>
               <tr v-for="student in students" :key="student.id">
-                <td>{{ student.rollNo || '-' }}</td>
+                <td v-if="!hasSearched">{{ student.rollNo || '-' }}</td>
                 <td>{{ student.name }}</td>
                 <td>{{ student.gender }}</td>
                 <td>{{ student.className || '-' }}</td>
                 <td>{{ student.sectionName || '-' }}</td>
-                
+                <td v-if="hasSearched">{{ student.rollNo || '-' }}</td>
                 <td>
                   <div class="buttons is-right">
                     <button class="button no-padding is-small is-info" @click="viewStudentDetails(student.id)" title="View">
@@ -115,8 +118,10 @@
       </div>
     </div>
 
-    <div v-else class="notification is-danger fixed-notifications">
-      <p>No Students found</p>
+    <div v-else> 
+      <div v-if="(selectedClassId && selectedSectionId != 0) || selectedSectionId || hasSearched" class="notification is-danger fixed-notifications">
+      <p >No Students found</p>
+      </div>
     </div>
 
     <!-- Modal -->
@@ -133,6 +138,7 @@
             v-if="selectedStudent && modalMode === 'edit'"
             :student="selectedStudent"
             :admission="admission"
+            :yearId="CurrentYearId"
             @save="handleSave"
             @cancel="closeModal"
           />
@@ -179,10 +185,31 @@ async function fetchClasses() {
 async function fetchSections() {
   if (!selectedClassId.value) return;
   const res = await window.electronAPI.getSectionsByClassId(selectedClassId.value);
-  if (res.success) sections.value = res.sections;
+  if (res.success){
+    sections.value = res.sections
+    if(res.sections.length===0){
+      selectedSectionId.value = 0;
+      await fetchExistingStudents();
+    }    
+  }  
 }
 
+watch(selectedClassId, async (classId) =>{
+  if(selectedSectionId) fetchExistingStudents()
+  else{
+    const secResult = await window.electronAPI.getSectionsByClassId(classId) 
+    if (secResult.success) {
+      sections.value = secResult.sections  
+    }
+    if (sections.value.length === 0){
+      selectedSectionId.value = 0
+      fetchExistingStudents();
+    }
+  }       
+})
+
 async function fetchExistingStudents() {
+  hasSearched.value = false
   const res = await window.electronAPI.getStudentsByClassSectionsId({
     YearId: CurrentYearId.value,
     ClassId: selectedClassId.value,
@@ -194,6 +221,7 @@ async function fetchExistingStudents() {
 async function searchStudents() {
   if (!searchQuery.value.trim()) return;
   isSearching.value = true;
+  
   try {
     const res = await window.electronAPI.searchStudents({
       query: searchQuery.value.trim(),
@@ -202,9 +230,14 @@ async function searchStudents() {
     if (res.success) {
       students.value = res.students;
       hasSearched.value = true;
+      
     } else {
       errorMessage.value = res.message || 'Search failed';
     }
+    if(hasSearched.value){
+    selectedClassId.value = ''
+      selectedSectionId.value = ''
+    }  
   } catch (err) {
     errorMessage.value = err.message;
   } finally {
@@ -220,7 +253,7 @@ async function viewStudentDetails(studentId) {
     modalMode.value = 'view';
     showModal.value = true;
 
-    console.log("Students", res.student)
+    //console.log("Students", res.student)
   } else {
     errorMessage.value = res.message || 'Could not load student details.';
   }
@@ -231,6 +264,7 @@ async function openEditModal(studentId) {
   if (res.success) {
     selectedStudent.value = res.student;
     admission.value = res.admission;
+    
     modalMode.value = 'edit';
     showModal.value = true;
   } else {
@@ -238,10 +272,18 @@ async function openEditModal(studentId) {
   }
 }
 
-function handleSave(updatedStudent) {
-  successMessage.value = 'Student updated successfully!';
-  showModal.value = false;
-  fetchExistingStudents();
+async function handleSave(result) {
+  if (result.success) {
+    showNotification(result.message, 'success');
+    showModal.value = false;
+    if (hasSearched.value) {
+      await searchStudents();
+    } else {
+      await fetchExistingStudents();
+    }
+  } else {
+    showNotification(result.message, 'danger');
+  }
 }
 
 function closeModal() {
@@ -258,27 +300,44 @@ async function confirmDeleteStudent(studentId) {
 
     const res = await window.electronAPI.deleteStudent(studentId);
     if (res.success) {
-      successMessage.value = 'Student deleted successfully!';
+      showNotification('Student deleted successfully!', 'success');
       await fetchExistingStudents();
     } else {
-      errorMessage.value = res.message || 'Failed to delete student';
+      showNotification(res.message || 'Failed to delete student', 'danger');
     }
   } catch (error) {
     console.error('Error during delete:', error);
-    errorMessage.value = 'An unexpected error occurred while deleting the student.';
+    showNotification('An unexpected error occurred while deleting the student.', 'danger');
   }
 }
 
+function showNotification(message, type = 'success', timeout = 5000) {
+  if (type === 'success') {
+    successMessage.value = message;
+    errorMessage.value = '';
+  } else {
+    errorMessage.value = message;
+    successMessage.value = '';
+  }
+  
+  // Clear the message after timeout
+  const timer = setTimeout(() => {
+    if (type === 'success') {
+      successMessage.value = '';
+    } else {
+      errorMessage.value = '';
+    }
+  }, timeout);
+  
+  // Return a function to manually clear the notification if needed
+  return () => clearTimeout(timer);
+}
 
 onMounted(async () => {
   await loadAcademicYear();
   await fetchClasses();
 });
 </script>
-
-
-
-
 
 
 <style scoped>

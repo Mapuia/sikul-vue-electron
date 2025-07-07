@@ -21,12 +21,10 @@ contextBridge.exposeInMainWorld('electronAuth', {
   notifyAcademicYearAdded: () => ipcRenderer.send('academic-year-added'),
   onAcademicYearChanged: (callback) => {
     // Safe check for ipcRenderer
-        if (ipcRenderer) {
-            ipcRenderer.on('refresh-academic-year', callback)
-          }
-        },
-        
-
+    if (ipcRenderer) {
+      ipcRenderer.on('refresh-academic-year', callback)
+    }
+  },  
   showConfirmationDialog: async (message) => await ipcRenderer.invoke('show-confirmation-dialog', message),
   showSuccessDialog: (message) => ipcRenderer.invoke('show-success-dialog', message),
       
@@ -81,7 +79,6 @@ contextBridge.exposeInMainWorld('electronAuth', {
   getClassSubjectMappings: () => ipcRenderer.invoke('get-class-subject-mappings'),
   saveClassSubjectMappings: (mappings) => ipcRenderer.invoke('save-class-subject-mappings', mappings),
 
-  
   // Class-Section Mapping methods
   getClassSectionMappings: () => ipcRenderer.invoke('get-class-section-mappings'),
   saveClassSectionMappings: (mappings) => ipcRenderer.invoke('save-class-section-mappings', mappings),
@@ -107,13 +104,9 @@ contextBridge.exposeInMainWorld('electronAuth', {
   getCoScholasticMarks: (params) => ipcRenderer.invoke('get-coscholastic-marks', params), 
   getCoScholasticMarksByStudentId: (examId, studentId) => ipcRenderer.invoke('get-coscholastic-marks-by-student', examId, studentId),
  
-
   getActiveExamByType: (examType, YearId) => ipcRenderer.invoke('get-active-exam-by-type', examType, YearId),             //New
   getMarksByClassSectionExams: (data) => ipcRenderer.invoke('get-marks-by-class-section-exams', data),
-
-  //Next Features
-  //getClassSectionStats: (data) => ipcRenderer.invoke('get-stats', data),     
-
+ 
   // For the result creation page
   calculateTotalMarks: (data) => ipcRenderer.invoke('calculate-total-marks', data),
   generateResults: (data) => ipcRenderer.invoke('generate-results', data),
@@ -131,17 +124,15 @@ contextBridge.exposeInMainWorld('electronAuth', {
   deleteStudent: (studentId) => ipcRenderer.invoke('delete-student', studentId),
   promoteStudent: (studentData) => ipcRenderer.invoke('promote-student', studentData),
   updateAdmission:(payload)=> ipcRenderer.invoke('update-admission', payload),
-
-  //for current Year Admission
-  //getStudentDetails: (studentId) => ipcRenderer.invoke('get-student-details', studentId),
+  fetchUpperClasses:(className)=>ipcRenderer.invoke('fetch-upper-classes', className),
 
   getStudentAdmissionDetails: (studentId, YearId) => ipcRenderer.invoke('get-admission-details', studentId, YearId),
   getPreviousAdmission: (studentId, YearId) => ipcRenderer.invoke('get-previous-admission', studentId, YearId),
 
   getmarkEntryStatus: (examId) => ipcRenderer.invoke('get-mark-entry-status', examId),
 
-   getExamStatus: (data) => ipcRenderer.invoke('get-exam-status', data),
-   getPublishStatus: (yearId) =>ipcRenderer.invoke('get-publish-status', yearId),
+  getExamStatus: (data) => ipcRenderer.invoke('get-exam-status', data),
+  getPublishStatus: (yearId) =>ipcRenderer.invoke('get-publish-status', yearId),
       
   //getClassesForExam: (data) => ipcRenderer.invoke('get-classes-for-exam', data),
   calculateClassMarks: (data) => ipcRenderer.invoke('calculate-class-marks', data),
@@ -149,15 +140,9 @@ contextBridge.exposeInMainWorld('electronAuth', {
   
   // For result generation
   generateResults: (data) => ipcRenderer.invoke('generate-results', data), 
-  
-  // For viewing results
   verifyResultStatus: (data) => ipcRenderer.invoke('verify-result-status', data),
-  //verifyResults: (data) => ipcRenderer.invoke('verify-results', data),
-
   getSectionResults: (data) => ipcRenderer.invoke('get-section-results', data),
   getResultSummary: (data) => ipcRenderer.invoke('get-result-summary', data),  
- 
-
   getStudentReportCard: (params) => ipcRenderer.invoke('get-student-report-card', params),
 
   getMarksByExamSubject: (params) => ipcRenderer.invoke('get-marks-by-exam-subject', params),

@@ -118,6 +118,17 @@ button:focus-visible {
   z-index: 100;
   cursor: pointer
 }
+.notification-enter-active,
+.notification-leave-active {
+  transition: all 0.5s ease;
+}
+
+.notification-enter-from,
+.notification-leave-to {
+  opacity: 0;
+  transform: translateX(100px);
+}
+
 .is-square {
   width: 1.75rem;
   height: 1.75rem;

@@ -139,7 +139,8 @@ CREATE TABLE IF NOT EXISTS Admissions (
     FOREIGN KEY (StudentId) REFERENCES Students(Id) ON DELETE CASCADE,
     FOREIGN KEY (ClassId) REFERENCES Classes(Id) ON DELETE CASCADE,    
     FOREIGN KEY (AcademicYearId) REFERENCES AcademicYears(Id) ON DELETE CASCADE,
-    UNIQUE (AcademicYearId, StudentId)
+    UNIQUE (AcademicYearId, StudentId),
+    UNIQUE (ClassId, SectionId, RollNo)
 );
 
 -- Marks Table

@@ -175,8 +175,8 @@
                   </thead>
                 </table>
              <h2 class="title is-5">Re-Admit to:</h2>
-             </div>
-             <div class="columns is-multiline">
+            </div>
+            <div class="columns is-multiline">
               <div class="column is-half">                
                 <div class="field">
                   <label class="label">New Class</label>
