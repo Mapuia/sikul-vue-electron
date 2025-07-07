@@ -6,13 +6,13 @@
         <img src="../assets/sikul_logo.png" alt="School Logo" />
       </figure>
 
-      <h1 class="subtitle is-4">
+      <h1 class="subtitle is-4 mb-3">
         Hello {{ currentUser }}                         
       </h1>
       <h1 class="title is-4">
         Welcome to Calvary Higher Secondary School
       </h1>
-      <h2 class="subtitle is-5 mt-5">Light to Enlight</h2>      
+      <h2 class="subtitle is-5 mt-5 mb-5 is-italic">"Light to Enlight"</h2>      
     </section>
 
     <!-- Footer -->
@@ -40,13 +40,16 @@ const currentYear = new Date().getFullYear()
 
 onMounted(async () => {
   const user = await window.electronAuth.getCurrentUser()
-  currentUser.value = user.username.charAt(0).toUpperCase() + user.username.slice(1);;
+  currentUser.value = user.username.charAt(0).toUpperCase() + user.username.slice(1);
 })
 </script>
 
 <style scoped>
 .page-wrapper {
   min-height: calc(100vh - 3.25rem);
+}
+.section{
+  padding-bottom: 7rem;
 }
 .image img {
   width: 96px;

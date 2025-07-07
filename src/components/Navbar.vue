@@ -10,6 +10,7 @@
       <div class="is-flex is-flex-direction-column">
         <h1 class="compact-title">Calvary Higher Secondary School</h1>
         <span class="compact-subtitle is-7">Academic Year : {{ CurrentYear || 'Not Set' }}</span>
+        
       </div>
 
       <!-- Menu on the right -->
