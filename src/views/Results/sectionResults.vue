@@ -45,7 +45,7 @@
       </div>
 
       <!-- Result Display -->
-      <div v-if="(!isLoading && selectedClassId && noSections)|| (!isLoading && selectedClassId && selectedSectionId)" class="result-container">
+      <div v-if="results && resultSummary" class="result-container">
         <div class="level mt-4">
             <!-- Centered heading -->
             <div class="level-item has-text-left">
@@ -185,7 +185,8 @@
           </div> 
           <div class="has-text-centered mt-4">
             <button class="button is-primary" @click="downloadPDF">Download PDF</button>
-        </div>          
+          </div>            
+        
         </div>          
      
         <div v-else-if="!isLoading" class="notification is-danger mt-4">
@@ -355,8 +356,7 @@ async function fetchResults() {
     });
     
     if (resultsResponse) {
-      results.value = resultsResponse.results;
-      
+      results.value = resultsResponse.results;      
       // Create summary from the detailed results we just got
       resultSummary.value = resultsResponse.summary
     }
@@ -423,9 +423,7 @@ function downloadPDF() {
 .columns {
   color:black;
 }
-.print-container{
-  background: white;
-}
+
 .table-container {
   margin: 0 auto;
  color:black;
