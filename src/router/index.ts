@@ -13,32 +13,27 @@ const routes = [
     meta: { requiresAuth: true }
   },
   {
-    path: '/home',
-    name: 'Landing',
+    path: '/home', 
     component: () => import('@/views/home.vue'),
     meta: { allowedRoles: [ROLES.ADMIN, ROLES.TEACHER, ROLES.DEO] }
   },
   {
-    path: '/students/new',
-    name: 'NewStudent',
+    path: '/students/new', 
     component: () => import('@/views/Students/studentEntry.vue'),
     meta: { allowedRoles: [ROLES.ADMIN, ROLES.TEACHER, ROLES.DEO] }
   },
   {
     path: '/students/re',
-    name: 'ExistingStudent',
     component: () => import('@/views/Students/existingStudents.vue'),
     meta: { allowedRoles: [ROLES.ADMIN, ROLES.TEACHER, ROLES.DEO] }
   },
   {
     path: '/students/tr',
-    name: 'Transfer',
     component: () => import('@/views/Students/transfer.vue'),
     meta: { allowedRoles: [ROLES.ADMIN, ROLES.TEACHER] }
   },
   {
-    path: '/admission/success',
-    name: 'AdmissionSuccess',
+    path: '/admission/success',  
     component: () => import('@/views/Students/AdmissionSuccess.vue'),
     props: true
   },

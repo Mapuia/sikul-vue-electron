@@ -26,17 +26,13 @@ ipcMain.handle('get-current-academic-year', () => {
   }
 });
 
-ipcMain.handle('get-previous-year', () => {
-  
+ipcMain.handle('get-year-Id', (event, yearName) => {
+
   try {
     const stmt = db.prepare(`
-      SELECT Id, YearName FROM AcademicYears
-      WHERE IsActive = 0 
-      ORDER BY StartDate DESC
-      LIMIT 1
-    `);
-    const previousYear = stmt.get();
-    return { success: true, previousYearId: previousYear?.Id, previousYear: previousYear?.YearName };
+      SELECT Id FROM AcademicYears WHERE YearName = ? `);
+    const previousYear = stmt.get(yearName);
+    return { success: true, previousYearId: previousYear?.Id };
   } catch (err) {
     console.error('DB error (getPreviousYear):', err);
     return { success: false, error: err.message };
@@ -46,7 +42,7 @@ ipcMain.handle('get-previous-year', () => {
 ////Getting all academic Years
 ipcMain.handle('get-academic-years', () => {
   const rows = db.prepare('SELECT * FROM AcademicYears ORDER BY StartDate DESC').all();
-  const result = rows.map(toCamelCase);  // 🔁 Normalize keys
+  const result = rows.map(toCamelCase); 
   return { success: true, result };
 });
 

@@ -71,7 +71,7 @@
     <!-- Student Table -->
     <div v-if="students.length > 0" class="mt-2">
       <div class="box">
-        <h2 class="subtitle is-4">Students ({{ students.length }} Records) </h2>
+        <h2 class="subtitle is-4">Students {{ students.length }} Records </h2>
         <div class="table-container">
           <table class="table is-fullwidth is-striped is-hoverable">
             <thead>

@@ -14,7 +14,7 @@ contextBridge.exposeInMainWorld('electronAuth', {
   contextBridge.exposeInMainWorld("electronAPI", {
   getAcademicYears: () => ipcRenderer.invoke('get-academic-years'),
   getCurrentAcademicYear: () => ipcRenderer.invoke('get-current-academic-year'),
-  getPreviousYear: () => ipcRenderer.invoke('get-previous-year'),
+  getYearId: (yearName) => ipcRenderer.invoke('get-year-Id', yearName),
   activateAcademicYear: async (data) => await ipcRenderer.invoke('activate-academic-year', data),
   deleteAcademicYear:(id) => ipcRenderer.invoke('delete-academic-year',id),
   addAcademicYear: (id) => ipcRenderer.invoke("add-academic-year", id),
@@ -73,7 +73,8 @@ contextBridge.exposeInMainWorld('electronAuth', {
   deleteSignatory: (id) => ipcRenderer.invoke('delete-signatory', id),
 
   //getSubjectsByClass: (className) => ipcRenderer.invoke('get-subjects-by-class', className),
-  insertStudentAndAdmission: (form) => ipcRenderer.invoke('insert-student-admission', form),
+  //handled in AdmissionHandler.cjs
+  insertStudentAndAdmission: (studentForm) => ipcRenderer.invoke('insert-student-admission', studentForm),
      
   //Class Subject Mapping
   getClassSubjectMappings: () => ipcRenderer.invoke('get-class-subject-mappings'),
