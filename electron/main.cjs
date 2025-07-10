@@ -164,13 +164,23 @@ ipcMain.handle('show-confirmation-dialog', async (_, message) => {
   });
   return result.response === 0;
 });
-ipcMain.handle('show-success-dialog', async (_, message) => {
+ipcMain.handle('show-info-dialog', async (_, message) => {
   const { dialog } = require('electron');
   await dialog.showMessageBox({
     type: 'info',
     buttons: ['OK'],
     defaultId: 0,
-    title: 'Success',
+    title: 'Sikul App says',
+    message,
+  });
+});
+ipcMain.handle('show-error-dialog', async (_, message) => {
+  const { dialog } = require('electron');
+  await dialog.showMessageBox({
+    type: 'error',
+    buttons: ['OK'],
+    defaultId: 0,
+    title: 'Sikul App says',
     message,
   });
 });

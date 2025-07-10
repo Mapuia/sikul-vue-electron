@@ -165,7 +165,7 @@ ipcMain.handle('get-current-exam', async (event, yearId) => {
         PassingPercentage: terminal.PassingPercentage || null,
         Result_Published: terminal.Result_Published || false
       },
-      annual: {
+      final: {
         Result_Published: annual.Result_Published || false
       }
     };

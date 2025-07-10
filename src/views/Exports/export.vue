@@ -191,26 +191,26 @@ async function exportSettings() {
   try {
     const response = await window.electronAPI.exportSettings(CurrentYearId.value)
     if (response.success) {
-      alert('Settings exported successfully.')
+      window.electronAPI.showInfoDialog('Settings exported successfully.')
     } else {
-      alert('Failed to export settings.')
+      window.electronAPI.showErrorDialog('Failed to export settings.')
     }
   } catch (error) {
     console.error('Error exporting settings:', error)
-    alert('An error occurred while exporting settings.')
+    window.electronAPI.showErrorDialog('An error occurred while exporting settings.')
   }
 }
 async function exportMasterData() {
   try {
     const response = await window.electronAPI.exportMasterData()
     if (response.success) {
-      alert('Master Data exported successfully.')
+      window.electronAPI.showInfoDialog('Master Data exported successfully.')
     } else {
-      alert('Failed to export Master Data.')
+      window.electronAPI.showErrorDialog('Failed to export Master Data.')
     }
   } catch (error) {
     console.error('Error exporting Master Data:', error)
-    alert('An error occurred while exporting Master Data.')
+    window.electronAPI.showErrorDialog('An error occurred while exporting Master Data.')
   }
 }
 //fetch all from Admissions for selectedClassId and SelectedSectionId for CurrentYearId
@@ -225,9 +225,9 @@ async function exportStudent(className, sectionName) {
   })
 
   if (response.success) {
-    alert('Student data exported successfully.')
+    window.electronAPI.showInfoDialog('Student data exported successfully.')
   } else {
-    alert('Failed to export student data.')
+    window.electronAPI.showErrorDialog('Failed to export student data.')
   }
 }
 
@@ -248,9 +248,9 @@ async function exportHalfYearly(className, sectionName) {
   })
 
   if (response.success) {
-    alert('Half Yearly exam data exported.')
+    window.electronAPI.showInfoDialog('Half Yearly exam data exported.')
   } else {
-    alert('Export failed.')
+    window.electronAPI.showErrorDialog('Export failed.')
   }
 }
 
@@ -271,9 +271,9 @@ async function exportAnnual(className, sectionName) {
   })
 
   if (response.success) {
-    alert('Annual exam data exported.')
+    window.electronAPI.showInfoDialog('Annual exam data exported.')
   } else {
-    alert('Export failed.')
+    window.electronAPI.showErrorDialog('Export failed.')
   }
 }
 

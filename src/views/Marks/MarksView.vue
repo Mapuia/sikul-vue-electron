@@ -93,7 +93,7 @@
                 <thead>
                   <tr>
                     <th rowspan="2" style="width: 100px; vertical-align: middle">Roll No.</th>
-                    <th rowspan="2" style="min-width: 150px; vertical-align: middle">Student Name</th>
+                    <th rowspan="2" style="min-width: 250px; vertical-align: middle">Student Name</th>
                     <th colspan="3" class="has-text-centered">Marks Scored</th>                   
                     <th rowspan="2" style="vertical-align: middle">Appeared</th>
                     <th rowspan="2" style="vertical-align: middle">Status</th>
@@ -145,11 +145,14 @@
                       </span>
                     </td>
                     <td v-if="Result_Published"><p class = "help has-text-danger">Result Published! Can not update marks</p></td>
-                    <td v-else-if="appeared[student.StudentId]">
+                    <td v-else-if="appeared[student.StudentId] && canAccess(['admin', 'teacher'])">
                       <button class="button is-info is-small" @click="openEditModal(student)"><i class="fas fa-edit mr-2"></i> Update</button>
                     </td>
-                    <td v-else>
+                    <td v-else-if = "!appeared[student.StudentId]">
                       <span class="has-text-grey">Not Appeared</span>
+                    </td>
+                    <td v-else>
+                      <span class="help has-text-danger">No Access</span>
                     </td>
                   </tr>
                 </tbody>
@@ -227,11 +230,14 @@
                         {{ existingGrades[student.StudentId] || 'N/A' }}
                       </td>
                       <td v-if="Result_Published"><p class = "help has-text-danger">Result Published! Can not update grades</p></td>
-                      <td v-else-if="appeared[student.StudentId]" style="text-align: center;">                      
+                      <td v-else-if="appeared[student.StudentId] && canAccess(['admin', 'teacher'])" style="text-align: center;">                      
                         <button class="button is-info is-small" @click="openEditModal(student)"><i class="fas fa-edit"></i> Update</button>
                       </td>
+                      <td v-else-if = "!appeared[student.StudentId]">
+                        <span class="has-text-grey">Not Appeared</span>
+                      </td>
                       <td v-else>
-                        <span class="has-text-grey has-tex-centered">Not Appeared</span>
+                        <span class="help has-text-danger">No Access</span>
                       </td>
                     </tr>
                   </tbody>
@@ -329,11 +335,12 @@
 </template>
 
 <script setup>
-import { ref, watch, computed, onMounted, reactive } from 'vue'
+import { ref, watch, computed, onMounted } from 'vue'
 import { useAcademicYear } from '../../composables/useAcademicYear'
 import { useActiveExam } from '../../composables/useActiveExam'
 import { useRoute, useRouter } from 'vue-router'
 
+// ============== ROUTER & COMPOSABLES ==============
 const route = useRoute()
 const router = useRouter()
 
@@ -343,40 +350,45 @@ const {
   periodicMinorMaxMark,
   terminalMajorMaxMark,
   terminalMinorMaxMark,
-  Terminal_Published,
-  Annual_Published,
   PassingPercentage,      
   loadActiveExam 
 } = useActiveExam()
 
-// Reactive state
+// ============== REACTIVE STATE ==============
+// Exam related
 const examType = ref('')
 const currentExamId = ref('')
 const currentExamName = ref('')
-const selected = ref('Scholastic') // Default to Scholastic Subjects
+const Result_Published = ref(false)
+
+// UI state
+const selected = ref('Scholastic') // Default tab
+const successMessage = ref('')
+const errorMessage = ref('')
+const isSaving = ref(false)
+const studentloaded = ref(false)
+
+// Data lists
 const classes = ref([])
 const sections = ref([])
 const subjects = ref([])
 const students = ref([])
+
+// Selected values
 const selectedClassId = ref('')
 const selectedSectionId = ref('')
 const selectedSubjectId = ref('')
 const marksEntered = ref(false)
 
-// Data stores
-const existingGrades = ref({})
-const newGrades = ref({})
+// Marks data
 const periodicMarks = ref({})
 const termMarks = ref({})
 const statuses = ref({})
-const appeared = ref({}) // Track if student appeared for exam
-const Result_Published = ref(false)
-// UI state
-const successMessage = ref('')
-const errorMessage = ref('')
-const isSaving = ref(false)
-const finished = ref(false)
-const studentloaded = ref(false)
+const appeared = ref({})
+
+// Grades data
+const existingGrades = ref({})
+const newGrades = ref({})
 
 // Edit modal state
 const isEditModalOpen = ref(false)
@@ -387,26 +399,29 @@ const editForm = ref({
   grade: ''
 })
 
-// Computed properties
-const selectedSubjectName = computed(() => {
-  return subjects.value.find(sub => sub.Id === selectedSubjectId.value)?.SubjectName || ''
-})
+// User role
+const userRole = ref('')
 
-const selectedSubject = computed(() => {
-  return subjects.value.find(subject => subject.Id === selectedSubjectId.value) || null
-})
+// ============== COMPUTED PROPERTIES ==============
+const selectedSubjectName = computed(() => 
+  subjects.value.find(sub => sub.Id === selectedSubjectId.value)?.SubjectName || ''
+)
 
-const selectedSubjectCategory = computed(() => {
-  return selectedSubject.value?.SubjectCategory || null
-})
-// Watch for route changes
+const selectedSubject = computed(() => 
+  subjects.value.find(subject => subject.Id === selectedSubjectId.value) || null
+)
+
+const selectedSubjectCategory = computed(() => 
+  selectedSubject.value?.SubjectCategory || null
+)
+
+// ============== WATCHERS ==============
+// Watch route changes
 watch(() => route.query.type, (newType) => {
   examType.value = newType
   getExam()
   fetchClasses() 
-  selectedClassId.value = ''
-  selectedSectionId.value = 0
-  selectedSubjectId.value = ''
+  resetSelections()
 }, { immediate: true })
 
 watch(() => route.query, (newQuery) => {
@@ -417,183 +432,86 @@ watch(() => route.query, (newQuery) => {
   }
 }, { immediate: true })
 
-// On Page Load, get examId and examName
-async function getExam() {
-  const result = await window.electronAPI.getExamByType(examType.value, CurrentYearId.value)
-  currentExamId.value = result.exam.Id
-  currentExamName.value = result.exam.ExamName
-}
-//verify result published
-async function verifyResultStatus() { 
-    const result = await window.electronAPI.verifyResultStatus({
-            academicYearId: CurrentYearId.value,
-            resultType: examType.value === 'terminal' ? examType.value : 'final', //if examType is not terminal, result will be final
-            examId: currentExamId.value,
-            classId: selectedClassId.value,
-            sectionId: selectedSectionId.value
-          })       
-    if (result.success) {
-      Result_Published.value = result.isPublished     
-    }
-}
-// Initialization
-onMounted(async () => {
-  await Promise.all([
-    loadAcademicYear(),
-    loadActiveExam()       
-  ])  
-})
-
-// Watch for tab changes
+// Watch tab changes
 watch(selected, (newTab) => {
-  // Reset all selections when switching tabs
-  selectedClassId.value = ''
-  selectedSectionId.value = 0
-  selectedSubjectId.value = ''
-  students.value = []
-  periodicMarks.value = {}
-  termMarks.value = {}
-  statuses.value = {}
-  newGrades.value = {}
-  appeared.value = {}
+  resetSelections()
   fetchClasses()
 })
 
-// Watch for class changes
+// Watch class changes
 watch(selectedClassId, async (classId) => {
   selectedSubjectId.value = ''
   if (!classId) {
     resetSectionData()    
     return
   } 
+  
+  selectedSectionId.value = ''
   marksEntered.value = false
-  const secResult = await window.electronAPI.getSectionsByClassId(classId)
-   
-  if (secResult.success) {
-    sections.value = secResult.sections
-  }
-  if(sections.value.length === 0){
-    selectedSectionId.value = 0
-    loadStudentsBySectionId()
-    studentloaded.value = false  
-  }
-  const result = await window.electronAPI.getSubjectsByClassId(selectedClassId.value, selected.value)
-  if (result.success) subjects.value = result.subjects   
+  await fetchSections(classId)
+  await fetchSubjects(classId)
+  studentloaded.value = false 
 })
 
-// Watch for section changes
+// Watch section changes
 watch(selectedSectionId, async (sectionId) => {
   if (!selectedClassId.value || !sectionId) {
     resetStudentData()
     return
   }
-  loadStudentsBySectionId()
+  await verifyResultStatus()
+  await loadStudentsBySectionId()
   studentloaded.value = false
 })
 
-// Watch for subject changes
+// Watch subject changes
 watch(selectedSubjectId, async (subjectId) => {
   if (!subjectId) return
-
+  
   if (selected.value === "Scholastic") {
     await loadExistingMarks()
   } else if (selected.value === "Co-Scholastic") {
     await loadExistingGrades()
   }
   studentloaded.value = true
-  verifyResultStatus()
 })
 
-// Methods
-const calculateTotal = (studentId) => {
-  const pmarks = periodicMarks.value[studentId] || 0
-  const tmarks = termMarks.value[studentId] || 0
-  return pmarks + tmarks
+// ============== LIFECYCLE HOOKS ==============
+onMounted(async () => {
+  await Promise.all([
+    loadAcademicYear(),
+    loadActiveExam(),
+    getUser()       
+  ])  
+})
+
+// ============== DATA FETCHING FUNCTIONS ==============
+async function getExam() {
+  const result = await window.electronAPI.getExamByType(examType.value, CurrentYearId.value)
+  currentExamId.value = result.exam.Id
+  currentExamName.value = result.exam.ExamName
 }
 
-const updateStatus = (studentId) => {
-  const total = calculateTotal(studentId)
-  const maxTotal = (selectedSubjectCategory.value === 'Major' 
-    ? (periodicMajorMaxMark.value + terminalMajorMaxMark.value)
-    : (periodicMinorMaxMark.value + terminalMinorMaxMark.value))
-  
-  const passMark = Math.ceil(maxTotal * (PassingPercentage.value / 100))
-  statuses.value[studentId] = total >= passMark ? 'Pass' : 'Fail'
-}
-
-const resetSectionData = () => {
-  sections.value = []
-  subjects.value = []
-  selectedSectionId.value = ''
-  resetStudentData()
-}
-
-const resetStudentData = () => {
-  students.value = []
-  resetMarkData()
-}
-
-const resetMarkData = () => {
-  periodicMarks.value = {}
-  termMarks.value = {}
-  statuses.value = {}
-  appeared.value = {}
-}
-
-const resetGrades = () => {
-  existingGrades.value = {}
-  newGrades.value = {}
-}
-
-// Modal functions
-const openEditModal = async (student) => {
-  await verifyResultStatus()
-  if(Result_Published.value) return
-
-  selectedStudent.value = student
-  if (selected.value === 'Scholastic') {
-    editForm.value = {
-      periodicMarks: periodicMarks.value[student.StudentId] || 0,
-      termMarks: termMarks.value[student.StudentId] || 0,
-      grade: ''
-    }
-  } else {
-    editForm.value = {
-      periodicMarks: 0,
-      termMarks: 0,
-      grade: newGrades.value[student.StudentId] || existingGrades.value[student.StudentId] || ''
-    }
-  }
-  isEditModalOpen.value = true
-}
-
-const closeEditModal = () => {
-  isEditModalOpen.value = false
-  selectedStudent.value = {}
-  editForm.value = {
-    periodicMarks: 0,
-    termMarks: 0,
-    grade: ''
-  }
-}
-
-const calculateEditStatus = () => {
-  const periodic = parseInt(editForm.value.periodicMarks) || 0
-  const half = parseInt(editForm.value.termMarks) || 0
-  const total = periodic + half
-  
-  const maxTotal = (selectedSubjectCategory.value === 'Major' 
-    ? (periodicMajorMaxMark.value + terminalMajorMaxMark.value)
-    : (periodicMinorMaxMark.value + terminalMinorMaxMark.value))
-  
-  const passMark = Math.ceil(maxTotal * (PassingPercentage.value / 100))
-  return total >= passMark ? 'Pass' : 'Fail'
-}
-
-// Data loading functions
 async function fetchClasses() {
   const result = await window.electronAPI.getClasses()
   if (result.success) classes.value = result.classes
+}
+
+async function fetchSections(classId) {
+  const secResult = await window.electronAPI.getSectionsByClassId(classId) 
+  if (secResult.success) {
+    sections.value = secResult.sections  
+  }
+  if (sections.value.length === 0) {
+    selectedSectionId.value = 0
+    await verifyResultStatus()
+    await loadStudentsBySectionId()     
+  }
+}
+
+async function fetchSubjects(classId) {
+  const result = await window.electronAPI.getSubjectsByClassId(classId, selected.value)
+  if (result.success) subjects.value = result.subjects
 }
 
 async function loadStudentsBySectionId() {
@@ -601,7 +519,7 @@ async function loadStudentsBySectionId() {
     const result = await window.electronAPI.getStudentsByClassAndSection({ 
       classId: selectedClassId.value,
       sectionId: selectedSectionId.value,
-      AcademicYearId: CurrentYearId.value
+      AcademicYearId: CurrentYearId.value,
     })
 
     if (result.success) {
@@ -624,7 +542,7 @@ async function loadExistingMarks() {
       ClassId: selectedClassId.value,
       SectionId: selectedSectionId.value
     })
-
+    
     periodicMarks.value = {}
     termMarks.value = {}
     
@@ -634,6 +552,7 @@ async function loadExistingMarks() {
       statuses.value[mark.StudentId] = mark.SubjectResult || "N.A."
       appeared.value[mark.StudentId] = mark.SubjectResult === 'N.A.' ? 0 : 1
     })
+ 
     marksEntered.value = result.length > 0
   } catch (error) {
     console.error("Failed to load marks:", error)
@@ -655,7 +574,7 @@ async function loadExistingGrades() {
     if (result.success) {
       result.grades.forEach(grade => {
         existingGrades.value[grade.StudentId] = grade.Grade
-        newGrades.value[grade.StudentId] = grade.Grade // Initialize newGrades with existing values
+        newGrades.value[grade.StudentId] = grade.Grade
         appeared.value[grade.StudentId] = grade.Grade ? 1 : 0
       })
     }   
@@ -664,60 +583,148 @@ async function loadExistingGrades() {
   }
 }
 
-// Save functions
-const saveChanges = async () => {
+// ============== RESET FUNCTIONS ==============
+function resetSelections() {
+  selectedClassId.value = ''
+  selectedSectionId.value = ''
+  selectedSubjectId.value = ''
+  resetStudentData()
+  resetMarkData()
+  resetGrades()
+}
+
+function resetSectionData() {
+  sections.value = []
+  subjects.value = []
+  selectedSectionId.value = ''
+  resetStudentData()
+}
+
+function resetStudentData() {
+  students.value = []
+  resetMarkData()
+}
+
+function resetMarkData() {
+  periodicMarks.value = {}
+  termMarks.value = {}
+  statuses.value = {}
+  appeared.value = {}
+}
+
+function resetGrades() {
+  existingGrades.value = {}
+  newGrades.value = {}
+}
+
+// ============== MARK CALCULATION FUNCTIONS ==============
+function calculateTotal(studentId) {
+  const pmarks = periodicMarks.value[studentId] || 0
+  const tmarks = termMarks.value[studentId] || 0
+  return pmarks + tmarks
+}
+
+function updateStatus(studentId) {
+  const total = calculateTotal(studentId)
+  const maxTotal = (selectedSubjectCategory.value === 'Major' 
+    ? (periodicMajorMaxMark.value + terminalMajorMaxMark.value)
+    : (periodicMinorMaxMark.value + terminalMinorMaxMark.value))
+  
+  const passMark = Math.ceil(maxTotal * (PassingPercentage.value / 100))
+  statuses.value[studentId] = total >= passMark ? 'Pass' : 'Fail'
+}
+
+// ============== MODAL FUNCTIONS ==============
+async function openEditModal(student) {
+  await verifyResultStatus()
+  if(Result_Published.value) return
+
+  selectedStudent.value = student
   if (selected.value === 'Scholastic') {
-    // Update the marks for the selected student
+    editForm.value = {
+      periodicMarks: periodicMarks.value[student.StudentId] || 0,
+      termMarks: termMarks.value[student.StudentId] || 0,
+      grade: ''
+    }
+  } else {
+    editForm.value = {
+      periodicMarks: 0,
+      termMarks: 0,
+      grade: newGrades.value[student.StudentId] || existingGrades.value[student.StudentId] || ''
+    }
+  }
+  isEditModalOpen.value = true
+}
+
+function closeEditModal() {
+  isEditModalOpen.value = false
+  selectedStudent.value = {}
+  editForm.value = {
+    periodicMarks: 0,
+    termMarks: 0,
+    grade: ''
+  }
+}
+
+function calculateEditStatus() {
+  const periodic = parseInt(editForm.value.periodicMarks) || 0
+  const half = parseInt(editForm.value.termMarks) || 0
+  const total = periodic + half
+  
+  const maxTotal = (selectedSubjectCategory.value === 'Major' 
+    ? (periodicMajorMaxMark.value + terminalMajorMaxMark.value)
+    : (periodicMinorMaxMark.value + terminalMinorMaxMark.value))
+  
+  const passMark = Math.ceil(maxTotal * (PassingPercentage.value / 100))
+  return total >= passMark ? 'Pass' : 'Fail'
+}
+
+// ============== DATA SAVING FUNCTIONS ==============
+async function saveChanges() {
+  if (selected.value === 'Scholastic') {
     periodicMarks.value[selectedStudent.value.StudentId] = editForm.value.periodicMarks
     termMarks.value[selectedStudent.value.StudentId] = editForm.value.termMarks
     updateStatus(selectedStudent.value.StudentId)
     await saveMarks()
   } else {
-    // Update the grade for the selected student
     newGrades.value[selectedStudent.value.StudentId] = editForm.value.grade
-    //appeared.value[selectedStudent.value.StudentId] = editForm.value.grade ? 1 : 0
     await submitGrades()
   }
   closeEditModal()
 }
 
 async function saveMarks() {
-  isSaving.value = true;
-  errorMessage.value = '';
+  isSaving.value = true
+  errorMessage.value = ''
 
   try {
-    // Calculate max marks based on subject category
     const periodicMax = selectedSubjectCategory.value === 'Major' 
       ? periodicMajorMaxMark.value 
-      : periodicMinorMaxMark.value;
+      : periodicMinorMaxMark.value
     
     const terminalMax = selectedSubjectCategory.value === 'Major' 
       ? terminalMajorMaxMark.value 
-      : terminalMinorMaxMark.value;
+      : terminalMinorMaxMark.value
     
-    const totalMax = periodicMax + terminalMax;
+    const totalMax = periodicMax + terminalMax
 
     const marksData = students.value
-    .filter(student => !!appeared.value[student.StudentId])
-    .map(student => {
-      const periodicMarksObtained = periodicMarks.value[student.StudentId] || 0;
-      const terminalMarksObtained = termMarks.value[student.StudentId] || 0;
-      const totalMarksObtained = periodicMarksObtained + terminalMarksObtained;
-      return {
-        StudentId: student.StudentId,        
-        PeriodicMaxMark: periodicMax,
-        TerminalMaxMark: terminalMax,
-        TotalMaxMarks: totalMax,
-        PeriodicMarksObtained: periodicMarksObtained,
-        TerminalMarksObtained: terminalMarksObtained,
-        TotalMarksObtained: totalMarksObtained,
-        SubjectResult: statuses.value[student.StudentId]
-      };
-    });
-
-    if (marksData.length === 0) {
-      throw new Error('No marks data to save');
-    }
+      .filter(student => !!appeared.value[student.StudentId])
+      .map(student => {
+        const periodicMarksObtained = periodicMarks.value[student.StudentId] || 0
+        const terminalMarksObtained = termMarks.value[student.StudentId] || 0
+        const totalMarksObtained = periodicMarksObtained + terminalMarksObtained
+        return {
+          StudentId: student.StudentId,        
+          PeriodicMaxMark: periodicMax,
+          TerminalMaxMark: terminalMax,
+          TotalMaxMarks: totalMax,
+          PeriodicMarksObtained: periodicMarksObtained,
+          TerminalMarksObtained: terminalMarksObtained,
+          TotalMarksObtained: totalMarksObtained,
+          SubjectResult: statuses.value[student.StudentId]
+        }
+      })
 
     const subjectData = {
       YearId: CurrentYearId.value, 
@@ -726,33 +733,28 @@ async function saveMarks() {
       ClassId: selectedClassId.value,
       SectionId: selectedSectionId.value === '' ? 0 : selectedSectionId.value,
       SubjectId: selectedSubjectId.value
-      //Finished: Boolean(finished.value)
-    };
-
-    if (!subjectData.YearId || !subjectData.ExamId || subjectData.ClassId === '' || !subjectData.SubjectId) {
-      throw new Error('Incomplete subject data');
     }
 
-    const result = await window.electronAPI.saveMarks({marksData, subjectData});
+    const result = await window.electronAPI.saveMarks({marksData, subjectData})
     if (result.success) {
-      successMessage.value = 'Marks updated successfully!';
-      setTimeout(() => successMessage.value = '', 3000);
-      marksEntered.value = true;
+      successMessage.value = 'Marks updated successfully!'
+      setTimeout(() => successMessage.value = '', 3000)
+      marksEntered.value = true
       studentloaded.value = true
     } else {
-      throw new Error(result.message || 'Failed to update marks'); 
+      throw new Error(result.message || 'Failed to update marks') 
     }
   } catch (err) {
-    errorMessage.value = err.message;
-    setTimeout(() => errorMessage.value = '', 5000);
+    errorMessage.value = err.message
+    setTimeout(() => errorMessage.value = '', 5000)
   } finally {
-    isSaving.value = false;
+    isSaving.value = false
   }
 }
 
 async function submitGrades() {
   if (!selectedClassId.value || selectedSectionId.value === '' || !selectedSubjectId.value) {
-    alert('Please select class, section, and co-scholastic activity')
+    window.electronAPI.showInfoDialog('Please select class, section, and co-scholastic activity')
     return
   }
 
@@ -760,23 +762,18 @@ async function submitGrades() {
   try {
     const gradesData = students.value
       .filter(student => appeared.value[student.StudentId])
-      .map(student => {
-        // Use new grade if edited, otherwise existing grade
-        const grade = newGrades.value[student.StudentId] || existingGrades.value[student.StudentId]
-        return {
-          StudentId: student.StudentId,
-          SubjectId: selectedSubjectId.value,
-          ActiveExamId: currentExamId.value,
-          Grade: grade
-        }
-      })
+      .map(student => ({
+        StudentId: student.StudentId,
+        SubjectId: selectedSubjectId.value,
+        ActiveExamId: currentExamId.value,
+        Grade: newGrades.value[student.StudentId] || existingGrades.value[student.StudentId]
+      }))
 
     const result = await window.electronAPI.saveCoScholasticMarks(gradesData)
 
     if (result.success) {
       successMessage.value = 'Grades submitted successfully!'
       setTimeout(() => successMessage.value = '', 3000)
-      // Refresh existing grades after save
       await loadExistingGrades()
     } else {
       throw new Error(result.error || 'Failed to save grades')
@@ -788,6 +785,32 @@ async function submitGrades() {
   } finally {
     isSaving.value = false
   }
+}
+
+// ============== UTILITY FUNCTIONS ==============
+async function verifyResultStatus() { 
+  const result = await window.electronAPI.verifyResultStatus({
+    academicYearId: CurrentYearId.value,
+    resultType: examType.value === 'terminal' ? examType.value : 'final',
+    examId: currentExamId.value,
+    classId: selectedClassId.value,
+    sectionId: selectedSectionId.value
+  })       
+  
+  if (result.success) {
+    Result_Published.value = result.isPublished
+  }
+}
+
+async function getUser() {
+  const user = await window.electronAuth.getCurrentUser()
+  if (user) {    
+    userRole.value = user.role
+  }
+}
+
+const canAccess = (requiredRoles) => {
+  return requiredRoles.includes(userRole.value)
 }
 </script>
 
@@ -805,7 +828,8 @@ async function submitGrades() {
   gap: 1rem;
 }
 .title{
-  margin-bottom: 0;
+  padding-bottom: 0rem;
+  margin-bottom: 0rem;  
 }
 .main-content {
   flex: 1;
@@ -815,12 +839,10 @@ async function submitGrades() {
   padding: 0.5rem;
   margin: 0;
 }
+
 .tab-button{
  border: 1px solid rgb(126, 126, 126);
  border-radius: 10px;
-}
-.tab-heading{
-  padding: 0.15 rem;
 }
 
 .thin-line {

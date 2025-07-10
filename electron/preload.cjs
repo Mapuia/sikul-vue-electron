@@ -26,8 +26,9 @@ contextBridge.exposeInMainWorld('electronAuth', {
     }
   },  
   showConfirmationDialog: async (message) => await ipcRenderer.invoke('show-confirmation-dialog', message),
-  showSuccessDialog: (message) => ipcRenderer.invoke('show-success-dialog', message),
-      
+  showInfoDialog: (message) => ipcRenderer.invoke('show-info-dialog', message),
+  showErrorDialog: (message) => ipcRenderer.invoke('show-error-dialog', message),
+
   //Classes API
   getClasses: () => ipcRenderer.invoke('get-classes'),
   insertClass: async (classId, className) => await ipcRenderer.invoke('insert-class', classId, className),       
@@ -148,6 +149,7 @@ contextBridge.exposeInMainWorld('electronAuth', {
 
   getMarksByExamSubject: (params) => ipcRenderer.invoke('get-marks-by-exam-subject', params),
   publishResults: (params) => ipcRenderer.invoke('publish-results', params),
+  getPublishStatus: (data) => ipcRenderer.invoke('get-publish-status', data),  
   unpublishResults: (params) => ipcRenderer.invoke('unpublish-results', params),
 
   generateReportCard:(params) => ipcRenderer.invoke('generate-report-card', params),

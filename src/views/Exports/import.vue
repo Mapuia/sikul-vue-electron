@@ -92,12 +92,12 @@ const currentDate = ref(new Date().toLocaleDateString('en-IN', {
 
 // Helper function to show success message
 function showSuccess(message, details = '') {
-  alert(`${message}\n\n${details}`)
+  window.electronAPI.showInfoDialog(`${message}\n\n${details}`)
 }
 
 // Helper function to show error
 function showError(message) {
-  alert(`Error: ${message}`)
+  window.electronAPI.showErrorDialog(`Error: ${message}`)
 }
 
 // Helper function to open file dialog

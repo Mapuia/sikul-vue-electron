@@ -604,7 +604,7 @@ async function proceedToGenerateReportCard() {
 
 async function generateReportCard(studentId, totalWorkingDays, attendance, remark) {
   if (!studentId || !currentExamId.value) {
-    window.alert('Please select a valid student and ensure exam is properly loaded.')
+    window.electronAPI.showInfoDialog('Please select a valid student and ensure exam is properly loaded.')
     return
   }  
   try {
@@ -619,15 +619,15 @@ async function generateReportCard(studentId, totalWorkingDays, attendance, remar
     })
     
     if (results?.success) { 
-      await window.electronAPI.showSuccessDialog('Report card generated successfully!');
+      await window.electronAPI.showInfoDialog('Report card generated successfully!');
       await fetchReportCard(studentId, selectedStudentName.value)
       
     } else {
-      window.alert('Failed to generate report card. Please try again.')
+      window.electronAPI.showErrorDialog('Failed to generate report card. Please try again.')
     }
   } catch (error) {
     console.error('Error generating report:', error)
-    window.alert('An error occurred while generating the report card.')
+    window.electronAPI.showErrorDialog('An error occurred while generating the report card.')
   }
 }
 

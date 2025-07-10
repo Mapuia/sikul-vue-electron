@@ -9,7 +9,7 @@ const terminalMajorMaxMark = ref(0)
 const terminalMinorMaxMark = ref(0)
 const PassingPercentage = ref(40) // Default passing percentage
 const Terminal_Published = ref(false)
-const Annual_Published = ref(false)
+const Final_Published = ref(false)
 
 export const useActiveExam = () => {
   const loadActiveExam = async () => {
@@ -25,7 +25,7 @@ export const useActiveExam = () => {
       
       // Ensure boolean values for published status
       Terminal_Published.value = Boolean(result?.terminal?.Result_Published);
-      Annual_Published.value = Boolean(result?.annual?.Result_Published);
+      Final_Published.value = Boolean(result?.final?.Result_Published);
       
     } catch (error) {
       console.error('Error loading active exam:', error);
@@ -36,7 +36,7 @@ export const useActiveExam = () => {
       terminalMinorMaxMark.value = 0;
       PassingPercentage.value = 40;
       Terminal_Published.value = false;
-      Annual_Published.value = false;
+      Final_Published.value = false;
     }
   }
 
@@ -47,7 +47,7 @@ export const useActiveExam = () => {
     terminalMinorMaxMark,
     PassingPercentage,
     Terminal_Published,
-    Annual_Published,
+    Final_Published,
     loadActiveExam,
   }
 }

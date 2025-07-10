@@ -1,6 +1,6 @@
 <template>
   <div class="form-container single">
-    <h1 class="title has-text-centered">Class - Master Entry</h1>
+    <h1 class="title has-text-centered is-4">Class - Master Entry</h1>
 
     <div class="buttons mt-4">
       <button class="button is-primary" @click="showAddForm = true" v-if="!showAddForm">
@@ -121,12 +121,7 @@
                       <i class="fas fa-times"></i>
                    
                   </button>
-                  <button 
-                    class="button is-small is-danger no-padding" 
-                    @click="deleteClass(classItem)"
-                    title="Delete">
-                    <i class="fas fa-trash-alt"></i>
-                  </button>
+                  
                 </div>
               </td>
             </tr>

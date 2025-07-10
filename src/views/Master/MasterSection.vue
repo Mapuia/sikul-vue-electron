@@ -1,6 +1,6 @@
 <template>
   <div class="form-container single">
-    <h1 class="title has-text-centered">Section - Master Entry</h1>
+    <h1 class="title has-text-centered is-4">Section - Master Entry</h1>
 
     <div class="buttons mt-4">
       <button class="button is-primary" @click="showAddSectionForm = true" v-if="!showAddSectionForm">
@@ -91,9 +91,7 @@
                     </span>
                    
                   </button>
-                  <button class="button is-small is-danger no-padding" @click="deleteSection(sectionItem)">
-                    <i class="fas fa-trash-alt"></i>
-                  </button>
+                  
                 </div>
               </td>
             </tr>

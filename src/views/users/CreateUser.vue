@@ -88,7 +88,7 @@ const router = useRouter();
 const username = ref('');
 const password = ref('');
 const confirmPassword = ref('');
-const role = ref('teacher');
+const role = ref('');
 const error = ref('');
 const success = ref('');
 const loading = ref(false);
@@ -115,12 +115,14 @@ const createUser = async () => {
 
     if (result.success) {
       success.value = 'User created successfully!';
+      window.electronAPI.showInfoDialog(success.value);
       username.value = '';
       password.value = '';
       confirmPassword.value = '';
-      role.value = 'teacher';
+      role.value = '';
     } else {
       error.value = result.message || 'Failed to create user';
+      window.electronAPI.showErrorDialog(error.value);
     }
   } catch (err) {
     error.value = 'An error occurred while creating user';

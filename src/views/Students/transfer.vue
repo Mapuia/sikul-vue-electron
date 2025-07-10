@@ -38,7 +38,7 @@ function handleSubmit() {
   if (sampleText.value.trim()) {
     submitted.value = true
   }
-  alert('This will be the upgraded feature of this Application.')
+  window.electronAPI.showInfoDialog('This will be the upgraded feature of this Application.')
 }
 
 function reset() {

@@ -1,6 +1,6 @@
 <template>
   <div class="form-container full">
-    <h1 class="title has-text-centered">Subject - Master Entry</h1>
+    <h1 class="title has-text-centered is-4">Subject - Master Entry</h1>
 
     <div class="buttons mt-4">
       <button class="button is-primary" @click="showAddSubjectForm = true" v-if="!showAddSubjectForm">
@@ -235,13 +235,7 @@
                   >
                     <i class="fas fa-times"></i>
                   </button>
-                  <button 
-                    class="button is-small is-danger no-padding" 
-                    @click="deleteSubject(subject)"
-                    :disabled="isSubmitting"
-                  >
-                    <i class="fas fa-trash-alt"></i>
-                  </button>
+                  
                 </div>
               </td>
             </tr>

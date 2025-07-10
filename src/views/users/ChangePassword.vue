@@ -98,11 +98,13 @@ const changePassword = async () => {
     
     if (result.success) {
       success.value = 'Password changed successfully!';
+      window.electronAPI.showInfoDialog(success.value);
       currentPassword.value = '';
       newPassword.value = '';
       confirmPassword.value = '';
     } else {
       error.value = result.message || 'Failed to change password';
+      window.electronAPI.showErrorDialog(error.value);
     }
   } catch (err) {
     error.value = 'An error occurred while changing password';

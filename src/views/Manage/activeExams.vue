@@ -1,6 +1,6 @@
 <template>
   <div class="form-container full">
-    <h1 class="title has-text-centered">Available Exams</h1>
+    <h1 class="title has-text-centered is-4">Available Exams</h1>
     <h2 class="subtitle has-text-centered">for Academic Year: {{ CurrentYear }}</h2>
 
     <div class="buttons mt-4">
@@ -83,9 +83,7 @@
                     <button class="button is-small is-info no-padding" @click="startEditing(exam)" title="Edit">
                       <span class="fas fa-edit"></span>
                     </button>
-                    <button class="button is-small is-danger no-padding" @click="confirmDelete(exam)" title="Delete">
-                      <span class="fas fa-trash-alt"></span>
-                    </button>
+                    
                   </template>
                   <template v-else>
                     <button class="button is-small is-success no-padding" @click="saveEdit" :disabled="saving">

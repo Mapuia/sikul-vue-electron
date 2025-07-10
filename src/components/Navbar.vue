@@ -43,9 +43,10 @@
                 <span class="navbar-link">Half Yearly</span>
                 <div class="navbar-subdropdown">
                   <router-link class="navbar-item" to="/marks/marks-entry?type=terminal" @click="closeDropdown">Marks Entry</router-link>
-                  <router-link class="navbar-item" to="/result/create?type=terminal" @click="closeDropdown">Generate Result</router-link>
-                  <router-link class="navbar-item" to="/result/section?type=terminal" @click="closeDropdown">Section-wise Result</router-link>
-                  <router-link class="navbar-item" to="/result/summary?type=terminal" @click="closeDropdown">Result Summary</router-link>
+                  <router-link class="navbar-item" to="/marks/view?type=terminal" @click="closeDropdown">View Marks</router-link>
+                  <router-link v-if="canAccess(['admin','teacher'])" class="navbar-item" to="/result/create?type=terminal" @click="closeDropdown">Generate Result</router-link>
+                  <router-link class="navbar-item" to="/result/section?type=terminal" @click="closeDropdown">View Section Result</router-link>
+                  <router-link class="navbar-item" to="/result/summary?type=terminal" @click="closeDropdown">View Result Summary</router-link>
                 </div>
               </div>
               <!-- Annual Exam Submenu -->
@@ -53,9 +54,10 @@
                 <span class="navbar-link">Annual</span>
                 <div class="navbar-subdropdown">
                   <router-link class="navbar-item" to="/marks/marks-entry?type=annual" @click="closeDropdown">Marks Entry</router-link>
-                  <router-link class="navbar-item" to="/result/create?type=annual" @click="closeDropdown">Generate Result</router-link>
-                  <router-link class="navbar-item" to="/result/section?type=annual" @click="closeDropdown">Section-wise Result</router-link>
-                  <router-link class="navbar-item" to="/result/summary?type=annual" @click="closeDropdown">Result Summary</router-link>
+                  <router-link class="navbar-item" to="/marks/view?type=annual" @click="closeDropdown">View Marks</router-link>
+                  <router-link v-if="canAccess(['admin','teacher'])" class="navbar-item" to="/result/create?type=annual" @click="closeDropdown">Generate Result</router-link>
+                  <router-link class="navbar-item" to="/result/section?type=annual" @click="closeDropdown">View Section Result</router-link>
+                  <router-link class="navbar-item" to="/result/summary?type=annual" @click="closeDropdown">View Result Summary</router-link>
                 </div>
               </div>
             </div>
@@ -84,8 +86,8 @@
               <span class="fas fa-solid fa-gear"></span>Settings
             </a>
             <div class="navbar-dropdown">
-              <router-link class="navbar-item" to="/academic-year/create" @click="closeDropdown">Academic Session</router-link>
-              <router-link class="navbar-item" to="/exam/create" @click="closeDropdown">Examination</router-link>
+              <router-link v-if="canAccess(['admin'])" class="navbar-item" to="/academic-year/create" @click="closeDropdown">Academic Session</router-link>
+              <router-link v-if="canAccess(['admin'])" class="navbar-item" to="/exam/create" @click="closeDropdown">Examination</router-link>
               <router-link class="navbar-item" to="/result-criteria/set" @click="closeDropdown">Result Criteria Info</router-link>
               <router-link class="navbar-item" to="/export" @click="closeDropdown"><i class="fas fa-file-export mr-2"></i>Export</router-link>
               <router-link class="navbar-item" to="/import" @click="closeDropdown"><i class="fas fa-file-import mr-2"></i>Import</router-link>
@@ -150,13 +152,16 @@ const openDropdown = ref('');
 // Load user data and academic year
 onMounted(async () => {
   await loadAcademicYear();
+  await getUser();
+});
+
+async function getUser(){
   const user = await window.electronAuth.getCurrentUser();
   if (user) {
     currentUser.value = user.username.charAt(0).toUpperCase() + user.username.slice(1);;
     userRole.value = user.role;
   }
-});
-
+}
 
 // Role-based access control
 const canAccess = (requiredRoles) => {

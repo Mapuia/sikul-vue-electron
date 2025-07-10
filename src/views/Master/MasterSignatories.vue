@@ -1,6 +1,6 @@
 <template>
   <div class="form-container wide">
-    <h1 class="title has-text-centered">Signatories - Master Entry</h1>
+    <h1 class="title has-text-centered is-4">Signatories - Master Entry</h1>
 
     <!-- Notification System -->
     <transition name="slide-fade">

@@ -340,7 +340,7 @@ ipcMain.handle('generate-results', async (event, { academicYearId, resultType, e
           AcademicYearId, ActiveExamId, ClassId, SectionId, ResultType,
           isGenerated, Last_Modified_at
         ) VALUES (?, ?, ?, ?, ?, 1, CURRENT_TIMESTAMP)
-      `).run(academicYearId, examId, classId, sectionId, resultType);
+      `).run(academicYearId, examId, classId, sectionId, resultType);     
 
       return {
         success: true,
@@ -393,7 +393,7 @@ function getResultStatus(percentage, failCount, PassingPercentage) {
 //Check for if Result is Generated for given ClassID and SectionId of CurrentExam Sections.
 
 
-
+/*
 ipcMain.handle('publish-results', async (event, { academicYearId, examId, classId, sectionId }) => {
   try {
     // Check if results are generated
@@ -425,6 +425,7 @@ ipcMain.handle('publish-results', async (event, { academicYearId, examId, classI
     return { success: false, error: error.message };
   }
 });
+*/
 
 //Get generated Result Summary
 ipcMain.handle('get-result-summary', async (event, { academicYearId, examId, resultType }) => {
@@ -699,6 +700,126 @@ ipcMain.handle('get-section-results', async (event, { academicYearId, examId, cl
       error: error.message
     };
   }
+});
+
+// In your electron main process file (e.g., main.js)
+
+ipcMain.handle('get-publish-status', async (event, { academicYearId, activeExamId }) => {
+    
+  try {
+    // Get count of finished mark entries
+    const markEntryStmt = db.prepare(`
+      SELECT COUNT(*) as count 
+      FROM MarkEntryStatus 
+      WHERE ActiveExamId = ? AND FinishedEntry = 1
+    `);
+    const markEntryCount = markEntryStmt.get(activeExamId).count;
+
+    // Get count of generated results
+    const resultStatusStmt = db.prepare(`
+      SELECT COUNT(*) as count 
+      FROM ResultStatus 
+      WHERE AcademicYearId = ? AND ActiveExamId = ? AND isGenerated = 1
+    `);
+    const resultStatusCount = resultStatusStmt.get(academicYearId, activeExamId).count;
+    // get published date
+    const publishDateStmt = db.prepare(`
+      SELECT PublishDate 
+      FROM ActiveExams 
+      WHERE Id = ? AND AcademicYearId = ?
+    `);
+    const publishDate = publishDateStmt.get(activeExamId, academicYearId).PublishDate || ''
+
+    return {
+      success: true,
+      markEntryCount,
+      resultStatusCount,
+      publishDate
+    };
+  } catch (error) {
+    console.error('Error getting publish status counts:', error);
+    return { success: false, message: error.message };
+  } 
+});
+
+ipcMain.handle('publish-results', async (event, { academicYearId, activeExamId, publishDate }) => {  
+
+  try {
+    // Begin transaction
+    db.prepare('BEGIN TRANSACTION').run();
+
+    /* 1. Verify counts match
+    const countCheck = db.prepare(`
+      SELECT 
+        (SELECT COUNT(*) FROM MarkEntryStatus WHERE ActiveExamId = ? AND FinishedEntry = 1) as markEntryCount,
+        (SELECT COUNT(*) FROM ResultStatus WHERE AcademicYearId = ? AND ActiveExamId = ? AND isGenerated = 1) as resultStatusCount
+    `).get(activeExamId, academicYearId, activeExamId);
+
+    if (countCheck.markEntryCount !== countCheck.resultStatusCount) {
+      throw new Error(`Count mismatch - Mark entries: ${countCheck.markEntryCount}, Generated results: ${countCheck.resultStatusCount}`);
+    }
+
+    if (countCheck.markEntryCount === 0) {
+      throw new Error('No results available to publish');
+    }*/
+
+    // 2. Update ResultStatus table
+    const updateResultStatus = db.prepare(`
+      UPDATE ResultStatus 
+      SET isPublished = 1, Last_Modified_at = CURRENT_TIMESTAMP
+      WHERE AcademicYearId = ? AND ActiveExamId = ? AND isGenerated = 1
+    `);
+    updateResultStatus.run(academicYearId, activeExamId);
+
+    // 3. Update ActiveExams table
+    const updateActiveExams = db.prepare(`
+      UPDATE ActiveExams 
+      SET Result_Published = 1, PublishDate = ?, Modified_at = CURRENT_TIMESTAMP
+      WHERE Id = ? AND AcademicYearId = ?
+    `);
+    updateActiveExams.run(publishDate, activeExamId, academicYearId);
+
+    // Commit transaction
+    db.prepare('COMMIT').run();
+
+    return { success: true };
+  } catch (error) {
+    db.prepare('ROLLBACK').run();
+    console.error('Error publishing results:', error);
+    return { success: false, message: error.message };
+  } 
+});
+
+ipcMain.handle('unpublish-results', async (event, { academicYearId, activeExamId }) => {
+  try {
+    // Begin transaction
+    db.prepare('BEGIN TRANSACTION').run();
+
+    // 1. Update ResultStatus table
+    const updateResultStatus = db.prepare(`
+      UPDATE ResultStatus 
+      SET isPublished = 0, Last_Modified_at = CURRENT_TIMESTAMP
+      WHERE AcademicYearId = ? AND ActiveExamId = ? AND isGenerated = 1
+    `);
+    updateResultStatus.run(academicYearId, activeExamId);
+
+    // 2. Update ActiveExams table
+    const updateActiveExams = db.prepare(`
+      UPDATE ActiveExams 
+      SET Result_Published = 0, PublishDate = NULL, Modified_at = CURRENT_TIMESTAMP
+      WHERE Id = ? AND AcademicYearId = ?
+    `);
+    updateActiveExams.run(activeExamId, academicYearId);
+
+    // Commit transaction
+    db.prepare('COMMIT').run();
+
+    return { success: true };
+  } catch (error) {
+    db.prepare('ROLLBACK').run();
+    console.error('Error unpublishing results:', error);
+    return { success: false, message: error.message };
+  } 
 });
 
 

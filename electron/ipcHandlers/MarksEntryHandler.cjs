@@ -51,7 +51,7 @@ ipcMain.handle('save-marks', async (event, { marksData, subjectData }) => {
     return { success: false, error: "No subject data provided" };
   }
 
-console.log('Check MarksData:', marksData);
+  //console.log('Check MarksData:', marksData);
   // Prepare all statements outside transaction first
   let upsertMarkStmt, upsertEntryStatusStmt, upsertTotalMarksStmt, studentTotalsStmt, finalTotalsStmt, finalCumulativeStmt;
     const currentUser = await authService.getCurrentUser();

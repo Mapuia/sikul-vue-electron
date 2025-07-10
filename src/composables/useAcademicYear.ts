@@ -23,7 +23,7 @@ export const useAcademicYear = () => {
 
     if (/^\d{4}-\d{4}$/.test(CurrentYear.value)) {
       const startYear = parseInt(CurrentYear.value.split("-")[0]);
-      const previousYear = `${startYear - 1}-${startYear}`;
+      let previousYear = `${startYear - 1}-${startYear}`;
       PreviousYear.value = previousYear;
       //console.log(previousYear); // "2023-2024"
     } else {

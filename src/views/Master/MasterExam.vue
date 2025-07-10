@@ -1,6 +1,6 @@
 <template>
   <div class="form-container wide">
-    <h1 class="title has-text-centered">Exams - Master Data</h1>
+    <h1 class="title has-text-centered is-4">Exams - Master Data</h1>
 
     <div class="buttons mt-3">
       <button class="button is-primary " @click="showAddForm = true" v-if="!showAddForm">

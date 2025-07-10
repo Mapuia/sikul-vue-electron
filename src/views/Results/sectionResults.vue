@@ -207,7 +207,7 @@ import html2pdf from 'html2pdf.js'
 
 const { CurrentYearId, CurrentYear } = useAcademicYear()
 const { 
-  Terminal_Published,
+  Final_Published,
   Annual_Published,
   PassingPercentage,      
   loadActiveExam 

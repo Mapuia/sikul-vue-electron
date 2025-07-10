@@ -1,6 +1,6 @@
 <template>
   <div class="form-container single">
-    <h1 class="title has-text-centered">Academic Session</h1>
+    <h1 class="title has-text-centered is-4">Academic Session</h1>
     <h2 class="subtitle has-text-centered">Current Academic Year {{ CurrentYear }}</h2>
 
     <!-- Academic Year Form -->

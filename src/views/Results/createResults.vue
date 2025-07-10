@@ -1,10 +1,48 @@
 <template>
   <div  class="form-container full"> 
     <div>
-      <h1 class="title is-4 has-text-centered mb-4">{{ resultName }} Result for Academic Session {{ CurrentYear }}</h1>
-      
+      <h1 class="title is-4 has-text-centered mb-4">{{ resultName }} Result for Academic Session {{ CurrentYear }}</h1>      
     </div>
-    <div v-if="!isGenerating" class="notification is-light has-text-centered mb-5">
+    <div v-if="!isGenerating" class=" has-text-centered mb-5">
+      <div class = "box is-flex is-flex-direction-column is-align-items-center">
+        <div v-if = "resultPublished" class="is-flex is-align-items-center">
+          <p class="has-text-weight-bold">Results are published on {{ publishDate }}</p>
+          <button v-if = "canAccess(['admin'])" class = "button is-danger ml-3 is-small"
+            @click="unPublishResults"
+          ><i class = "fas fa-undo mr-2"></i>
+            Unpublish Results
+          </button>
+        </div>
+        <div v-else-if="canPublish" class="is-flex is-align-items-center">
+          <!-- Label -->
+          <label class="label mb-0 mr-3">Publish Date:</label>          
+          <!-- Date Input -->
+          <input
+            type="date"
+            v-model="currentDate"
+            @change="handleDateChange"
+            class="input mr-3"
+            style="max-width: 160px; width: 160px;"
+          />
+          
+          <!-- Button -->
+          <button
+            class="button is-primary"
+            :disabled="!canPublish || isLoading"
+            @click="publishResult"
+          >
+            <span v-if="isLoading">Publishing...</span>
+            <span v-else>
+              <i class="fas fa-paper-plane mr-2"></i>Publish Results
+            </span>
+          </button>
+        </div>
+        <div v-else class="is-flex is-fullwidth is-justify-content-center">
+          <p> Generate Results for all the Class-Sections one by one.</p>
+        </div>  
+        
+      </div>  
+        
       <div class="is-flex">
         <!-- Marks Entry Status Table -->
         <section class="box column mr-5">
@@ -34,8 +72,8 @@
                     <button
                       class="button is-small is-warning"
                       @click="loadModalResults(item.classId, item.sectionId, item.resultStatus.isPublished)"
-                    >
-                      View Only
+                    > <i class = "fas fa-eye mr-2"></i>
+                      View Results
                     </button>                    
                   </td>
                   
@@ -57,13 +95,13 @@
                       @click="generateResult(item.classId, item.sectionId)"
                     >
                       <span v-if="item.resultGenerating">Generating...</span>
-                      <span v-else>Re-Generate Result</span>
+                      <span v-else><i class="fas fa-redo mr-2"></i>Re-Generate Result</span>
                     </button>
                     <button
                       class="button is-small is-info"
-                      @click="loadModalResults(item.classId, item.sectionId, item.resultStatus.isPublished)"
-                    >
-                      View & Publish
+                      @click="loadModalResults(item.classId, item.sectionId)"
+                    ><i class = "fas fa-eye mr-2 mt-1"></i>
+                      View Results
                     </button>
                     
                   </td>
@@ -94,16 +132,16 @@
         <!-- Instructions -->
         <section class="box info-container mb-5">
           <h2 class="subtitle has-text-centered">Instructions</h2>
-          <div class="help notification  ">
+          <div class="help notification">
             <ul class="bullet">
               <li class="mb-4">Complete mark entry for all subjects to enable result generation</li>
               <li class="mb-4">Check box (Finished all students) in the Mark Entry must be check to enable Result generation</li>
               <li class="mb-4">Cumulative totals are automatically calculated during mark entry</li>
               <li class="mb-4">Click "Generate Result" to create results Class and Section Wise</li>
               <li class="mb-4">Results must be generated once per exam/ class/ section</li>
-              <li class="mb-4">After Result are generated, Publish button will appear</li>
-              <li class="mb-4">Once Results are published, they cannot be modified unless unpublished by Admin</li>
-              <li class="mb-4">Click "View Results" to see the generated results</li>
+              <li class="mb-4">Publish Result button will appear. Publish Date will be shown or You can select the date.</li>
+              <li class="mb-4">Click and Confirm to publish results</li>
+              <li class="mb-4">Click "View Results" to see the generated results section-wise</li>
             </ul>
           </div>
         </section>
@@ -113,11 +151,11 @@
       <div class="modal" :class="{ 'is-active': modalVisible }">
         <div class="modal-background" @click="closeModal"></div>
         <div class="modal-card">
-          <header class="modal-card-head">
+          <header class="modal-card-head has-text-left">
             <h1 class="modal-card-title">{{ resultName }} Results for  
-              CLASS - {{ modalClassName }},{{ modalSectionName ? ' SECTION - ' + modalSectionName : '' }} ({{ CurrentYear }})</h1>
-            <h2></h2>
-            <button class="delete" aria-label="close" @click="closeModal"></button>
+              CLASS - {{ modalClassName }} {{ modalSectionName ? '(' + modalSectionName + ')': '' }} ({{ CurrentYear }})</h1>
+            <h2>Status: {{ modalPublished ? 'Published' : 'Not Published' }}</h2>
+            <button class="delete ml-2" aria-label="close" @click="closeModal"></button>
           </header>
           <section class="modal-card-body">
             <div class="table-container">
@@ -155,14 +193,7 @@
           </section>
           <footer class="modal-card-foot is-flex is-justify-content-flex-end">
             <button class="button is-dark mr-2" @click="closeModal">Close</button>
-                <button              
-                    :disabled="modalPublished"
-                    class="button"
-                    :class="modalPublished ? 'is-dark' : 'is-primary'"
-                    @click="publishResult(modalClassId, modalSectionId)"
-                >
-                    {{ modalPublished ? 'Published' : 'Publish Result'}}
-                </button>  
+                
           </footer>
         </div>
       </div>
@@ -174,13 +205,13 @@
 </template>
 
 <script setup>
-import { ref, watch, onMounted } from 'vue'
+import { ref, watch, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useAcademicYear } from '../../composables/useAcademicYear'
 import { useActiveExam } from '../../composables/useActiveExam'
 
 const { CurrentYearId, CurrentYear } = useAcademicYear()
-const { PassingPercentage, loadActiveExam } = useActiveExam()
+const { Terminal_Published, Final_Published, PassingPercentage, loadActiveExam } = useActiveExam()
 
 const router = useRouter()
 const route = useRoute()
@@ -199,7 +230,13 @@ const modalClassName = ref('')
 const modalSectionName = ref('')
 const modalClassId = ref('')
 const modalSectionId = ref('')
-const modalPublished = ref('')
+const modalPublished = ref(false)
+const markEntryCount = ref(0)
+const resultStatusCount = ref(0)
+const currentDate = ref('')
+const publishDate = ref('')
+
+const userRole = ref('')
 
 watch(() => route.query.type, (newType) => {
   examType.value = newType
@@ -213,6 +250,105 @@ async function getExam() {
   currentExamName.value = result.exam.ExamName
   //console.log("CurrentExam Id: in get examId", currentExamId.value)
   fetchMarkEntryStatus()
+  getUser()
+}
+
+async function getUser() {
+  const user = await window.electronAuth.getCurrentUser()
+  if (user) {    
+    userRole.value = user.role
+  }
+}
+
+const canAccess = (requiredRoles) => {
+  return requiredRoles.includes(userRole.value)
+}
+
+const canPublish = computed(() => {
+  return markEntryCount.value > 0 && 
+         markEntryCount.value === resultStatusCount.value && 
+         resultStatusCount.value > 0
+    
+})
+
+ 
+const resultPublished = ref('')
+
+async function checkPublishStatus() {
+  try {
+    // Get counts from both tables
+    const status = await window.electronAPI.getPublishStatus({
+      academicYearId: CurrentYearId.value,
+      activeExamId: currentExamId.value      
+    })
+
+    markEntryCount.value = status.markEntryCount
+    resultStatusCount.value = status.resultStatusCount
+    publishDate.value = status.publishDate || ''
+    if(publishDate.value){
+      resultPublished.value = true
+    }
+    else {
+      resultPublished.value = false
+    }
+
+  } catch (error) {
+    console.error("Error checking publish status:", error)
+    
+  }
+}
+
+async function publishResult() {
+  if (!canPublish.value) {
+    window.electronAPI.showInfoDialog("Cannot publish results - not all results are generated")
+    return
+  }
+
+  isLoading.value = true
+  try {
+    const response = await window.electronAPI.publishResults({
+      academicYearId: CurrentYearId.value,
+      activeExamId: currentExamId.value,
+      publishDate: currentDate.value
+    })
+
+    if (response.success) {
+      window.electronAPI.showInfoDialog("Results published successfully.")
+      // You might want to refresh the status after publishing
+      checkPublishStatus()
+    } else {
+      window.electronAPI.showErrorDialog("Failed to publish results: " + (response.message || "Unknown error"))
+    }
+  } catch (error) {
+    console.error("Error publishing results:", error)
+    window.electronAPI.showErrorDialog("An error occurred while publishing results")
+  } finally {
+    isLoading.value = false
+  }
+}
+
+function unPublishResults(){
+  window.electronAPI.showConfirmationDialog("Are you sure you want to unpublish the results? This action cannot be undone.")
+    .then(async (confirmed) => {
+      if (confirmed) {
+        try {
+          const response = await window.electronAPI.unpublishResults({
+            academicYearId: CurrentYearId.value,
+            activeExamId: currentExamId.value
+          })
+          if (response.success) {
+            checkPublishStatus()
+            window.electronAPI.showInfoDialog("Results unpublished successfully.")
+            
+          } else {
+            window.electronAPI.showErrorDialog("Failed to unpublish results: " + (response.message || "Unknown error"))
+          }
+        } catch (error) {
+          console.error("Error unpublishing results:", error)
+          window.electronAPI.showErrorDialog("An error occurred while unpublishing results")
+        }
+      }
+    })
 }
 
 function goToMarkEntry(examType) {
@@ -224,7 +360,11 @@ function goToMarkEntry(examType) {
   })  
 }
 onMounted(async () => {
-     await loadActiveExam()   
+     await loadActiveExam()
+     const today = new Date();
+      const formattedDate = today.toISOString().split('T')[0];
+      currentDate.value = formattedDate; 
+      checkPublishStatus()
 })
 
 async function fetchMarkEntryStatus() {
@@ -278,12 +418,12 @@ async function generateResult(classId, sectionId) {
       modalVisible.value = true
       isGenerating.value = false
       fetchMarkEntryStatus()
-      showNotification('success', 'Results generated successfully')
+      showSuccess('Results generated successfully')
     }
     //console.log('Failed to generate result')
   } catch (error) {
     console.error('Generation error:', error)
-    showNotification('danger', 'Error during result generation')
+    showError('Error during result generation')
   }
 }
 
@@ -311,6 +451,7 @@ async function loadModalResults(classId, sectionId, isPublished) {
   } else {
     modalResults.value = []
     console.error('Failed to load section results:', result.message)
+
   }
 }
 
@@ -319,31 +460,13 @@ function closeModal() {
   modalResults.value = []
 }
 
-function publishResult(classId, sectionId) {
- //console.log('Published: ', classId, sectionId)
-  window.electronAPI.publishResults({
-    academicYearId: CurrentYearId.value,
-    examId: currentExamId.value,
-    classId,
-    sectionId
-  })
-  .then(response => {
-    if (response.success) {
-      showNotification('success', 'Results published successfully')
-      fetchMarkEntryStatus() // Refresh status after publishing
-      closeModal()
-    } else {
-      showNotification('danger', response.message || 'Failed to publish results')
-    }
-  })
-  .catch(error => {
-    console.error('Publish error:', error)
-    showNotification('danger', 'Error during result publishing')
-  })
-}
 
-function showNotification(type, message) {
-  alert(`${type.toUpperCase()}: ${message}`)
+
+function showSuccess(message) {
+  window.electronAPI.showInfoDialog(`SUCCESS: ${message}`)
+}
+function showError(message) {
+  window.electronAPI.showErrorDialog(`ERROR: ${message}`)
 }
 </script>
 
