@@ -56,6 +56,10 @@
  border-bottom: none;
 }
 
+input, textarea, select {
+  border: 1px solid #565555 !important; 
+}
+
 button {
   border-radius: 8px;
   border: 1px solid transparent;
@@ -109,10 +113,6 @@ button:focus-visible {
   text-align: center;
 }
 
-.left-col {
-  left: 0;
-  z-index: 2;
-}
 
 .fixed-notification {
   position: fixed;

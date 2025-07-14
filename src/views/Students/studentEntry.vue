@@ -1,5 +1,5 @@
 <template>
-  <div class="form-container mid my-2">
+  <div class="form-container mid">
     <h1 class="title has-text-centered is-4">New Student Entry</h1>
     <h2 class="subtitle has-text-centered mb-4">Form</h2>
     <div v-if="message" class="notification is-primary fixed-notification" @click="message = ''">{{ message }}</div>
@@ -319,9 +319,21 @@
               />
             </td>
           </tr>
+          <tr>
+            <th>Admission Date</th>
+            <td>
+              <input 
+                ref="admissionDate"
+                class="input" 
+                v-model="form.admissionDate" 
+                type="date"
+              />
+            
+            </td>
+          </tr>
         </thead>
       </table>
-           
+        
       <!-- Buttons -->
       <div class="field is-grouped mt-4">
         <button class="button is-primary" @click="showConfirmation">Submit</button>
@@ -385,7 +397,7 @@
         
         <!-- Unique ID -->
         <div class="box">
-          <legend class="title is-5">Unique ID</legend>
+          <legend class="title is-5 bottom-border">Unique ID</legend>
           <table class="sikul-table">
             <thead>
               <tr>
@@ -474,7 +486,7 @@ import { useAcademicYear } from '../../composables/useAcademicYear';
 
 const { CurrentYearId, CurrentYear, loadAcademicYear } = useAcademicYear()
 const router = useRouter();
-
+const currentDate = ref('')
 const message = ref('');
 const classes = ref([]);
 const sectionOptions = ref([]);
@@ -533,7 +545,8 @@ const form = reactive({
   classId: null,
   sectionId: 0,
   academicYearId: CurrentYearId.value,
-  admissionType: 'New'
+  admissionType: 'New',
+  admissionDate: currentDate.value
 });
 
 function validateForm() {
@@ -707,7 +720,13 @@ async function handleSubmit() {
   //console.log('Submitting form', form);
 
   try {
-    const plainForm = JSON.parse(JSON.stringify(form));
+    const cleanForm = {
+      ...form,
+      aadhaar: form.aadhaar === '' ? null : form.aadhaar,
+      apar: form.apar === '' ? null : form.apar,
+      pen: form.pen === '' ? null : form.pen
+    };
+    const plainForm = JSON.parse(JSON.stringify(cleanForm));
     //console.log('Sanitized Form:', plainForm);
 
     const response = await window.electronAPI.insertStudentAndAdmission(plainForm);
@@ -715,7 +734,7 @@ async function handleSubmit() {
 
     if (response.success) {
       router.push({
-        name: 'admission-success',
+        path: '/admission/success',
         query: {
           admissionId: response.admissionId,
           studentName: form.name,
@@ -736,10 +755,13 @@ async function handleSubmit() {
 
 onMounted(async() => {
   await loadAcademicYear();
-  console.log('Year ID after load:', CurrentYearId.value);
+  
   form.academicYearId = CurrentYearId.value;
   fetchClasses();
-  
+  const today = new Date();
+      const formattedDate = today.toISOString().split('T')[0];
+      currentDate.value = formattedDate;
+      form.admissionDate = formattedDate
   // Focus on name input when page loads
   nextTick(() => {
     if (nameInput.value) {
@@ -750,13 +772,8 @@ onMounted(async() => {
 </script>
 
 <style scoped>
-.help.is-danger {
-  color: #ff3860;
-  font-size: 0.75rem;
-  margin-top: 0.25rem;
-}
-.is-danger {
-  border-color: #ff3860 !important;
+.table{
+  border: 1px solid #565555;
 }
 .table th{
   width: 300px;

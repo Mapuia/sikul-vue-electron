@@ -24,7 +24,7 @@
             </a>
             <div class="navbar-dropdown">
               <router-link class="navbar-item" to="/students/new" @click="closeDropdown">New Student</router-link>
-              <router-link class="navbar-item" to="/students/re" @click="closeDropdown">Enrol Existing Students</router-link>
+              <router-link class="navbar-item" to="/students/re" @click="closeDropdown">Re-Admission</router-link>
               <router-link class="navbar-item" to="/manage/student" @click="closeDropdown">Manage Student</router-link>
             </div>
           </div>
@@ -158,7 +158,7 @@ onMounted(async () => {
 async function getUser(){
   const user = await window.electronAuth.getCurrentUser();
   if (user) {
-    currentUser.value = user.username.charAt(0).toUpperCase() + user.username.slice(1);;
+    currentUser.value = user.username.charAt(0).toUpperCase() + user.username.slice(1);
     userRole.value = user.role;
   }
 }

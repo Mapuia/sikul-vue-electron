@@ -418,6 +418,7 @@ const selectedSubjectCategory = computed(() =>
 // ============== WATCHERS ==============
 // Watch route changes
 watch(() => route.query.type, (newType) => {
+  Result_Published.value = false
   examType.value = newType
   getExam()
   fetchClasses() 
@@ -449,6 +450,10 @@ watch(selectedClassId, async (classId) => {
   selectedSectionId.value = ''
   marksEntered.value = false
   await fetchSections(classId)
+  if (sections.value.length === 0) {
+    selectedSectionId.value = 0
+  }
+  await verifyResultStatus()
   await fetchSubjects(classId)
   studentloaded.value = false 
 })
@@ -551,9 +556,9 @@ async function loadExistingMarks() {
       termMarks.value[mark.StudentId] = mark.TerminalMarksObtained || 'No Entry'
       statuses.value[mark.StudentId] = mark.SubjectResult || "N.A."
       appeared.value[mark.StudentId] = mark.SubjectResult === 'N.A.' ? 0 : 1
-    })
- 
+    }) 
     marksEntered.value = result.length > 0
+    
   } catch (error) {
     console.error("Failed to load marks:", error)
     errorMessage.value = "Failed to load existing marks"

@@ -24,7 +24,7 @@ export const useActiveExam = () => {
       PassingPercentage.value = result?.terminal?.PassingPercentage ?? 40;
       
       // Ensure boolean values for published status
-      Terminal_Published.value = Boolean(result?.terminal?.Result_Published);
+      Terminal_Published.value = Boolean(result?.terminal?.Result_Published); 
       Final_Published.value = Boolean(result?.final?.Result_Published);
       
     } catch (error) {

@@ -1,5 +1,6 @@
 <template>
-  <div class="form-container box wide">
+  
+  <div v-if="resultPublished" class="form-container box wide">
         
       <!-- Centered heading -->
       <div class="has-text-centered">
@@ -162,7 +163,7 @@
             <!-- Left Side -->
             <div class="column has-text-left">
               <div class="signature">
-                <p class="print-date">Date: {{ currentDate }}</p>
+                <p class="publish-date">Publish Date: {{ DisplayDate(publishDate) }}</p>
               </div>
             </div>
             <div class="column"></div>
@@ -187,6 +188,11 @@
       <button class="button is-primary" @click="downloadPDF">Download PDF</button>
     </div>  
   </div>
+  <div v-else class="container single pb-1" >
+    <div class="notification is-success has-text-centered " >
+      <p>{{ resultName }} Results has not been published.</p>      
+    </div>    
+  </div>
 </template>
 
 <script setup>
@@ -202,10 +208,21 @@ const { loadActiveExam } = useActiveExam()
 const route = useRoute()
 
 const examType = ref('')
+const resultName = ref('')
 const currentExamId = ref('')
 const currentExamName = ref('')
 const resultSummary = ref([]) 
 const isLoading = ref(false)
+
+const DisplayDate = stringReverse => {
+  const date = new Date(stringReverse)
+  return date.toLocaleDateString('en-IN', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  })
+}
+
 const currentDate = ref(new Date().toLocaleDateString('en-US', {
   year: 'numeric',
   month: 'long',
@@ -214,21 +231,24 @@ const currentDate = ref(new Date().toLocaleDateString('en-US', {
 
 watch(() => route.query.type, (newType) => {
   examType.value = newType
-  //console.log("Exam Type in watch:", examType.value)
-  getExam() 
- 
+  getExam()
+  resultName.value = newType === 'terminal'? 'Half Yearly' : 'Final'  
 }, { immediate: true })
+
 watch(examType, async (newType) => {
   if (newType) {
     await getExam()
+    await checkPublishStatus()
     await fetchResultSummary()
   }
 }, { immediate: true })
 
 async function getExam() {
+  //console.log('Fetching exam for type:', examType.value, 'and year:', CurrentYearId.value)
   const result = await window.electronAPI.getExamByType(examType.value, CurrentYearId.value)
   currentExamId.value = result.exam.Id
   currentExamName.value = result.exam.ExamName
+  //console.log('Fetched exam:', currentExamId.value, currentExamName.value)
 }
 // NEW: Principal signatory info
 const head = ref({ name: '', designation: '' })
@@ -236,7 +256,7 @@ const head = ref({ name: '', designation: '' })
 
 onMounted(async () => {
   isLoading.value = true
-  try {
+  try {    
     await loadActiveExam()    
     await fetchHeadSignatory()
     await fetchResultSummary()
@@ -337,6 +357,29 @@ function downloadPDF() {
     jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' }
   }
   html2pdf().set(opt).from(element).save()
+}
+
+const resultPublished = ref(false)
+const publishDate = ref('')
+async function checkPublishStatus() {
+  try {
+    // Get counts from both tables
+    //console.log("Checking publish status for exam:", currentExamId.value, "and academic year:", CurrentYearId.value)
+    const status = await window.electronAPI.getPublishStatus({
+      academicYearId: CurrentYearId.value,
+      activeExamId: currentExamId.value      
+    })   
+    publishDate.value = status.publishDate || ''
+    if(publishDate.value){
+      resultPublished.value = true
+    }
+    else {
+      resultPublished.value = false
+    }
+
+  } catch (error) {
+    console.error("Error checking publish status:", error)    
+  }
 }
 </script>
 

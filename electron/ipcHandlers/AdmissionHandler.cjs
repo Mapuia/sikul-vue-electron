@@ -6,7 +6,9 @@ const { db } = require('../database.cjs');
 
 //Insert Student and Admission
 ipcMain.handle('insert-student-admission', (event, form) => {
-  //console.log("Student Insert:", form)
+  console.log("Student Insert:", form);
+  const studentId = crypto.randomUUID();
+  
   const insertStudent = db.prepare(`
     INSERT INTO Students (
       Id, Name, Gender, FathersName, MothersName, DOB, Aadhaar, APAR, PEN, Contact, Address, PIN,
@@ -28,19 +30,19 @@ ipcMain.handle('insert-student-admission', (event, form) => {
   const transaction = db.transaction((form) => {
     // Step 1: Insert into Students table
     const studentResult = insertStudent.run({
-      Id: crypto.randomUUID(),
+      Id: studentId,
       Name: form.name,
       Gender: form.gender,
       FathersName: form.fathersName,
       MothersName: form.mothersName,
       DOB: form.dob,
-      Aadhaar: form.aadhaar,
-      APAR: form.apar,
-      PEN: form.pen,
+      Aadhaar: form.aadhaar || null,  // Ensure NULL instead of empty string
+      APAR: form.apar || null,        // Ensure NULL instead of empty string
+      PEN: form.pen || null,          // Ensure NULL instead of empty string
       Contact: form.contact,
       Address: form.address,
       PIN: form.pin,
-      FirstAdmissionDate: form.firstAdmissionDate,
+      FirstAdmissionDate: form.admissionDate,
       Status: form.status || 'Admitted',
       Caste: form.caste,
       Religion: form.religion,
@@ -49,34 +51,39 @@ ipcMain.handle('insert-student-admission', (event, form) => {
       BloodGroup: form.bloodGroup
     });
 
-    const studentId = studentResult.lastInsertRowid;
-
     // Step 2: Insert into Admission table
-    const admissionResult = insertAdmission.run({
-      StudentId: studentId,
-      AcademicYearId: form.academicYearId,
-      ClassId: form.classId,
-      SectionId: form.sectionId,
-      RollNo: form.rollNo,
-      AdmissionType: form.admissionType
-    });
+    try {
+      const admissionResult = insertAdmission.run({
+        StudentId: studentId,
+        AcademicYearId: form.academicYearId,
+        ClassId: form.classId,
+        SectionId: form.sectionId,
+        RollNo: form.rollNo,
+        AdmissionType: form.admissionType
+      });
 
-    return {
-      success: true,
-      studentId,
-      admissionId: admissionResult.lastInsertRowid
-    };
+      return {
+        success: true,
+        studentId,
+        admissionId: admissionResult.lastInsertRowid
+      };
+    } catch (admissionError) {
+      // Specifically catch the roll number unique constraint violation
+      if (admissionError.message.includes('UNIQUE constraint failed: Admissions.AcademicYearId, Admissions.ClassId, Admissions.SectionId, Admissions.RollNo')) {
+        throw new Error('Duplicate Roll No. Please assign a different Roll No.');
+      }
+      throw admissionError; // Re-throw other errors
+    }
   });
 
   try {
-   
     return transaction(form);
   } catch (err) {
     console.error('Transaction failed:', err.message);
+    // The error message will now be specific about roll number duplicates
     throw err;
   }
 });
-
 /////////////////////////////////////////////////////////////////////////////////////////GET ADMISSION DETAILS
 ipcMain.handle('get-admission-details', async (event, studentId, AcademicYearId) => {
   
@@ -114,10 +121,10 @@ ipcMain.handle('get-admission-details', async (event, studentId, AcademicYearId)
 ipcMain.handle('get-previous-admission', async (event, studentId, AcademicYearId) => {  
   try {
     // Get admission details
-    //console.log('Student and YearID:', studentId, AcademicYearId) 
+    console.log('Student and YearID:', studentId, AcademicYearId) 
  
     const admissionStmt = db.prepare(`
-      SELECT s.Id as studentId, s.Name,
+      SELECT s.Id as studentId, s.Name as Name,
         a.RollNo, a.AdmissionType, c.ClassName, sec.SectionName,
         s.PEN, s.APAR,
         r.ResultStatus, 
@@ -134,7 +141,7 @@ ipcMain.handle('get-previous-admission', async (event, studentId, AcademicYearId
     `);
     const admission = admissionStmt.get(studentId, AcademicYearId);
 
-   //console.log('AdmissionHandler- for ReAdmission:', admission)
+   console.log('AdmissionHandler- for ReAdmission:', admission)
     return { 
       success: true, 
       admission: {
@@ -147,7 +154,7 @@ ipcMain.handle('get-previous-admission', async (event, studentId, AcademicYearId
   }
 });
 
-ipcMain.handle('promote-student', async (event, admissionData) => {
+ipcMain.handle('admit-student', async (event, admissionData) => {
   
     // Get admission details
     //console.log('Promoted:', admissionData)

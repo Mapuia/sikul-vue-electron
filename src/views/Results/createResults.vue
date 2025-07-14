@@ -1,8 +1,22 @@
 <template>
-  <div  class="form-container full"> 
+  <div v-if="resultPublished" class="form-container wide">
+    <div class="notification is-success has-text-centered">
+      <p>Results are published for {{ resultName }} Exam of Academic Session {{ CurrentYear }}.</p>
+      <p>Publish Date: {{ publishDate }}</p>
+    </div>
+    <div class="has-text-centered mb-5">
+      <button v-if = "canAccess(['admin'])" class = "button is-danger ml-3 is-small"
+            @click="unPublishResults"
+          ><i class = "fas fa-undo mr-2"></i>
+            Unpublish Results
+          </button>
+    </div>
+  </div>
+  <div v-else class="form-container full"> 
     <div>
       <h1 class="title is-4 has-text-centered mb-4">{{ resultName }} Result for Academic Session {{ CurrentYear }}</h1>      
     </div>
+
     <div v-if="!isGenerating" class=" has-text-centered mb-5">
       <div class = "box is-flex is-flex-direction-column is-align-items-center">
         <div v-if = "resultPublished" class="is-flex is-align-items-center">
@@ -38,7 +52,7 @@
           </button>
         </div>
         <div v-else class="is-flex is-fullwidth is-justify-content-center">
-          <p> Generate Results for all the Class-Sections one by one.</p>
+          <p> Generate Results for all the Class-Sections one by one. Once the Results for all the Classes and Sections are generated. Publish Button will appear here</p>
         </div>  
         
       </div>  
@@ -134,14 +148,14 @@
           <h2 class="subtitle has-text-centered">Instructions</h2>
           <div class="help notification">
             <ul class="bullet">
-              <li class="mb-4">Complete mark entry for all subjects to enable result generation</li>
-              <li class="mb-4">Check box (Finished all students) in the Mark Entry must be check to enable Result generation</li>
+              <li class="mb-4">Complete mark entry for all subjects to enable result generation.</li>
+              <li class="mb-4">Check box (Finished all students) in the Mark Entry must be check to enable Result generation.</li>
               <li class="mb-4">Cumulative totals are automatically calculated during mark entry</li>
-              <li class="mb-4">Click "Generate Result" to create results Class and Section Wise</li>
-              <li class="mb-4">Results must be generated once per exam/ class/ section</li>
-              <li class="mb-4">Publish Result button will appear. Publish Date will be shown or You can select the date.</li>
-              <li class="mb-4">Click and Confirm to publish results</li>
-              <li class="mb-4">Click "View Results" to see the generated results section-wise</li>
+              <li class="mb-4">Click "Generate Result" to create results Class and Section Wise.</li>
+              <li class="mb-4">Results must be generated once per exam/ class/ section.</li>
+              <li class="mb-4">Publish Result button will appear. Select the Publish Date or Today's Date will be selected by default.</li>
+              <li class="mb-4">Click and Confirm to publish results.</li>
+              <li class="mb-4">Click "View Results" to see the generated results section-wise.</li>
             </ul>
           </div>
         </section>
@@ -211,7 +225,7 @@ import { useAcademicYear } from '../../composables/useAcademicYear'
 import { useActiveExam } from '../../composables/useActiveExam'
 
 const { CurrentYearId, CurrentYear } = useAcademicYear()
-const { Terminal_Published, Final_Published, PassingPercentage, loadActiveExam } = useActiveExam()
+const { PassingPercentage, loadActiveExam } = useActiveExam()
 
 const router = useRouter()
 const route = useRoute()
@@ -234,6 +248,7 @@ const modalPublished = ref(false)
 const markEntryCount = ref(0)
 const resultStatusCount = ref(0)
 const currentDate = ref('')
+const resultPublished = ref(false)
 const publishDate = ref('')
 
 const userRole = ref('')
@@ -250,7 +265,7 @@ async function getExam() {
   currentExamName.value = result.exam.ExamName
   //console.log("CurrentExam Id: in get examId", currentExamId.value)
   fetchMarkEntryStatus()
-  getUser()
+  
 }
 
 async function getUser() {
@@ -259,7 +274,6 @@ async function getUser() {
     userRole.value = user.role
   }
 }
-
 const canAccess = (requiredRoles) => {
   return requiredRoles.includes(userRole.value)
 }
@@ -270,9 +284,6 @@ const canPublish = computed(() => {
          resultStatusCount.value > 0
     
 })
-
- 
-const resultPublished = ref('')
 
 async function checkPublishStatus() {
   try {
@@ -293,16 +304,15 @@ async function checkPublishStatus() {
     }
 
   } catch (error) {
-    console.error("Error checking publish status:", error)
-    
+    console.error("Error checking publish status:", error)    
   }
 }
 
 async function publishResult() {
-  if (!canPublish.value) {
-    window.electronAPI.showInfoDialog("Cannot publish results - not all results are generated")
-    return
-  }
+ // if (!canPublish.value) {
+ //   window.electronAPI.showInfoDialog("Cannot publish results - not all results are generated")
+ //   return
+ // }
 
   isLoading.value = true
   try {
@@ -365,6 +375,7 @@ onMounted(async () => {
       const formattedDate = today.toISOString().split('T')[0];
       currentDate.value = formattedDate; 
       checkPublishStatus()
+      getUser()
 })
 
 async function fetchMarkEntryStatus() {
@@ -414,10 +425,12 @@ async function generateResult(classId, sectionId) {
     })
     const isPublished = false
     if (response.success) {
+      isGenerating.value = false
+      classSectionStatus.value[index].resultGenerating = false
       await loadModalResults(classId, sectionId, isPublished)
       modalVisible.value = true
       isGenerating.value = false
-      fetchMarkEntryStatus()
+      fetchMarkEntryStatus()      
       showSuccess('Results generated successfully')
     }
     //console.log('Failed to generate result')

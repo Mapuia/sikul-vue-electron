@@ -429,17 +429,11 @@ async function deleteSignatory(signatory) {
 
 onMounted(() => {
   fetchClasses();
-
   fetchSignatories();
 });
 </script>
 
 <style scoped>
-.form-container {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 20px;
-}
 
 .modal-card {
   width: 80%;
@@ -449,14 +443,6 @@ onMounted(() => {
 .modal-card-body {
   max-height: calc(100vh - 200px);
   overflow-y: auto;
-}
-
-.fixed-notification {
-  position: fixed;
-  top: 20px;
-  right: 20px;
-  z-index: 100;
-  max-width: 400px;
 }
 
 /* Animation for notifications */

@@ -215,12 +215,11 @@
           </div>
         </div>
         <div class="field">
-          <label class="label">Re-Admission Type ({{ studentData.AdmissionType }})</label>
+          <label class="label">Admission Type ({{ studentData.AdmissionType }})</label>
             <div class="control">
               <div class="select is-fullwidth">
                 <select v-model="studentData.AdmissionType" required>
-                  <option disabled selected>-- Select Admission Type --</option> 
-                  <option>New</option> 
+                  <option disabled selected>-- Select Admission Type --</option>                   
                   <option>Promoted</option> 
                   <option>Repeat</option>
                   </select>

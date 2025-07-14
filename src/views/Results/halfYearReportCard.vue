@@ -75,7 +75,7 @@
                   <tr v-for="result in results" :key="result.StudentId">
                     <td style="font-weight: 700;">{{ result.ResultStatus === 'Pass' ? result.Rank : '' }}</td>
                     <td>{{ result.RollNo }}</td>
-                    <td style="text-align: left;">{{ result.Name }} - {{ result.StudentId }}</td>
+                    <td style="text-align: left;">{{ result.Name }}</td>
                     <td>
                       {{ result.Division }}
                     </td>
@@ -98,6 +98,13 @@
                           <i class="fas fa-download"></i>
                         </span>
                         <span>Generate Report Card</span>
+                      </button>
+                      <button v-if="result.ReportCard === 1 && canAccess(['admin'])" class="button is-small is-primary mr-2"
+                              @click="openInputModal(result.StudentId, result.Name)">
+                        <span class="icon is-small">
+                          <i class="fas fa-download"></i>
+                        </span>
+                        <span>Re-Generate</span> 
                       </button>
                     </td>
                   </tr>
@@ -161,13 +168,13 @@
                 <div class="header-wrapper has-text-centered  mb-3" style="position: relative;">                  
                   <!-- Headings -->
                   <h1 class="title print-title mt-3">CALVARY HIGHER SECONDARY SCHOOL</h1>
-                  <h2 class="subtitle print-subtitle is-6 m-0"><i>(Tripura Presbyterian School)</i></h2>
+                  <h2 class="subtitle print-subtitle  m-0"><i>(Tripura Presbyterian School)</i></h2>
                   <img src="/sikul_logo.png" alt="School Logo" style="display: block; margin: 3px auto; height: 60px;" />
 
-                  <h2 class="subtitle print-subtitle is-7 m-0">Affiliated to TBSE, School Code: 2C018</h2>
-                  <h2 class="subtitle print-subtitle is-7 m-0">Mission Compound, Tuidu. Gomati District, Tripura – 799101 </h2>
-                  <h2 class="subtitle print-subtitle is-7 m-0">Phone No: (+91) 8787793883, email: calvaryhighschool2019@gmail.com</h2>
-                  <h2 class="subtitle print-subtitle is-6">Academic Session : {{ CurrentYear }}</h2>
+                  <h2 class="subtitle print-subtitle  m-0">Affiliated to TBSE, School Code: 2C018</h2>
+                  <h2 class="subtitle print-subtitle  m-0">Mission Compound, Tuidu. Gomati District, Tripura – 799101 </h2>
+                  <h2 class="subtitle print-subtitle  m-0">Phone No: (+91) 8787793883, email: calvaryhighschool2019@gmail.com</h2>
+                  <h2 class="subtitle print-subtitle ">Academic Session : {{ CurrentYear }}</h2>
                   <h1 class="title print-title is-5 mt-2 mb-7">REPORT CARD (Half Yealy)</h1>
 
                 </div>
@@ -180,7 +187,7 @@
                         <td class="">{{ studentData.Name }}</td>
                     
                         <th class="">Class:</th>
-                        <td class="">{{className}} {{sectionName ? 'Section '+ sectionName : ''}}</td>
+                        <td class="">{{className}} &nbsp; {{sectionName ? 'Section '+ sectionName : ''}}</td>
                       
                      
                         <th class="">Roll No:</th>
@@ -270,7 +277,7 @@
                             </tr>
                             <tr >
                               <th class = "summary">No. Students</th>
-                              <td>{{noOfStudents}}</td>
+                              <td>{{reportCardData.noOfStudents}}</td>
                             </tr>
                             <tr>
                               <th class = "summary">No. Working Days</th>
@@ -318,9 +325,9 @@
                               </td>
                             </tr> 
                             <tr>
-                              <th class="bottom">-sd/-</th>
                               <th class="bottom"></th>
-                              <th class="bottom pt-5">-sd/-</th>
+                              <th class="bottom"></th>
+                              <th class="bottom pt-5"></th>
                             </tr>
                             <tr>
                               <th class="bottom">Signature of Class Teacher</th>
@@ -332,7 +339,7 @@
                       </div>
 
                 <div class="mb-2" style="position: relative;">
-                  <p class="is-size-6">Date: {{ currentDate }}</p>
+                  <p class="is-size-6">Issue Date: {{ currentDate }}</p>
                 </div>  
                 <div class="is-flex has-flex-direction-column has-text-centered">
                   <p class="is-size-7">* This is a computer-generated report card.</p>
@@ -366,7 +373,7 @@ const { PassingPercentage, loadActiveExam } = useActiveExam()
 const { CurrentYearId, CurrentYear } = useAcademicYear()
 
 const route = useRoute()
-
+const userRole = ref('')
 const isLoading = ref(false)
 const modalVisible = ref(false)
 
@@ -391,22 +398,12 @@ const currentAttendance = ref(0)
 const currentTeachersRemark = ref('')
 
 //For Report Card Fetch
-const noOfStudents = ref(0)
 const marksData = ref([])
 const studentData = ref([])
 const resultData = ref([])
 const reportCardData = ref([])
 
 const classTeacher = ref({ name: '', designation: '' })
-
-async function fetchNoOfStudents() {
-  const no = await window.electronAPI.getNoOfStudents({
-    classId: selectedClassId.value,
-    sectionId: selectedSectionId.value || 0
-  })
-  noOfStudents.value = no.NoOfStudents
-  //console.log("No of Students:", noOfStudents.value)
-}
 
 const currentDate = ref(new Date().toLocaleDateString('en-IN', {
   year: 'numeric',
@@ -451,9 +448,19 @@ async function fetchClassTeacherInfo() {
     console.error('Error fetching teacher:', error)
   }
 }
+async function getUser() {
+  const user = await window.electronAuth.getCurrentUser()
+  if (user) {    
+    userRole.value = user.role
+  }
+}
+const canAccess = (requiredRoles) => {
+  return requiredRoles.includes(userRole.value)
+}
 
 
 onMounted(async () => {
+  await getUser()
   await fetchClasses()
   await getExam()  
 })
@@ -475,7 +482,6 @@ watch(selectedClassId, async (newClassId) => {
     await fetchSections()
     if (sections.value.length < 2) {
       selectedSectionId.value = 0
-      fetchNoOfStudents()
       await fetchClassTeacherInfo()
       await fetchResults()
     }
@@ -488,7 +494,6 @@ watch(selectedClassId, async (newClassId) => {
 watch(selectedSectionId, async (newSectionId) => {
   if (newSectionId) {
     await fetchResults()
-    await fetchNoOfStudents()
     await fetchClassTeacherInfo()
   }
 })
@@ -554,7 +559,7 @@ async function proceedToGenerateReportCard() {
     currentAttendance.value,
     currentTeachersRemark.value
   )
-  // Reset input fields
+  fetchResults()
 }
 
 async function generateReportCard(studentId, totalWorkingDays, attendance, remark) {
@@ -679,7 +684,7 @@ function closeModal() {
   font-weight: 600;
 }
 .print-subtitle{
-  font-size: 12pt;
+  font-size: 11pt;
   font-family: 'Oswald';
   font-weight: 500;
 }
@@ -806,25 +811,23 @@ function closeModal() {
 .student-table{
   color: black;
   width:100%;
-  margin-bottom: 1rem;
+  margin-bottom: 0.25rem;
   margin-top: 1rem;
 }
 .student-table th{
   font-size: 14px;
   color: black;
-  font-weight: 420;
-  padding: 0;
+  font-weight: 450;
+  padding: 0.1rem;
   text-align: left;
 }
 .student-table td{ 
-  padding: 0;
-  font-size: 16px;
-  text-align: left !important;
+  padding: 0.1rem;
+  font-size: 14px;
   color: black;
   text-align: left;
-  font-weight: 700;
+  font-weight: 500;
 }
-
 
 
 .report-table{

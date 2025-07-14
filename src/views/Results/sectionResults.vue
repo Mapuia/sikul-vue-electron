@@ -1,5 +1,5 @@
 <template>
-  <div class="form-container box wide">
+  <div v-if="resultPublished" class="form-container box wide">
     <div class="has-text-centered mb-4">
       <h1 class="title is-4">{{ currentExamName ? currentExamName : 'Final' }} Result, {{ CurrentYear }}</h1>
       <h2 class="subtitle is-5">Select Class and Section</h2>
@@ -164,7 +164,7 @@
             <!-- Left Side -->
             <div class="column has-text-left">
               <div class="signature">
-                <p class="print-date">Date: {{ currentDate }}</p>
+                <p class="publish-date">Publish Date: {{ DisplayDate(publishDate) }}</p>
               </div>
             </div>
             <div class="column"></div>
@@ -188,13 +188,18 @@
           </div>            
         
         </div>          
-     
-        <div v-else-if="!isLoading" class="notification is-danger mt-4">
+
+        <div v-else-if="!isLoading && selectedClassId !== ''" class="notification is-danger mt-4">
           No results found for Class {{ className }}{{ sectionName? ' Section ' + sectionName : '' }}.
         </div>
          
       </div>
     </div>
+  </div>
+  <div v-else class="container single pb-1" >
+    <div class="notification is-success has-text-centered " >
+      <p>{{ resultName }} Results has not been published.</p>      
+    </div>    
   </div>
 </template>
 
@@ -216,6 +221,7 @@ const {
 const route = useRoute()
 
 const examType = ref('')
+const resultName = ref('')
 const currentExamId = ref('')
 const currentExamName = ref('')
 const resultSummary = ref([]) 
@@ -227,6 +233,15 @@ const selectedSectionId = ref('')
 const noSections = ref(false)
 const results = ref([])
 
+const DisplayDate = stringReverse => {
+  const date = new Date(stringReverse)
+  return date.toLocaleDateString('en-IN', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  })
+}
+
 const currentDate = ref(new Date().toLocaleDateString('en-IN', {
   year: 'numeric',
   month: 'numeric',
@@ -235,17 +250,16 @@ const currentDate = ref(new Date().toLocaleDateString('en-IN', {
 
 watch(() => route.query.type, (newType) => {
   examType.value = newType
-  //console.log("Exam Type in watch:", examType.value)
-  getExam()
+  resultName.value = newType === 'terminal'? 'Half Yearly' : 'Final'  
+  getExam()  
   selectedClassId.value = ''
   selectedSectionId.value = ''  
 }, { immediate: true })
 
 watch(examType, async (newType) => {
-  if (newType) {
-    if( newType === 'annual') currentExamName.value = 'Final'
+  if (newType) {    
     selectedClassId.value = ''
-    selectedSectionId.value = ''    
+    selectedSectionId.value = ''     
   }
 }, { immediate: true })
 
@@ -253,6 +267,7 @@ async function getExam() {
   const result = await window.electronAPI.getExamByType(examType.value, CurrentYearId.value)
   currentExamId.value = result.exam.Id
   currentExamName.value = examType.value === 'terminal' ? result.exam.ExamName : 'Final'
+  checkPublishStatus()
  //console.log("Current Exam ID in getExam:", currentExamId.value)
 }
 
@@ -282,9 +297,31 @@ async function fetchClassTeacherInfo() {
 }
 
 onMounted(async () => {
+  await getExam()  
   await loadActiveExam()
   await fetchClasses()
+  
 })
+const resultPublished = ref(false)
+const publishDate = ref('')
+async function checkPublishStatus() {
+  try {
+  
+    const status = await window.electronAPI.getPublishStatus({
+      academicYearId: CurrentYearId.value,
+      activeExamId: currentExamId.value      
+    })   
+    publishDate.value = status.publishDate || ''
+    if(publishDate.value){
+      resultPublished.value = true
+    }
+    else {
+      resultPublished.value = false
+    }
+  } catch (error) {
+    console.error("Error checking publish status:", error)    
+  }
+}
 
 async function fetchClasses() {
   try {

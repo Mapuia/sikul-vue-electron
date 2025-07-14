@@ -110,7 +110,7 @@
                       <span class="icon">
                         <i class="fas fa-arrow-up"></i>
                       </span>
-                      <span>Promote</span>
+                      <span>Re-Admit</span>
                     </button>
                   </div>
                 </td>
@@ -184,7 +184,7 @@
                     <div class="select is-fullwidth">
                       <select v-model="newClassId">
                         <option disabled value="">-- Select Class --</option>
-                        <option v-for="cls in classes" :key="cls.Id" :value="cls.Id">
+                        <option v-for="cls in newClasses" :key="cls.Id" :value="cls.Id">
                           {{ cls.ClassName }}
                         </option>
                       </select>
@@ -247,37 +247,53 @@ import { ref, onMounted, watch, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import StudentDetailsView from '@/components/StudentDetailsView.vue';
 import { useAcademicYear } from '../../composables/useAcademicYear';
-const { CurrentYearId, CurrentYear, PreviousYearId, PreviousYear, loadAcademicYear } = useAcademicYear();
 
+// Composables
+const { CurrentYearId, CurrentYear, PreviousYearId, PreviousYear, loadAcademicYear } = useAcademicYear();
 const router = useRouter();
 
-// Data properties
+// ======================
+// Reactive State
+// ======================
+
+// Data Collections
 const classes = ref([]);
 const sections = ref([]);
+const students = ref([]);
+const newClasses = ref([]);
+const newSections = ref([]);
+
+// Selection Refs
 const selectedClassId = ref('');
 const selectedSectionId = ref('');
-const noSections = ref(false);
-const searchQuery = ref('');
-const students = ref([]);
-const isSearching = ref(false);
-const hasSearched = ref(false);
-const showDetailsModal = ref(false);
-const selectedStudent = ref(null);
-const selectedAdmission = ref(null);
-const errorMessage = ref('');
-const successMessage = ref('')
-const modalMode = ref('view');
-const showPromotionModal = ref(false);
-const promotionData = ref({});
 const newClassId = ref('');
 const newSectionId = ref('');
 const newRollNo = ref('');
 const admissionType = ref('');
 
+// UI State
+const isSearching = ref(false);
+const hasSearched = ref(false);
+const noSections = ref(false);
+const showDetailsModal = ref(false);
+const showPromotionModal = ref(false);
 const isSaving = ref(false);
-const newSections = ref([]);
+const modalMode = ref('view'); // 'view' | 'promote'
 
-// Computed properties
+// Student Data
+const selectedStudent = ref(null);
+const selectedAdmission = ref(null);
+const promotionData = ref({});
+
+// Messages
+const errorMessage = ref('');
+const successMessage = ref('');
+const searchQuery = ref('');
+
+// ======================
+// Computed Properties
+// ======================
+
 const className = computed(() => {
   const selectedClass = classes.value.find(cls => cls.Id === selectedClassId.value);
   return selectedClass ? selectedClass.ClassName : '';
@@ -288,15 +304,15 @@ const sectionName = computed(() => {
   return selectedSection ? selectedSection.SectionName : '';
 });
 
-// Methods
+// ======================
+// Data Fetching Methods
+// ======================
+
 async function fetchClasses() {
   try {
     const response = await window.electronAPI.getClasses();
-    if (response.success) {
-      classes.value = response.classes;
-    }
+    if (response.success) classes.value = response.classes;
   } catch (error) {
-    //console.error('Error fetching classes:', error);
     errorMessage.value = 'Failed to load classes';
   }
 }
@@ -311,16 +327,20 @@ async function fetchSections() {
     const response = await window.electronAPI.getSectionsByClassId(selectedClassId.value);
     if (response.success) {
       sections.value = response.sections;
-      if (sections.value.length === 0) {
-        noSections.value = true;
-        selectedSectionId.value = 0;
-      } else {
-        noSections.value = false;
-      }
+      noSections.value = sections.value.length === 0;
+      if (noSections.value) selectedSectionId.value = 0;
     }
   } catch (error) {
-    console.error('Error fetching sections:', error);
     errorMessage.value = 'Failed to load sections';
+  }
+}
+
+async function fetchNewClasses() {
+  try {
+    const response = await window.electronAPI.fetchUpperClasses(className.value);
+    if (response.success) newClasses.value = response.classes;
+  } catch (error) {
+    errorMessage.value = 'Failed to load classes';
   }
 }
 
@@ -328,21 +348,16 @@ async function fetchNewSections() {
   if (!newClassId.value) return;
   
   try {
-    sections.value = [];
+    newSections.value = [];
     newSectionId.value = '';   
     
     const response = await window.electronAPI.getSectionsByClassId(newClassId.value);
     if (response.success) {
       newSections.value = response.sections;
-      if (sections.value.length === 0) {
-        noSections.value = true;
-        newSectionId.value = 0;
-      } else {
-        noSections.value = false;
-      }
+      noSections.value = newSections.value.length === 0;
+      if (noSections.value) newSectionId.value = 0;
     }
   } catch (error) {
-    console.error('Error fetching sections:', error);
     errorMessage.value = 'Failed to load sections';
   }
 }
@@ -355,24 +370,21 @@ async function fetchExistingStudents() {
       ClassId: selectedClassId.value,
       SectionId: selectedSectionId.value
     });
-    if (response.success) {
-      students.value = response.students;
-    } else {
-      errorMessage.value = response.message || 'Failed to fetch existing students';
-    }
+    if (response.success) students.value = response.students;
+    else errorMessage.value = response.message || 'Failed to fetch existing students';
   } catch (error) {
     errorMessage.value = error.message;
-    console.error('Error fetching students:', error);
   } finally {
     isSearching.value = false;
   }
 }
 
+// ==================
+// Search Functionality
+// ==================
+
 async function searchStudents() {
-  if (!searchQuery.value.trim()) {
-    //await fetchExistingStudents();
-    return;
-  }
+  if (!searchQuery.value.trim()) return;
 
   try {
     isSearching.value = true;
@@ -380,6 +392,7 @@ async function searchStudents() {
       query: searchQuery.value.trim(),
       yearId: PreviousYearId.value
     });
+    
     if (response.success) {
       students.value = response.students;
       hasSearched.value = true;
@@ -389,7 +402,6 @@ async function searchStudents() {
     }
   } catch (error) {
     errorMessage.value = error.message;
-    console.error('Search error:', error);
     students.value = [];
   } finally {
     isSearching.value = false;
@@ -401,6 +413,10 @@ async function refreshStudents() {
   hasSearched.value = false;
   await fetchExistingStudents();
 }
+
+// ==================
+// Student Operations
+// ==================
 
 async function viewStudentDetails(studentId) {
   try {
@@ -416,7 +432,6 @@ async function viewStudentDetails(studentId) {
     }
   } catch (error) {
     errorMessage.value = error.message;
-    console.error('Error fetching student details:', error);
   }
 }
 
@@ -428,12 +443,12 @@ async function openPromotionModal(student) {
       newRollNo.value = promotionData.value.Rank;
       showPromotionModal.value = true;
       errorMessage.value = '';
+      await fetchNewClasses();
     } else {
       errorMessage.value = response.message || 'Failed to load student details for promotion';
     }
   } catch (error) {
     errorMessage.value = error.message;
-    console.error('Error opening promotion modal:', error);
   }
 }
 
@@ -446,19 +461,17 @@ async function promoteStudent() {
   isSaving.value = true;
   try {
     const response = await window.electronAPI.promoteStudent({
-      StudentId:promotionData.value.studentId,
+      StudentId: promotionData.value.studentId,
       ClassId: newClassId.value,
       SectionId: newSectionId.value || 0,
       RollNo: newRollNo.value,
       AcademicYearId: CurrentYearId.value,
-      AdmissionType:admissionType.value,
+      AdmissionType: admissionType.value,
       PreviousYearId: PreviousYearId.value
     });
     
     if (response.success) {
       showPromotionModal.value = false;
-      // Refresh the student list
-     // await fetchExistingStudents();
       successMessage.value = 'Student promoted successfully';
     } else {
       throw new Error(response.message || 'Failed to promote student');
@@ -469,6 +482,10 @@ async function promoteStudent() {
     isSaving.value = false;
   }
 }
+
+// ==================
+// UI Helpers
+// ==================
 
 function closeModal() {
   showDetailsModal.value = false;
@@ -490,18 +507,20 @@ function openNewAdmission() {
   router.push({ name: 'NewAdmission' });
 }
 
-// Lifecycle hooks
+// ==================
+// Lifecycle & Watchers
+// ==================
+
 onMounted(async () => {
   await loadAcademicYear();
   await fetchClasses();
 });
 
-// Watchers
 watch(selectedClassId, async (newClassId) => {
   if (newClassId) {
     await fetchSections();
-    if (sections.value.length < 2) {
-      noSections.value = true;
+    noSections.value = sections.value.length < 2;
+    if (noSections.value) {
       selectedSectionId.value = 0;    
       await fetchExistingStudents();
     }
@@ -515,20 +534,16 @@ watch(selectedClassId, async (newClassId) => {
 watch(newClassId, async (selectedClassId) => {
   if (selectedClassId) {
     await fetchNewSections();     
-    if (newSections.value.length < 2) {
-      noSections.value = true;
-      newSectionId.value = 0;     
-    }
+    noSections.value = newSections.value.length < 2;
+    if (noSections.value) newSectionId.value = 0;
   } else {
-    sections.value = [];
+    newSections.value = [];
     newSectionId.value = '';    
   }
 });
 
 watch(selectedSectionId, (newSectionId) => {
-  if (newSectionId) {
-    fetchExistingStudents();
-  }
+  if (newSectionId) fetchExistingStudents();
 });
 </script>
 

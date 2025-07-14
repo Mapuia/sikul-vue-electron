@@ -106,9 +106,9 @@ CREATE TABLE IF NOT EXISTS Students (
     FathersName TEXT,
     MothersName TEXT,
     DOB DATE,
-    Aadhaar TEXT UNIQUE,
-    APAR TEXT UNIQUE,
-    PEN TEXT UNIQUE,
+    Aadhaar TEXT,
+    APAR TEXT,
+    PEN TEXT,
     Contact TEXT,
     Email TEXT,
     Address TEXT,
@@ -138,9 +138,9 @@ CREATE TABLE IF NOT EXISTS Admissions (
     Last_Modified_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (StudentId) REFERENCES Students(Id) ON DELETE CASCADE,
     FOREIGN KEY (ClassId) REFERENCES Classes(Id) ON DELETE CASCADE,    
-    FOREIGN KEY (AcademicYearId) REFERENCES AcademicYears(Id) ON DELETE CASCADE,
-    UNIQUE (AcademicYearId, StudentId),
-    UNIQUE (ClassId, SectionId, RollNo)
+    FOREIGN KEY (AcademicYearId) REFERENCES AcademicYears(Id) ON DELETE CASCADE, 
+    UNIQUE (AcademicYearId, StudentId)
+    UNIQUE (AcademicYearId, ClassId, SectionId, RollNo)
 );
 
 -- Marks Table
@@ -263,7 +263,7 @@ CREATE TABLE IF NOT EXISTS ResultStatus (
     ClassId INTEGER NOT NULL,
     SectionId INTEGER,
     ResultType TEXT NOT NULL, -- terminal, annual, final
-    isGenerated BOOLEAN DEFAULT 0,
+    isGenerated BOOLEAN DEFAULT 1,
     isPublished BOOLEAN DEFAULT 0,
     Creation_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     Last_Modified_at DATETIME DEFAULT CURRENT_TIMESTAMP,   
@@ -312,15 +312,20 @@ CREATE INDEX IF NOT EXISTS idx_academicyears_isactive ON AcademicYears(IsActive)
 
 -- Students
 CREATE UNIQUE INDEX IF NOT EXISTS idx_students_Id ON Students(Id);
-CREATE UNIQUE INDEX IF NOT EXISTS idx_students_pen ON Students(PEN);
-CREATE UNIQUE INDEX IF NOT EXISTS idx_students_aadhaar ON Students(Aadhaar);
-CREATE UNIQUE INDEX IF NOT EXISTS idx_students_apar ON Students(APAR);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_students_aadhaar_not_null 
+    ON Students(Aadhaar) WHERE Aadhaar IS NOT NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS idx_students_apar_not_null 
+    ON Students(APAR) WHERE APAR IS NOT NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS idx_students_pen_not_null 
+    ON Students(PEN) WHERE PEN IS NOT NULL;
 
 -- Admissions
 CREATE INDEX IF NOT EXISTS idx_admissions_student_id ON Admissions(StudentId);
 CREATE INDEX IF NOT EXISTS idx_admissions_academic_year_id ON Admissions(AcademicYearId);
 CREATE INDEX IF NOT EXISTS idx_admissions_class_id ON Admissions(ClassId);
 CREATE INDEX IF NOT EXISTS idx_admissions_section_id ON Admissions(SectionId);
+
+
 
 -- ClassSectionMapping
 CREATE INDEX IF NOT EXISTS idx_classsectionmapping_classid ON ClassSectionMapping(ClassId);
@@ -533,7 +538,7 @@ SELECT
 -- Student 2 - X A
 INSERT INTO Students (Id, Name, Gender, FathersName, MothersName, DOB, Aadhaar, APAR, PEN, Contact, Address, Status, Caste, Religion, Height, Weight, BloodGroup)
 VALUES 
-('3f4c9a55-1d4e-4b90-b019-4f177654a1cb ','Aarav Mehta', 'Male', 'Ramesh Mehta', 'Sunita Mehta', '2010-03-21', '111122223333', '111122223333', '10100000001', '9998887771', '5 MG Road, Delhi', 'Admitted', 'OBC', 'Hindu', 142, 40.0, 'A+');
+('3f4c9a55-1d4e-4b90-b019-4f177654a1cb','Aarav Mehta', 'Male', 'Ramesh Mehta', 'Sunita Mehta', '2010-03-21', '111122223333', '111122223333', '10100000001', '9998887771', '5 MG Road, Delhi', 'Admitted', 'OBC', 'Hindu', 142, 40.0, 'A+');
 
 INSERT INTO Admissions (StudentId, AcademicYearId, ClassId, SectionId, RollNo, AdmissionType)
 VALUES (

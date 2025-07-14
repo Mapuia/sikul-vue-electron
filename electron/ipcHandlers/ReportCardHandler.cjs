@@ -152,6 +152,25 @@ ipcMain.handle('get-report-card', (event, { studentId, classId, sectionId, examI
     if (!reportCardData) {
       return { success: false, error: 'Report card not found' }
     }
+    const studentIdsInAdmissions = db.prepare(`
+        SELECT StudentId FROM Admissions
+        WHERE ClassId = ? AND AcademicYearId = ? AND (SectionId = ? OR ? = 0)
+      `).all(classId, academicYearId, SectionId, SectionId).map(row => row.StudentId);
+
+      // Step 2: Get distinct student IDs from Results for terminal
+      const terminalResultStudents = db.prepare(`
+        SELECT DISTINCT StudentId FROM Results
+        WHERE resultType = ?
+      `).all("terminal").map(row => row.StudentId);
+
+      const TerminalNoOfStudents = studentIdsInAdmissions.filter(id => terminalResultStudents.includes(id)).length;
+     
+      // Step 5: Add to attendanceData
+      if (reportCardData) {
+        reportCardData.noOfStudents = TerminalNoOfStudents;
+        
+      }
+
     return {
       success: true,
       studentData: studentData,
@@ -172,34 +191,35 @@ ipcMain.handle('get-final-report-card', (event, { studentId, classId, sectionId,
     SELECT ac.Id FROM ActiveExams ac
     JOIN Exams e ON e.Id = ac.ExamId
     WHERE ac.AcademicYearId = ? AND e.ExamType = 'terminal'
-    `).get(academicYearId)
+  `).get(academicYearId);
+
   const annual = db.prepare(`
     SELECT ac.Id FROM ActiveExams ac
     JOIN Exams e ON e.Id = ac.ExamId
-    WHERE ac.AcademicYearId = ? AND e.ExamType =  'annual'
-    `).get(academicYearId)  
+    WHERE ac.AcademicYearId = ? AND e.ExamType = 'annual'
+  `).get(academicYearId);
 
-  try {   
-    let SectionId = sectionId || 0
+  try {
+    const SectionId = sectionId || 0;
+
     const studentData = db.prepare(`
       SELECT 
         s.Name as Name,
         s.FathersName as FathersName,
         a.RollNo as RollNo,
         s.PEN as PEN,
-        s.APAR as APAR,     
-        a.AcademicYearId as AcademicYearId,        
-        s.APAR as APAR
+        s.APAR as APAR,
+        a.AcademicYearId as AcademicYearId
       FROM Students s
       JOIN Admissions a ON a.StudentId = s.Id
       JOIN Classes c ON c.Id = a.ClassId
-      LEFT JOIN Sections sec ON sec.Id = a.SectionId  -- LEFT JOIN instead of JOIN
+      LEFT JOIN Sections sec ON sec.Id = a.SectionId
       WHERE 
         s.Id = ? 
         AND a.AcademicYearId = ?
         AND c.Id = ? 
-        AND (a.SectionId = ? OR ? = 0)  -- Allow SectionId=0 to bypass filtering
-    `).get(studentId, academicYearId, classId, SectionId, SectionId);  
+        AND (a.SectionId = ? OR ? = 0)
+    `).get(studentId, academicYearId, classId, SectionId, SectionId);
 
     const marksData = db.prepare(`
       SELECT
@@ -212,12 +232,9 @@ ipcMain.handle('get-final-report-card', (event, { studentId, classId, sectionId,
         a.PeriodicMarksObtained as SecondPeriodicMarks,
         a.TerminalMarksObtained as AnnualMarks,
         a.TotalMarksObtained as AnnualTotalMarks
-      FROM
-        Subjects s
-      JOIN
-        Marks t ON t.SubjectId = s.Id AND t.ActiveExamId = ? AND t.StudentId = ?
-      JOIN
-        Marks a ON a.SubjectId = s.Id AND a.ActiveExamId = ? AND a.StudentId = ?
+      FROM Subjects s
+      JOIN Marks t ON t.SubjectId = s.Id AND t.ActiveExamId = ? AND t.StudentId = ?
+      JOIN Marks a ON a.SubjectId = s.Id AND a.ActiveExamId = ? AND a.StudentId = ?
       ORDER BY s.DisplayOrder ASC
     `).all(PassingPercentage, terminal.Id, studentId, annual.Id, studentId);
 
@@ -226,9 +243,8 @@ ipcMain.handle('get-final-report-card', (event, { studentId, classId, sectionId,
       const finalPassMark = subject.PassMark * 2;
       const finalMarks = subject.TerminalTotal + subject.AnnualTotalMarks;
       const result = finalMarks >= finalPassMark ? "Pass" : "Fail";
-      
       return {
-        ...subject, // Keep all existing properties
+        ...subject,
         finalFullMark,
         finalPassMark,
         finalMarks,
@@ -236,8 +252,7 @@ ipcMain.handle('get-final-report-card', (event, { studentId, classId, sectionId,
       };
     });
 
-  // Now calculate the updated totals including the new fields
-  const totals = finalMarksData.reduce((acc, row) => {
+    const totals = finalMarksData.reduce((acc, row) => {
       acc.fullMark += row.FullMark || 0;
       acc.passMark += row.PassMark || 0;
       acc.finalFullMark += row.finalFullMark || 0;
@@ -246,125 +261,164 @@ ipcMain.handle('get-final-report-card', (event, { studentId, classId, sectionId,
       acc.annualTotal += row.AnnualTotalMarks || 0;
       acc.finalMarks += row.finalMarks || 0;
       return acc;
-    }, { 
-      fullMark: 0, 
+    }, {
+      fullMark: 0,
       passMark: 0,
       finalFullMark: 0,
       finalPassMark: 0,
-      terminalTotal: 0, 
+      terminalTotal: 0,
       annualTotal: 0,
       finalMarks: 0
     });
 
-  const totalMarks = {     
-        fullMark: totals.fullMark,
-        passMark: totals.passMark,
-        finalFullMark: totals.finalFullMark,
-        finalPassMark: totals.finalPassMark,
-        terminalTotal: totals.terminalTotal,
-        annualTotal: totals.annualTotal,
-        finalMarks: totals.finalMarks
-      }    
+    const totalMarks = {
+      fullMark: totals.fullMark,
+      passMark: totals.passMark,
+      finalFullMark: totals.finalFullMark,
+      finalPassMark: totals.finalPassMark,
+      terminalTotal: totals.terminalTotal,
+      annualTotal: totals.annualTotal,
+      finalMarks: totals.finalMarks
+    };
 
-    const resultData = db.prepare(`
+    const results = db.prepare(`
       SELECT
-        StudentId,
-        TotalMarksObtained as TotalMark,       
-        Percentage,
-        Division,
-        Rank,
-        ResultStatus        
-      FROM
-        Results
+        r.StudentId,
+        r.TotalMarksObtained as TotalMark,
+        r.Percentage,
+        r.Division,
+        r.Rank,
+        r.ResultStatus,
+        e.ExamType,
+        r.ResultType
+      FROM Results r
+      JOIN ActiveExams ae ON ae.Id = r.ActiveExamId
+      JOIN Exams e ON e.Id = ae.ExamId
       WHERE 
-        ActiveExamId = ? AND StudentId = ? AND ResultType = ? AND ReportCard = ?
-      `).get(annual.Id, studentId, resultType, 1)
-      
-    //ReportCard Data
+        r.StudentId = ? 
+        AND (
+          (e.ExamType = 'terminal' AND r.ResultType = 'terminal') OR
+          (e.ExamType = 'annual' AND r.ResultType = 'final' AND r.ReportCard = 1)
+        )
+        AND (r.ActiveExamId = ? OR r.ActiveExamId = ?)
+    `).all(studentId, terminal.Id, annual.Id);
+
+    const resultData = {
+      terminal: results.find(r => r.ExamType === 'terminal'),
+      finalResult: results.find(r => r.ExamType === 'annual')
+    };
+    
+
     const reportCardData = db.prepare(`
       SELECT
         t.TotalWorkingDays as TerminalWorkingDays,
-        t.TotalPresentDays as TerminalPresentDays,       
+        t.TotalPresentDays as TerminalPresentDays,
         f.TotalWorkingDays as AnnualWorkingDays,
         f.TotalPresentDays as AnnualPresentDays,
         f.TeachersRemark as FinalRemark
       FROM 
         (SELECT * FROM ReportCards 
-        WHERE ActiveExamId = ? AND StudentId = ? AND AcademicYearId = ? AND ReportCardType = 'terminal') t
+         WHERE ActiveExamId = ? AND StudentId = ? AND AcademicYearId = ? AND ReportCardType = 'terminal') t
       LEFT JOIN
         (SELECT * FROM ReportCards 
-        WHERE ActiveExamId = ? AND StudentId = ? AND AcademicYearId = ? AND ReportCardType = 'final') f
+         WHERE ActiveExamId = ? AND StudentId = ? AND AcademicYearId = ? AND ReportCardType = 'final') f
       ON t.StudentId = f.StudentId AND t.AcademicYearId = f.AcademicYearId
-    `).get(
-      terminal.Id, studentId, academicYearId,
-      annual.Id, studentId, academicYearId
-    );
+    `).get(terminal.Id, studentId, academicYearId, annual.Id, studentId, academicYearId);
 
-//activities
-  const activities = db.prepare(`
+    const activities = db.prepare(`
       SELECT s.SubjectName as ActivityName, 
-      t.Grade as terminalGrade,
-      a.Grade as annualGrade
+             t.Grade as terminalGrade,
+             a.Grade as annualGrade
       FROM Subjects s
       LEFT JOIN CoScholasticMarks t 
-      ON t.SubjectId = s.Id 
-      AND t.ActiveExamId = ? 
-      AND t.StudentId = ?
+        ON t.SubjectId = s.Id AND t.ActiveExamId = ? AND t.StudentId = ?
       LEFT JOIN CoScholasticMarks a 
-      ON a.SubjectId = s.Id 
-      AND a.ActiveExamId = ? 
-      AND a.StudentId = ?
+        ON a.SubjectId = s.Id AND a.ActiveExamId = ? AND a.StudentId = ?
       WHERE s.SubjectCategory = 'Co-Scholastic' 
-    `).all(terminal.Id, studentId, annual.Id, studentId)    
+    `).all(terminal.Id, studentId, annual.Id, studentId);
 
-    // Calculate totals 
-    const attendanceData = reportCardData?{
-     
-      TerminalWorkingDays: reportCardData.TerminalWorkingDays,
-      TerminalPresentDays: reportCardData.TerminalPresentDays,    
-      AnnualWorkingDays: reportCardData.AnnualWorkingDays,
-      AnnualPresentDays: reportCardData.AnnualPresentDays,   
+    const attendanceData = reportCardData ? {
+      TerminalWorkingDays: reportCardData.TerminalWorkingDays || 0,
+      TerminalPresentDays: reportCardData.TerminalPresentDays || 0,
+      AnnualWorkingDays: reportCardData.AnnualWorkingDays || 0,
+      AnnualPresentDays: reportCardData.AnnualPresentDays || 0,
       TotalWorkingDays: (reportCardData.TerminalWorkingDays || 0) + (reportCardData.AnnualWorkingDays || 0),
-      TotalPresentDays: (reportCardData.TerminalPresentDays || 0) + (reportCardData.AnnualPresentDays || 0),  
-      remarks: reportCardData.FinalRemark
-      
-    } : null;    
+      TotalPresentDays: (reportCardData.TerminalPresentDays || 0) + (reportCardData.AnnualPresentDays || 0),
+      remarks: reportCardData.FinalRemark || ''
+    } : null;
 
-  return{
-    success: true,
-    studentData,
-    finalMarksData,
-    totalMarks,
-    activities,
-    resultData,
-    attendanceData
-  }
-   
-   
-  } catch (error) {
-    console.error('Error fetching report card:', error)
-    return { success: false, error: error.message }
-  }
-})
+    /////No of Students
+    // Step 1: Get all student IDs for this class, section, and academic year
+      const studentIdsInAdmissions = db.prepare(`
+        SELECT StudentId FROM Admissions
+        WHERE ClassId = ? AND AcademicYearId = ? AND (SectionId = ? OR ? = 0)
+      `).all(classId, academicYearId, SectionId, SectionId).map(row => row.StudentId);
 
-ipcMain.handle('get-no-of-students', async (event, { classId, sectionId }) => {
-  try {
-    let SectionId = 0;
-    if(sectionId === '') SectionId = 0
-    else SectionId = sectionId
-    const NoOfStudents = db.prepare(`
-      SELECT COUNT(*) as Count
-      FROM Admissions
-      WHERE ClassId = ? AND SectionId = ?
-    `).get(classId, SectionId)
+      // Step 2: Get distinct student IDs from Results for terminal
+      const terminalResultStudents = db.prepare(`
+        SELECT DISTINCT StudentId FROM Results
+        WHERE ActiveExamId = ?
+      `).all(terminal.Id).map(row => row.StudentId);
+
+      // Step 3: Get distinct student IDs from Results for annual
+      const finalResultStudents = db.prepare(`
+        SELECT DISTINCT StudentId FROM Results
+        WHERE ActiveExamId = ?
+      `).all(annual.Id).map(row => row.StudentId);
+
+      // Step 4: Count how many students from Admissions are in Results
+      const TerminalNoOfStudents = studentIdsInAdmissions.filter(id => terminalResultStudents.includes(id)).length;
+      const AnnualNoOfStudents = studentIdsInAdmissions.filter(id => finalResultStudents.includes(id)).length;
+
+      // Step 5: Add to attendanceData
+      if (attendanceData) {
+        attendanceData.TerminalNoOfStudents = TerminalNoOfStudents;
+        attendanceData.AnnualNoOfStudents = AnnualNoOfStudents;
+      }
+
 
     return {
       success: true,
-      NoOfStudents: NoOfStudents.Count
-    }
+      studentData,
+      finalMarksData,
+      resultData: {
+        terminal: {
+          Percentage: resultData.terminal?.Percentage || 0,
+          Division: resultData.terminal?.Division || '',
+          Rank: resultData.terminal?.Rank || '',
+          ResultStatus: resultData.terminal?.ResultStatus || ''
+        },
+        finalResult: {
+          Percentage: resultData.finalResult?.Percentage || 0,
+          Division: resultData.finalResult?.Division || '',
+          Rank: resultData.finalResult?.Rank || '',
+          ResultStatus: resultData.finalResult?.ResultStatus || ''
+        }
+      },
+      totalMarks,
+      attendanceData,
+      activities
+    };
 
   } catch (error) {
-    console.error('Error fetching number of students:', error)
-    return { success: false, error: error.message }
+    console.error('Error:', error);
+    return {
+      success: false,
+      error: error.message,
+      studentData: {},
+      finalMarksData: [],
+      resultData: {
+        terminal: {},
+        finalResult: {}
+      },
+      totalMarks: {},
+      attendanceData: null,
+      activities: []
+    };
   }
-})
+});
+
+
+
+
+

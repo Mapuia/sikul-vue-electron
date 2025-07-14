@@ -16,7 +16,7 @@ export const useAcademicYear = () => {
       CurrentYearId.value = response.result.Id;
       //console.log("Academic Year Loaded:", CurrentYear.value);
     } else {
-      console.warn('Failed to load academic year or invalid response:', response);
+      //console.warn('Failed to load academic year or invalid response:', response);
       CurrentYear.value = 'Not Set';
       CurrentYearId.value = 'Not Found';
     }
@@ -37,7 +37,7 @@ export const useAcademicYear = () => {
     else{
       console.log('No Year Value found')
     }
-
+    //console.log("Previous Year and Current Year:", PreviousYearId.value, CurrentYearId.value);
   }
   return {
     CurrentYear,

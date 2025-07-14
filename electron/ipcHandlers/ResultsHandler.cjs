@@ -114,7 +114,7 @@ ipcMain.handle('verify-result-status', async (event, { academicYearId, resultTyp
       }
     }
 
-    //console.log('Result status:', result);
+    console.log('Result status:', result);
     return { 
       success: true,
       isVerified: result.isGenerated || false,

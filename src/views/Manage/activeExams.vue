@@ -39,8 +39,8 @@
               <th>Major Marks</th>
               <th>Minor Marks</th>
               <th>Passing %</th>
-
               <th>Published?</th>
+              <th>Publish Date</th>
               <th>Actions</th>
             </tr>
           </thead>
@@ -71,9 +71,12 @@
               
               <!-- Result_Published -->
               <td>
-                <span class="tag" :class="exam.Result_Published ? 'is-success' : 'is-dark'">
-                  {{ exam.Result_Published ? 'Yes' : 'No' }}
-                </span>
+                
+                  {{ exam.ExamType === 'periodic'? 'No Result' :exam.Result_Published ? 'Yes' : 'No' }}
+            
+              </td>
+              <td>               
+                  {{ exam.PublishDate  }}               
               </td>
               
               <!-- Actions -->

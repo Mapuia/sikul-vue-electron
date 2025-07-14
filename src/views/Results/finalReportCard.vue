@@ -75,7 +75,7 @@
                   <tr v-for="result in results" :key="result.StudentId">
                     <td style="font-weight: 700;">{{ result.ResultStatus === 'Pass' ? result.Rank : '' }}</td>
                     <td>{{ result.RollNo }}</td>
-                    <td style="text-align: left;">{{ result.Name }} - {{ result.StudentId }}</td>
+                    <td style="text-align: left;">{{ result.Name }}</td>
                     <td>
                       {{ result.Division }}
                     </td>
@@ -98,6 +98,13 @@
                           <i class="fas fa-download"></i>
                         </span>
                         <span>Generate Report Card</span>
+                      </button>
+                      <button v-if="result.ReportCard === 1 && canAccess(['admin'])" class="button is-small is-primary mr-2"
+                              @click="openInputModal(result.StudentId, result.Name)">
+                        <span class="icon is-small">
+                          <i class="fas fa-download"></i>
+                        </span>
+                        <span>Re-Generate</span>
                       </button>
                     </td>
                   </tr>
@@ -165,15 +172,14 @@
                   
                   <!-- Headings -->
                   <h1 class="title print-title mt-3">CALVARY HIGHER SECONDARY SCHOOL</h1>
-                  <h2 class="subtitle print-subtitle is-6 m-0"><i>(Tripura Presbyterian School)</i></h2>
+                  <h2 class="subtitle print-subtitle m-0"><i>(Tripura Presbyterian School)</i></h2>
                   <img src="/sikul_logo.png" alt="School Logo" style="display: block; margin: 3px auto; height: 60px;" />
 
-                  <h2 class="subtitle print-subtitle is-7 m-0">Affiliated to TBSE, School Code: 2C018</h2>
-                  <h2 class="subtitle print-subtitle is-7 m-0">Mission Compound, Tuidu. Gomati District, Tripura – 799101 </h2>
-                  <h2 class="subtitle print-subtitle is-7 m-0">Phone No: (+91) 8787793883, email: calvaryhighschool2019@gmail.com</h2>
-                  <h2 class="subtitle print-subtitle is-6">Academic Session : {{ CurrentYear }}</h2>
+                  <h2 class="subtitle print-subtitle  m-0">Affiliated to TBSE, School Code: 2C018</h2>
+                  <h2 class="subtitle print-subtitle  m-0">Mission Compound, Tuidu. Gomati District, Tripura – 799101 </h2>
+                  <h2 class="subtitle print-subtitle m-0">Phone No: (+91) 8787793883, email: calvaryhighschool2019@gmail.com</h2>
+                  <h2 class="subtitle print-subtitle ">Academic Session : {{ CurrentYear }}</h2>
                   <h1 class="title print-title is-5 mt-2">REPORT CARD (Final)</h1>
-
                 </div>
 
                 <div class="table-container">
@@ -184,7 +190,7 @@
                         <td class="">{{ studentData.Name }}</td>
                     
                         <th class="">Class:</th>
-                        <td class="">{{className}} {{sectionName ? 'Section '+ sectionName : ''}}</td>
+                        <td class="">{{className}} &nbsp; {{sectionName ? 'Section '+ sectionName : ''}}</td>
                       
                         <th class="">Roll No:</th>
                         <td class="">{{ studentData.RollNo }}</td>
@@ -196,7 +202,6 @@
                         <td class="">{{ studentData.PEN }}</td>
                         <th class="">APAR:</th>
                         <td class="">{{ studentData.APAR }}</td>
-
                       </tr>
                     </tbody>
                   </table>
@@ -260,126 +265,129 @@
                         <td><b>{{ totalMarks.finalFullMark }}</b></td>
                         <td><b>{{ totalMarks.finalPassMark }}</b></td>
                         <td><b>{{ totalMarks.finalMarks }}</b></td>
-                        <td><span class="tag" :class="resultData.ResultStatus === 'Fail'? 'is-danger' : 'is-success'">
-                          {{ resultData.ResultStatus }}</span></td>
+                        <td><span class="tag" :class="resultData.finalResult?.ResultStatus === 'Fail'? 'is-danger' : 'is-success'">
+                          {{resultData.finalResult?.ResultStatus}}</span></td>
                       </tr>
                     </tbody>
                   </table>
                 </div>
-                  <div class="columns is-vcentered" style="align-items: flex-end;">
-                    <div class="column is-half is-flex is-flex-direction-column is-justify-content-flex-end">
-                        <table class="report-card-b">
-                          <tbody>
-                            <tr>
-                              <th colspan="4" class="summary-header">COSCHOLASTIC ACTIVITIES</th>
-                            </tr>
-                            <tr>                           
-                              <th class="summary-header">ACTIVITY NAME</th>
-                              <th >HALF YEARLY</th>            
-                              <th >ANNUAL</th>
-                            </tr>
-                            <tr v-for="activity in activities" :key="activity.Id">
-                              <th class = "summary">{{ activity.ActivityName }}</th>
-                              <td>{{ activity.terminalGrade }}</td>
-                              <td>{{ activity.annualGrade }}</td>
-                            </tr>
-                          </tbody>
-                        </table> 
-                        
-                        <table class="report-card-b mt-2">
-                          <tbody>                            
-                            <tr>
-                              <th class="summary-header">ATTENDANCE REPORT</th>
-                              <th >HALF YEARLY</th>
-                              <th >ANNUAL</th>
-                              <th >FINAL</th>
-                            </tr>
+                <div class="columns" >
+                  <div class="column is-half is-flex is-flex-direction-column is-justify-content-flex-end">
+                      <table class="report-card-b">
+                        <tbody>
+                          <tr>
+                            <th colspan="4" class="summary-header">COSCHOLASTIC ACTIVITIES</th>
+                          </tr>
+                          <tr>                           
+                            <th class="summary-header has-text-left">ACTIVITY NAMES</th>
+                            <th style="max-width:60px;">HALF YEARLY</th>            
+                            <th style="max-width:60px;">ANNUAL</th>
+                          </tr>
+                          <tr v-for="activity in activities" :key="activity.Id">
+                            <th class = "summary">{{ activity.ActivityName }}</th>
+                            <td>{{ activity.terminalGrade }}</td>
+                            <td>{{ activity.annualGrade }}</td>
+                          </tr>
+                        </tbody>
+                      </table>                       
+                  </div>
+                  <div class="column is-half is-flex is-flex-direction-column">   
+                      <table class="result-summary">
+                        <tbody>
+                          <tr> 
+                            <th colspan="3" class="has-text-centered"><b>RESULTS</b></th>
+                          </tr>  
+                          <tr> 
+                            <th class=""><b>PARAMETERS</b></th>
+                            <th class="has-text-centered"><b>HALF YEARLY</b></th>
+                            <th class="has-text-centered" style="min-width:80px"><b>FINAL</b></th>
+                          </tr>  
+                          <tr>
+                            <th >Percentage</th>
+                            <td>{{ Number(resultData.terminal?.Percentage).toFixed(2) }}</td>
+                            <td>{{ Number(resultData.finalResult?.Percentage).toFixed(2) }}</td>
                             
-                            <tr>
-                              <th class = "summary">No. Working Days</th>
-                              <td>{{reportCardData?.TerminalWorkingDays}}</td>
-                              <td>{{reportCardData?.AnnualWorkingDays}}</td>
-                              <td>{{reportCardData?.TotalWorkingDays }}</td>
-                            </tr>
-                            <tr>  
-                              <th class = "summary">No. Days Present</th>
-                              <td>{{reportCardData?.TerminalPresentDays}}</td>
-                              <td>{{reportCardData?.AnnualPresentDays}}</td>
-                              <td>{{reportCardData?.TotalPresentDays }}</td>
-                            </tr>
+                          </tr>
+                          <tr>
+                            <th class = "summary">Division</th>
+                            <td>{{resultData.terminal?.Division}}</td>                             
+                            <td>{{resultData.finalResult?.Division}}</td>                             
+                          </tr>
+                          <tr>
+                            <th class = "summary">Position</th>
+                            <td>{{resultData.terminal?.Rank}}</td>                        
+                            <td>{{resultData.finalResult?.Rank}}</td>                        
+                          </tr>
+                          <tr>
+                            <th class = "summary">Result</th>
+                            <td>{{resultData.terminal?.ResultStatus}}</td>                         
+                            <td>{{resultData.finalResult?.ResultStatus}}</td>                         
+                          </tr>
+                          <tr>
+                            <th  >Total No. of Students:</th>
+                            <td  class="bottom">
+                              <span>{{ reportCardData?.TerminalNoOfStudents }}</span>                                 
+                            </td>
+                            <td class="bottom">                                
+                              <span>{{ reportCardData?.AnnualNoOfStudents }}</span> 
+                            </td>
+                          </tr>
                           </tbody>
-                        </table>
-                    </div>
-                    <div class="column is-half is-flex is-flex-direction-column is-justify-content-flex-end">
-                    
-                        
-                        <table class="result-summary">
-                          <tbody>
-                            <tr> 
-                              <th colspan="2" class="has-text-centered"><b>FINAL RESULT</b></th>
-                            </tr>  
-                            <tr>
-                              <th >Percentage</th>
-                              <td>{{ Number(resultData.Percentage).toFixed(2) }}</td>
-                              
-                            </tr>
-                            <tr>
-                              <th class = "summary">Division</th>
-                              <td>{{resultData.Division}}</td>                             
-                            </tr>
-                            <tr>
-                              <th class = "summary">Position</th>
-                              <td>{{resultData.Rank}}</td>                        
-                            </tr>
-                            <tr>
-                              <th class = "summary">Result</th>
-                              <td>{{resultData.ResultStatus}}</td>                         
-                            </tr>
-                            <tr>
-                              <th  >Total No. of Students:</th>
-                              <td  class="bottom">
-                                <span>{{ noOfStudents }}</span> 
-                              </td>
-                            </tr>
-                            <tr>
-                              <th  >Class Teacher's Remark:</th>
-                              <td class="bottom">
-                                <span>{{ reportCardData.remarks }}</span> 
-                              </td>
-                            </tr>
-                          
-                            <tr>
-                              <th >Name of Class Teacher:</th>
-                              <td  class="bottom">
-                               <span v-if="classTeacher.name">{{ classTeacher.name }}</span>
-                                <span v-else>Class Teacher's Name</span>
-                              </td>
-                            </tr> 
-                          </tbody>
-                        </table>                       
-                      </div>
-                    </div>
-                    <div class="">
-                        <table class="report-table mb-4">
-                          <tbody>
-                            
-                            <tr>
-                              <th class="bottom"></th>
-                              <th class="bottom"></th>
-                              <th class="bottom pt-5"></th>
-                            </tr>
-                            <tr>
-                              <th class="bottom" style="text-align: left;"><p class="is-size-6">Date: {{ currentDate }}</p></th>
-                              <th class="bottom" style="text-align: center;"></th>
-                              <th class="bottom pr-4 mt-5" style="text-align: right;">Signature of Headmistress</th>
-
-                            </tr>
-                          </tbody>
-                        </table>
-                      </div>               
+                      </table> 
+                  </div>
+                </div>
+                <div class="columns" style="margin-top: -20px;">
+                  <div class="column is-half is-flex is-flex-direction-column">
+                      <table class="report-card-b ">
+                        <tbody>                            
+                          <tr>
+                            <th class="summary-header">ATTENDANCE REPORT</th>
+                            <th >HALF YEARLY</th>
+                            <th >ANNUAL</th>
+                            <th >FINAL</th>
+                          </tr>
+                          <tr>
+                            <th class = "summary">No. Working Days</th>
+                            <td>{{reportCardData?.TerminalWorkingDays}}</td>
+                            <td>{{reportCardData?.AnnualWorkingDays}}</td>
+                            <td>{{reportCardData?.TotalWorkingDays }}</td>
+                          </tr>
+                          <tr>  
+                            <th class = "summary">No. Days Present</th>
+                            <td>{{reportCardData?.TerminalPresentDays}}</td>
+                            <td>{{reportCardData?.AnnualPresentDays}}</td>
+                            <td>{{reportCardData?.TotalPresentDays }}</td>
+                          </tr>
+                        </tbody>
+                      </table>
+                  </div>
+                  <div class="column is-half is-flex is-flex-direction-column">  
+                    <table class="report-card-c">
+                      <tbody>
+                        <tr>
+                          <th >Name of Class Teacher:</th>
+                          <td >
+                            <span v-if="classTeacher.name">{{ classTeacher.name }}</span>
+                            <span v-else>Class Teacher's Name</span>
+                          </td>
+                        </tr>
+                        <tr>
+                          <th >Class Teacher's Remark:</th>
+                          <td >
+                            <span>{{ reportCardData.remarks }} </span> 
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>                       
+                  </div>
+                </div>
+                <div class="columns is-flex is-justify-content-space-between is-align-items-center mx-1 mt-6">
+                  <div>Date: {{ currentDate }}</div>
+                  <div class="mr-6 is-size-7">Signature of {{ head.designation || "Principal" }}</div>
+                </div>                
                 <div class="help is-flex is-justify-content-center has-text-centered mt-7">
                   * This is a computer-generated report card.
-              </div>
+                </div>
               </section>
               
             </div>
@@ -393,8 +401,7 @@
               <button class="button is-dark" @click="closeModal">Close</button>
             </footer>
           </div>
-        </div>
-        
+        </div>        
       </div>
       <!--End of Modal-->
 </template>
@@ -410,7 +417,7 @@ const { CurrentYearId, CurrentYear } = useAcademicYear()
 const { PassingPercentage, loadActiveExam } = useActiveExam()
 
 const route = useRoute()
-
+const userRole = ref('')
 const isLoading = ref(false)
 const modalVisible = ref(false)
 
@@ -435,23 +442,28 @@ const currentAttendance = ref(0)
 const currentTeachersRemark = ref('')
 
 //For Report Card Fetch
-const noOfStudents = ref(0)
+
 const marksData = ref([])
 const studentData = ref([])
-const resultData = ref([])
+const resultData = ref({
+  terminal: {
+    Percentage: 0,
+    Division: '',
+    Rank: '',
+    ResultStatus: ''
+  },
+  finalResult: {
+    Percentage: 0,
+    Division: '',
+    Rank: '',
+    ResultStatus: ''
+  }
+})
 const reportCardData = ref([])
 const totalMarks = ref([])
 
 const classTeacher = ref({ name: '', designation: '' })
-
-async function fetchNoOfStudents() {
-  const no = await window.electronAPI.getNoOfStudents({
-    classId: selectedClassId.value,
-    sectionId: selectedSectionId.value || 0
-  })
-  noOfStudents.value = no.NoOfStudents
-  //console.log("No of Students:", noOfStudents.value)
-}
+const head = ref({ name: '', designation: '' })
 
 const currentDate = ref(new Date().toLocaleDateString('en-IN', {
   year: 'numeric',
@@ -488,18 +500,45 @@ async function fetchClassTeacherInfo() {
         name: response.data.Name,
         designation: response.data.Designation
       }
-      //console.log("Class Teacher:", classTeacher.value)
+      console.log("Class Teacher:", classTeacher.value)
     }
   } catch (error) {
     console.error('Error fetching teacher:', error)
   }
 }
 
+async function fetchHeadSignatory() {
+  try {
+    const response = await window.electronAPI.getHeadSignatory()
+    if (response.success && response.data) {
+      head.value = {
+        name: response.data.Name,
+        designation: response.data.Designation
+      }
+    }
+    //console.log('Head Signatory:', head.value)
+  } catch (error) {
+    console.error('Error fetching head signatory:', error)
+  }
+} 
+
 onMounted(async () => {
   await loadActiveExam()
   await fetchClasses()
-  await getExam()  
+  await getExam()
+  await getUser()
+  await fetchHeadSignatory()
 })
+
+async function getUser() {
+  const user = await window.electronAuth.getCurrentUser()
+  if (user) {    
+    userRole.value = user.role
+  }
+}
+const canAccess = (requiredRoles) => {
+  return requiredRoles.includes(userRole.value)
+}
 
 async function fetchClasses() {
   try {
@@ -531,7 +570,6 @@ watch(selectedClassId, async (newClassId) => {
 watch(selectedSectionId, async (newSectionId) => {
   if (newSectionId) {
     await fetchResults()
-    await fetchNoOfStudents()
     await fetchClassTeacherInfo()
   }
 })
@@ -599,7 +637,7 @@ async function proceedToGenerateReportCard() {
     currentAttendance.value,
     currentTeachersRemark.value
   )
-  // Reset input fields
+  fetchResults()
 }
 
 async function generateReportCard(studentId, totalWorkingDays, attendance, remark) {
@@ -632,29 +670,50 @@ async function generateReportCard(studentId, totalWorkingDays, attendance, remar
 }
 
 async function fetchReportCard(studentId, Name) {
-  selectedStudentName.value = Name
- const reports = await window.electronAPI.getFinalReportCard({
-        examId: currentExamId.value,
-        classId: selectedClassId.value,
-        sectionId: selectedSectionId.value || 0,
-        studentId,
-        resultType: 'final',
-        academicYearId: CurrentYearId.value,
-        PassingPercentage: PassingPercentage.value
-      })
+  selectedStudentName.value = Name;
 
-      
-      if(reports?.success){         
-        studentData.value = reports.studentData || []
-        marksData.value = reports.finalMarksData || []
-        resultData.value = reports.resultData || []
-        totalMarks.value = reports.totalMarks || []
-        reportCardData.value = reports.attendanceData || []
-        activities.value = reports.activities || []
-        modalVisible.value = true
-        
-      }
+  try {
+    const reports = await window.electronAPI.getFinalReportCard({
+      examId: currentExamId.value,
+      classId: selectedClassId.value,
+      sectionId: selectedSectionId.value || 0,
+      studentId,
+      resultType: 'final',
+      academicYearId: CurrentYearId.value,
+      PassingPercentage: PassingPercentage.value
+    });
+
+    if (reports?.success) {
+      studentData.value = reports.studentData || {};
+      marksData.value = reports.finalMarksData || [];
+
+      // Corrected result data assignment
+      resultData.value = {
+        terminal: {
+          Percentage: reports.resultData?.terminal?.Percentage || 0,
+          Division: reports.resultData?.terminal?.Division || '',
+          Rank: reports.resultData?.terminal?.Rank || '',
+          ResultStatus: reports.resultData?.terminal?.ResultStatus || ''
+        },
+        finalResult: {
+          Percentage: reports.resultData?.finalResult?.Percentage || 0,
+          Division: reports.resultData?.finalResult?.Division || '',
+          Rank: reports.resultData?.finalResult?.Rank || '',
+          ResultStatus: reports.resultData?.finalResult?.ResultStatus || ''
+        }
+      };
+
+      totalMarks.value = reports.totalMarks || {};
+      reportCardData.value = reports.attendanceData || {};
+      activities.value = reports.activities || [];
+      modalVisible.value = true;
+    }
+  } catch (error) {
+    console.error('Error fetching report card:', error);
+    window.electronAPI.showErrorDialog('Failed to load report card data');
+  }
 }
+
 
 function downloadPDF() {
   
@@ -733,9 +792,9 @@ function closeModal() {
   font-weight: 600;
 }
 .print-subtitle{
-  font-size: 12pt;
+  font-size: 11pt;
   font-family: 'Oswald';
-  font-weight: 500;
+  font-weight: 400;
 }
 
 
@@ -830,6 +889,7 @@ function closeModal() {
   border: 2px solid black;
   width:100%;
   border-collapse: collapse;
+
 }
 .report-card-b th{
   border-collapse: true;
@@ -860,30 +920,29 @@ function closeModal() {
 .student-table{
   color: black;
   width:100%;
-  margin-bottom: 1rem;
+  margin-bottom: 0.25rem;
   margin-top: 1rem;
 }
 .student-table th{
   font-size: 14px;
   color: black;
-  font-weight: 420;
+  font-weight: 450;
   padding: 0.1rem;
   text-align: left;
-  max-width: 60px;
 }
 .student-table td{ 
-  padding: 0.2rem;
-  font-size: 16px;
+  padding: 0.1rem;
+  font-size: 14px;
   color: black;
   text-align: left;
-  font-weight: 700;
+  font-weight: 500;
 }
 
 .result-summary{
  color: black;
   width:100%;
   border-collapse: collapse;
-  min-height: 256px;
+  height:178px;
   border: 2px solid black;
 }
 .result-summary th{
@@ -906,13 +965,37 @@ function closeModal() {
   vertical-align: middle;
   border: 1px solid black;
 }
-
+.report-card-c{  
+  width:100%;
+  border-collapse: collapse;
+  min-height:60px;
+}
+.report-card-c th{
+  font-size: 14px;
+  color: black;
+  font-weight: 420;
+  padding-left: 0.2rem;
+  padding-right: 0.2rem;
+  text-align: left;
+  vertical-align: middle;
+  width: 160px;
+}
+.report-card-c td{
+  font-size: 14px;
+  color: black;
+  font-weight: 420;
+  padding-left: 0.2rem;
+  padding-right: 0.2rem;
+  text-align: left;
+  vertical-align: middle;
+}
 
 .report-table {
   color: black;
   width:100%;
   border-collapse: collapse;
-  margin-bottom: 10px;
+  margin-bottom: 5px;
+  margin-top: 50px;
 }
 .report-table td{ 
   border-collapse: collapse;

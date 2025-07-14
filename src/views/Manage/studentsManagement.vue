@@ -102,13 +102,13 @@
                     <button class="button no-padding is-small is-warning" @click="openEditModal(student.id)" title="Edit">
                       <i class="fas fa-user-edit"></i>
                     </button>
-                    <button
+                    <button v-if="canAccess(['admin'])"
                         class="button no-padding is-small is-danger"
                         @click="confirmDeleteStudent(student.id)"
                         title="Delete"
                       >
                         <i class="fas fa-trash"></i>
-                      </button>
+                    </button>
                   </div>
                 </td>
               </tr>
@@ -158,24 +158,33 @@ import StudentDetailsView from '@/components/StudentDetailsView.vue';
 import StudentEditForm from '@/components/StudentEditForm.vue';
 import { useAcademicYear } from '@/composables/useAcademicYear';
 
+// Composables
 const { CurrentYearId, loadAcademicYear } = useAcademicYear();
 
+// Refs - Data
 const classes = ref([]);
 const sections = ref([]);
 const students = ref([]);
 const selectedClassId = ref('');
 const selectedSectionId = ref('');
 const searchQuery = ref('');
+const userRole = ref('');
+
+// Refs - UI State
 const isSearching = ref(false);
 const hasSearched = ref(false);
-
+const showModal = ref(false);
+const modalMode = ref('view'); // 'view' | 'edit'
 const selectedStudent = ref(null);
 const admission = ref(null);
-const showModal = ref(false);
-const modalMode = ref('view');
 
+// Refs - Messages
 const errorMessage = ref('');
 const successMessage = ref('');
+
+// ======================
+// Data Fetching Methods
+// ======================
 
 async function fetchClasses() {
   const res = await window.electronAPI.getClasses();
@@ -184,32 +193,19 @@ async function fetchClasses() {
 
 async function fetchSections() {
   if (!selectedClassId.value) return;
+  
   const res = await window.electronAPI.getSectionsByClassId(selectedClassId.value);
-  if (res.success){
-    sections.value = res.sections
-    if(res.sections.length===0){
+  if (res.success) {
+    sections.value = res.sections;
+    if (res.sections.length === 0) {
       selectedSectionId.value = 0;
       await fetchExistingStudents();
     }    
   }  
 }
 
-watch(selectedClassId, async (classId) =>{
-  if(selectedSectionId) fetchExistingStudents()
-  else{
-    const secResult = await window.electronAPI.getSectionsByClassId(classId) 
-    if (secResult.success) {
-      sections.value = secResult.sections  
-    }
-    if (sections.value.length === 0){
-      selectedSectionId.value = 0
-      fetchExistingStudents();
-    }
-  }       
-})
-
 async function fetchExistingStudents() {
-  hasSearched.value = false
+  hasSearched.value = false;
   const res = await window.electronAPI.getStudentsByClassSectionsId({
     YearId: CurrentYearId.value,
     ClassId: selectedClassId.value,
@@ -217,6 +213,10 @@ async function fetchExistingStudents() {
   });
   if (res.success) students.value = res.students;
 }
+
+// ==================
+// Search Functionality
+// ==================
 
 async function searchStudents() {
   if (!searchQuery.value.trim()) return;
@@ -227,16 +227,17 @@ async function searchStudents() {
       query: searchQuery.value.trim(),
       yearId: CurrentYearId.value
     });
+    
     if (res.success) {
       students.value = res.students;
       hasSearched.value = true;
-      
     } else {
       errorMessage.value = res.message || 'Search failed';
     }
-    if(hasSearched.value){
-    selectedClassId.value = ''
-      selectedSectionId.value = ''
+    
+    if (hasSearched.value) {
+      selectedClassId.value = '';
+      selectedSectionId.value = '';
     }  
   } catch (err) {
     errorMessage.value = err.message;
@@ -245,6 +246,10 @@ async function searchStudents() {
   }
 }
 
+// ==================
+// Student CRUD Operations
+// ==================
+
 async function viewStudentDetails(studentId) {
   const res = await window.electronAPI.getStudentDetails(studentId, CurrentYearId.value);
   if (res.success) {
@@ -252,8 +257,6 @@ async function viewStudentDetails(studentId) {
     admission.value = res.admission;
     modalMode.value = 'view';
     showModal.value = true;
-
-    //console.log("Students", res.student)
   } else {
     errorMessage.value = res.message || 'Could not load student details.';
   }
@@ -264,7 +267,6 @@ async function openEditModal(studentId) {
   if (res.success) {
     selectedStudent.value = res.student;
     admission.value = res.admission;
-    
     modalMode.value = 'edit';
     showModal.value = true;
   } else {
@@ -272,30 +274,11 @@ async function openEditModal(studentId) {
   }
 }
 
-async function handleSave(result) {
-  if (result.success) {
-    showNotification(result.message, 'success');
-    showModal.value = false;
-    if (hasSearched.value) {
-      await searchStudents();
-    } else {
-      await fetchExistingStudents();
-    }
-  } else {
-    showNotification(result.message, 'danger');
-  }
-}
-
-function closeModal() {
-  showModal.value = false;
-  selectedStudent.value = null;
-  admission.value = null;
-  modalMode.value = 'view';
-}
-
 async function confirmDeleteStudent(studentId) {
   try {
-    const confirmed = await window.electronAPI.showConfirmationDialog('Are you sure you want to delete this student? This action cannot be undone.');
+    const confirmed = await window.electronAPI.showConfirmationDialog(
+      'Are you sure you want to delete this student? This action cannot be undone.'
+    );
     if (!confirmed) return;
 
     const res = await window.electronAPI.deleteStudent(studentId);
@@ -311,6 +294,27 @@ async function confirmDeleteStudent(studentId) {
   }
 }
 
+// ==================
+// Modal & Notification Handling
+// ==================
+
+async function handleSave(result) {
+  if (result.success) {
+    showNotification(result.message, 'success');
+    showModal.value = false;
+    hasSearched.value ? await searchStudents() : await fetchExistingStudents();
+  } else {
+    showNotification(result.message, 'danger');
+  }
+}
+
+function closeModal() {
+  showModal.value = false;
+  selectedStudent.value = null;
+  admission.value = null;
+  modalMode.value = 'view';
+}
+
 function showNotification(message, type = 'success', timeout = 5000) {
   if (type === 'success') {
     successMessage.value = message;
@@ -320,23 +324,48 @@ function showNotification(message, type = 'success', timeout = 5000) {
     successMessage.value = '';
   }
   
-  // Clear the message after timeout
   const timer = setTimeout(() => {
-    if (type === 'success') {
-      successMessage.value = '';
-    } else {
-      errorMessage.value = '';
-    }
+    type === 'success' ? (successMessage.value = '') : (errorMessage.value = '');
   }, timeout);
   
-  // Return a function to manually clear the notification if needed
   return () => clearTimeout(timer);
 }
+
+// ==================
+// Watchers & Lifecycle Hooks
+// ==================
+
+watch(selectedClassId, async (classId) => {
+  if (selectedSectionId.value) {
+    await fetchExistingStudents();
+  } else {
+    const secResult = await window.electronAPI.getSectionsByClassId(classId);
+    if (secResult.success) {
+      sections.value = secResult.sections;
+    }
+    if (sections.value.length === 0) {
+      selectedSectionId.value = 0;
+      await fetchExistingStudents();
+    }
+  }       
+});
 
 onMounted(async () => {
   await loadAcademicYear();
   await fetchClasses();
+  await getUser();
 });
+async function getUser(){
+  const user = await window.electronAuth.getCurrentUser();
+  if (user) {  
+    userRole.value = user.role;
+  }
+}
+
+// Role-based access control
+const canAccess = (requiredRoles) => {
+  return requiredRoles.includes(userRole.value);
+};
 </script>
 
 

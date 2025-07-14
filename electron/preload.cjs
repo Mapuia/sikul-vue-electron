@@ -110,8 +110,7 @@ contextBridge.exposeInMainWorld('electronAuth', {
   getMarksByClassSectionExams: (data) => ipcRenderer.invoke('get-marks-by-class-section-exams', data),
  
   // For the result creation page
-  calculateTotalMarks: (data) => ipcRenderer.invoke('calculate-total-marks', data),
-  generateResults: (data) => ipcRenderer.invoke('generate-results', data),
+  calculateTotalMarks: (data) => ipcRenderer.invoke('calculate-total-marks', data), 
 
   // Utility functions
   showNotification: (title, body) => ipcRenderer.invoke('show-notification', { title, body }),
@@ -124,7 +123,7 @@ contextBridge.exposeInMainWorld('electronAuth', {
   getStudentDetails: (studentId, YearId) => ipcRenderer.invoke('get-student-details', studentId, YearId),
   updateStudent: (studentData) => ipcRenderer.invoke('update-student', studentData),
   deleteStudent: (studentId) => ipcRenderer.invoke('delete-student', studentId),
-  promoteStudent: (studentData) => ipcRenderer.invoke('promote-student', studentData),
+  admitStudent: (studentData) => ipcRenderer.invoke('admit-student', studentData),
   updateAdmission:(payload)=> ipcRenderer.invoke('update-admission', payload),
   fetchUpperClasses:(className)=>ipcRenderer.invoke('fetch-upper-classes', className),
 
@@ -155,7 +154,6 @@ contextBridge.exposeInMainWorld('electronAuth', {
   generateReportCard:(params) => ipcRenderer.invoke('generate-report-card', params),
   getReportCard: (params) => ipcRenderer.invoke('get-report-card', params),
   getFinalReportCard: (params) => ipcRenderer.invoke('get-final-report-card', params),
-  getNoOfStudents: (params) => ipcRenderer.invoke('get-no-of-students', params),
 
   getHeadSignatory:() => ipcRenderer.invoke('get-head-signatory'),
   getTeacherSignatory:(params) => ipcRenderer.invoke('get-teacher-signatory', params),
