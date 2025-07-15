@@ -1,7 +1,7 @@
 <template>
   <div class="form-container mid">
     <h1 class="title has-text-centered is-4">New Student Entry</h1>
-    <h2 class="subtitle has-text-centered mb-4">Form</h2>
+    <h2 class="subtitle has-text-centered mb-4"></h2>
     <div v-if="message" class="notification is-primary fixed-notification" @click="message = ''">{{ message }}</div>
 
     <!-- Personal Info -->
@@ -337,7 +337,7 @@
       <!-- Buttons -->
       <div class="field is-grouped mt-4">
         <button class="button is-primary" @click="showConfirmation">Submit</button>
-        <button class="button is-light" @click="router.push('/dashboard')">Cancel</button>
+        <button class="button is-light" @click="router.push('/home')">Cancel</button>
       </div>
      
  
@@ -601,14 +601,16 @@ function validateForm() {
   
   if (!form.sectionId) {
     const isSection =  window.electronAPI.getSectionsByClassId(form.classId)
-    if(!isSection.success) {
+    if(form.classId) {
+      if(isSection.sections.length === 0){
       isValid = true;
       form.sectionId = 0;
-    }else{
-    errors.sectionId = 'Section is required';
-    isValid = false;
+      }else{
+        errors.sectionId = 'Section is required';
+        isValid = false;
+      }
     }
-  }
+  }  
   
   return isValid;
 }
@@ -618,6 +620,7 @@ const showModal = ref(false);
 
 function showConfirmation() {
   if (!validateForm()) {
+    window.electronAPI.showErrorDialog('Please fill all required fields correctly before submitting.');
     return;
   }
   showModal.value = true;

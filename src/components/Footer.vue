@@ -1,30 +1,17 @@
 <template>
-  <footer class="footer has-background-light">
-    <div class="content">
-      <div class="columns is-vcentered is-mobile">
-        <!-- Left -->
+  <footer class="footer has-background-light py-3">
+      <div class="columns is-mobile is-vcentered px-4 is-size-7">
         <div class="column has-text-left">
-          <p class="help is-dark">
-            Developed by Lalrinpuia, Capritech IT Solutions.
-          </p>
+          Developed by Capritech IT Solutions.
         </div>
-
-        <!-- Center -->
         <div class="column has-text-centered">
-          <p>
-            &copy; {{ currentYear }} Calvary Higher Secondary School. All rights reserved.
-          </p>
+          {{ currentYear }} Calvary Higher Secondary School. All rights reserved.
         </div>
-
-        <!-- Right -->
         <div class="column has-text-right">
-          <a href="mailto:ell.rpa@gmail.com" class="button is-small is-light">
-            email: ell.rpa@gmail.com
-          </a>
+          <a href="mailto:ell.rpa@gmail.com" class="button is-small is-light" style="font-weight: 400;">email: ell.rpa@gmail.com</a>
         </div>
       </div>
-    </div>
-  </footer>
+    </footer>
 </template>
 
 <script setup>
@@ -32,13 +19,7 @@ const currentYear = new Date().getFullYear()
 </script>
 
 <style scoped>
-.footer {
-  padding-top: 0.75rem;
-  margin-top:auto;
-  margin-bottom: 1px;
-  height: 60px;
-  width:100%;
-
- 
+.footer{
+  color: rgb(35, 35, 73);
 }
 </style>

@@ -15,25 +15,14 @@
       <h2 class="subtitle is-5 mt-5 mb-5 is-italic">"Light to Enlight"</h2>      
     </section>
 
-    <!-- Footer -->
-    <footer class="footer has-background-light py-3">
-      <div class="columns is-mobile is-vcentered px-4 is-size-7">
-        <div class="column has-text-left">
-          Developed by Capritech IT Solutions.
-        </div>
-        <div class="column has-text-centered">
-          &copy; {{ currentYear }} Calvary Higher Secondary School. All rights reserved.
-        </div>
-        <div class="column has-text-right">
-          <a href="mailto:ell.rpa@gmail.com" class="button is-small is-light">email: ell.rpa@gmail.com</a>
-        </div>
-      </div>
-    </footer>
+    <Footer />
+    
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted } from 'vue'
+import Footer from '../components/Footer.vue'
 
 const currentUser = ref('')
 const currentYear = new Date().getFullYear()

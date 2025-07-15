@@ -51,6 +51,13 @@ ipcMain.handle('save-marks', async (event, { marksData, subjectData }) => {
     return { success: false, error: "No subject data provided" };
   }
 
+  const totalMarks = db.prepare(`
+    SELECT SUM(s.FullMark) AS TotalFullMark
+    FROM ClassSubjectMapping csm
+    JOIN Subjects s ON csm.SubjectId = s.Id
+    WHERE csm.ClassId = ?
+    `).run(subjectData.ClassId).TotalFullMark;
+
   //console.log('Check MarksData:', marksData);
   // Prepare all statements outside transaction first
   let upsertMarkStmt, upsertEntryStatusStmt, upsertTotalMarksStmt, studentTotalsStmt, finalTotalsStmt, finalCumulativeStmt;
@@ -141,17 +148,20 @@ ipcMain.handle('save-marks', async (event, { marksData, subjectData }) => {
       studentTotalsStmt = db.prepare(`
         SELECT 
           StudentId,
-          SUM(TotalMaxMarks) AS totalMax,
+          ? AS totalMax,  
           SUM(TotalMarksObtained) AS totalObtained,
           CASE 
-            WHEN SUM(TotalMaxMarks) > 0 
-            THEN (SUM(TotalMarksObtained) * 100.0 / SUM(TotalMaxMarks))
+            WHEN ? > 0  
+            THEN (SUM(TotalMarksObtained) * 100.0 / ?)  
             ELSE 0 
           END AS percentage
         FROM Marks
-        WHERE ActiveExamId = ? and StudentId = ?
+        WHERE ActiveExamId = ? AND StudentId = ?
         GROUP BY StudentId
       `);
+
+
+
 
         // Begin transaction
     db.prepare('BEGIN').run();
@@ -186,10 +196,15 @@ ipcMain.handle('save-marks', async (event, { marksData, subjectData }) => {
         1
       );
       
-      let studentTotals = [];
-
-      for (const mark of marksData) {       
-        studentTotals.push(studentTotalsStmt.get(subjectData.ExamId, mark.StudentId));
+      const studentTotals = [];
+      for (const mark of marksData) {
+        studentTotals.push(studentTotalsStmt.get(
+          totalMarks,  // First ? (totalMax)
+          totalMarks,  // Second ? (in CASE)
+          totalMarks,  // Third ? (in division)
+          subjectData.ExamId,
+          mark.StudentId
+        ));
       }
 
       // Update CumulativeTotalMarks with calculated values
@@ -207,39 +222,45 @@ ipcMain.handle('save-marks', async (event, { marksData, subjectData }) => {
       //when examtype is annual, need to fetch and sum the marks andinsert new entry for final cumulative marks.
       if (subjectData.ExamType === 'annual') {
       // Insert new entry for final cumulative marks
-      finalTotalsStmt = db.prepare(`
-        SELECT
-          StudentId,
-          AcademicYearId,
-          SUM(TotalMaxMarks) AS finalTotalMax,
-          SUM(TotalMarksObtained) AS finalTotalObtained,
-          CASE 
-            WHEN SUM(TotalMaxMarks) > 0 
-            THEN ROUND(SUM(TotalMarksObtained) * 100.0 / SUM(TotalMaxMarks), 2)
-            ELSE 0 
-          END AS finalPercentage
-        FROM CumulativeTotalMarks
-        WHERE AcademicYearId = ? AND StudentId = ?
-        GROUP BY StudentId
-      `);
+        finalTotalsStmt = db.prepare(`
+          SELECT
+            StudentId,
+            AcademicYearId,
+            ? * 2 AS finalTotalMax, 
+            SUM(TotalMarksObtained) AS finalTotalObtained,
+            CASE 
+              WHEN ? > 0 
+              THEN ROUND(SUM(TotalMarksObtained) * 100.0 / (? * 2), 2)
+              ELSE 0 
+            END AS finalPercentage
+          FROM CumulativeTotalMarks
+          WHERE AcademicYearId = ? AND StudentId = ?
+          GROUP BY StudentId
+        `);
 
-      let finalTotals = []
-      for(const student of studentTotals) {
-        const finalTotal = finalTotalsStmt.get(subjectData.YearId, student.StudentId);
-        if (finalTotal) {
-          finalTotals.push(finalTotal);
+        let finalTotals = [];
+        for (const student of studentTotals) {
+          const finalTotal = finalTotalsStmt.get(
+            totalMarks,   // First ? (for finalTotalMax)
+            totalMarks,   // Second ? (in CASE)
+            totalMarks,   // Third ? (in division)
+            subjectData.YearId,
+            student.StudentId
+          );
+          if (finalTotal) {
+            finalTotals.push(finalTotal);
+          }
         }
-      }
 
-      for (const final of finalTotals) {
-        finalCumulativeStmt.run(
-          final.AcademicYearId,
-          final.StudentId,
-          final.finalTotalMax,
-          final.finalTotalObtained,
-          final.finalPercentage
-        );
-      }      
+        for (const final of finalTotals) {
+          finalCumulativeStmt.run(
+            final.AcademicYearId,
+            final.StudentId,
+            final.finalTotalMax,
+            final.finalTotalObtained,
+            final.finalPercentage
+          );
+        }     
     //console.log('Final Totals:', finalTotals);
     }
       // Commit transaction

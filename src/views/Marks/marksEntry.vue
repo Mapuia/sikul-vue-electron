@@ -8,7 +8,7 @@
         <h2 class="subtitle has-text-centered">Mark Entry Disabled!</h2>
         <div class="notification is-danger">
           {{ resultName }} for Current Session <strong>{{ CurrentYear }}</strong> is Published. <br />       
-          <p class="has-text-weight-bold">You cannot enter marks after the result is published.</p>
+          <p class="has-text-weight-bold">You cannot enter marks after the Result is published.</p>
         </div>
       </div>
     </div>
