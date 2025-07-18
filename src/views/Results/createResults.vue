@@ -1,7 +1,7 @@
 <template>
   <div v-if="resultPublished" class="form-container wide">
     <div class="notification is-success has-text-centered">
-      <p>Results are published for {{ resultName }} Exam of Academic Session {{ CurrentYear }}.</p>
+      <p>{{ resultName }} are published for Academic Session {{ CurrentYear }}.</p>
       <p>Publish Date: {{ publishDate }}</p>
     </div>
     <div class="has-text-centered mb-5">
@@ -14,20 +14,13 @@
   </div>
   <div v-else class="form-container full"> 
     <div>
-      <h1 class="title is-4 has-text-centered mb-4">{{ resultName }} Result for Academic Session {{ CurrentYear }}</h1>      
+      <h1 class="title is-4 has-text-centered mb-4">Create and Publish {{ resultName }} for Academic Session {{ CurrentYear }}</h1>      
     </div>
 
     <div v-if="!isGenerating" class=" has-text-centered mb-5">
       <div class = "box is-flex is-flex-direction-column is-align-items-center">
-        <div v-if = "resultPublished" class="is-flex is-align-items-center">
-          <p class="has-text-weight-bold">Results are published on {{ publishDate }}</p>
-          <button v-if = "canAccess(['admin'])" class = "button is-danger ml-3 is-small"
-            @click="unPublishResults"
-          ><i class = "fas fa-undo mr-2"></i>
-            Unpublish Results
-          </button>
-        </div>
-        <div v-else-if="canPublish" class="is-flex is-align-items-center">
+        
+        <div v-if="canPublish" class="is-flex is-align-items-center">
           <!-- Label -->
           <label class="label mb-0 mr-3">Publish Date:</label>          
           <!-- Date Input -->
@@ -37,8 +30,7 @@
             @change="handleDateChange"
             class="input mr-3"
             style="max-width: 160px; width: 160px;"
-          />
-          
+          />          
           <!-- Button -->
           <button
             class="button is-primary"
@@ -59,7 +51,9 @@
         
       <div class="is-flex">
         <!-- Marks Entry Status Table -->
-        <section class="box column mr-5">
+        <section class="box column mr-5 ">
+          <h1 class="subtitle is-5 mb-1">Marks Entry Status</h1>
+          <p class="mb-3">Only the classes with marks entered is displayed here.</p>
           <div class="table-container">
             <table class="table is-fullwidth is-striped is-hoverable">
               <thead>
@@ -72,7 +66,7 @@
                 </tr>
               </thead>
               <tbody>
-                <tr v-for="item in classSectionStatus" :key="`${item.classId}-${item.sectionId}`">
+                <tr v-for="item in filteredClassSectionStatus" :key="`${item.classId}-${item.sectionId}`">
                   <td>{{ !["KG-I", "KG-II"].includes(item.className) ? "Class " + item.className : item.className }}</td>
                   <td>{{ item.sectionName ? item.sectionName : '-' }}</td>
                   <td>
@@ -149,8 +143,6 @@
           <div class="help notification">
             <ul class="bullet">
               <li class="mb-4">Complete mark entry for all subjects to enable result generation.</li>
-              <li class="mb-4">Check box (Finished all students) in the Mark Entry must be check to enable Result generation.</li>
-              <li class="mb-4">Cumulative totals are automatically calculated during mark entry</li>
               <li class="mb-4">Click "Generate Result" to create results Class and Section Wise.</li>
               <li class="mb-4">Results must be generated once per exam/ class/ section.</li>
               <li class="mb-4">Publish Result button will appear. Select the Publish Date or Today's Date will be selected by default.</li>
@@ -166,7 +158,7 @@
         <div class="modal-background" @click="closeModal"></div>
         <div class="modal-card">
           <header class="modal-card-head has-text-left">
-            <h1 class="modal-card-title">{{ resultName }} Results for  
+            <h1 class="modal-card-title">{{ resultName }} for  
               CLASS - {{ modalClassName }} {{ modalSectionName ? '(' + modalSectionName + ')': '' }} ({{ CurrentYear }})</h1>
             <h2>Status: {{ modalPublished ? 'Published' : 'Not Published' }}</h2>
             <button class="delete ml-2" aria-label="close" @click="closeModal"></button>
@@ -256,7 +248,7 @@ const userRole = ref('')
 watch(() => route.query.type, (newType) => {
   examType.value = newType
   getExam()
-  resultName.value = newType === 'terminal'? 'Half Yearly' : 'Final'  
+  resultName.value = newType === 'terminal'? 'Half Yearly Results' : 'Final Results'  
 }, { immediate: true })
 
 async function getExam() {
@@ -278,6 +270,10 @@ const canAccess = (requiredRoles) => {
   return requiredRoles.includes(userRole.value)
 }
 
+const filteredClassSectionStatus = computed(() => {
+  return classSectionStatus.value.filter(item => item.finishedSubjects !== 0);
+})
+console.log("Filtered Class Section Status:", filteredClassSectionStatus.value)
 const canPublish = computed(() => {
   return markEntryCount.value > 0 && 
          markEntryCount.value === resultStatusCount.value && 

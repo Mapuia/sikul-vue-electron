@@ -1,5 +1,6 @@
 const { ipcMain } = require('electron');
 const { db } = require('../database.cjs');
+const currentTime = new Date(new Date().getTime() + 5.5 * 60 * 60 * 1000).toISOString();
 
 // Get all students with admission details
 ipcMain.handle('get-all-students', async () => {
@@ -178,7 +179,7 @@ ipcMain.handle('update-student', async (event, studentData) => {
           studentData.Id,
           studentData.AcademicYearId
         );
-        console.log("Duplicate", duplicateCheck.count)
+        //console.log("Duplicate", duplicateCheck.count)
         if (duplicateCheck.count > 0) {
           
           return { 
@@ -208,7 +209,7 @@ ipcMain.handle('update-student', async (event, studentData) => {
           Height = ?,
           Weight = ?,
           BloodGroup = ?,
-          Last_Modified_at = CURRENT_TIMESTAMP
+          Last_Modified_at = ?
         WHERE Id = ?
       `);
 
@@ -229,6 +230,7 @@ ipcMain.handle('update-student', async (event, studentData) => {
         studentData.Height,
         studentData.Weight,
         studentData.BloodGroup,
+        currentTime,
         studentData.Id
       );
 
@@ -240,7 +242,8 @@ ipcMain.handle('update-student', async (event, studentData) => {
           ClassId = ?,
           SectionId = ?,
           RollNo = ?,
-          AdmissionType = ?
+          AdmissionType = ?,
+          Last_Modified_at = ?
         WHERE
           StudentId = ?
       `);
@@ -251,6 +254,7 @@ ipcMain.handle('update-student', async (event, studentData) => {
         studentData.SectionId,
         studentData.RollNo,
         studentData.AdmissionType,
+        currentTime,
         studentData.Id
       );
 

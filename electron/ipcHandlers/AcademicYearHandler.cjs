@@ -1,6 +1,6 @@
 const { ipcMain } = require('electron');
 const { db } = require('../database.cjs');
-
+const currentTime = new Date(new Date().getTime() + 5.5 * 60 * 60 * 1000).toISOString();
 
 function toCamelCase(obj) {
   return Object.fromEntries(
@@ -56,10 +56,10 @@ ipcMain.handle('add-academic-year', async (event, { yearName, startDate, endDate
 
       // Insert the new academic year with IsActive = 1
       const insertStmt = db.prepare(`
-        INSERT INTO AcademicYears (YearName, StartDate, EndDate, IsActive)
-        VALUES (?, ?, ?, ?)
+        INSERT INTO AcademicYears (YearName, StartDate, EndDate, IsActive, Creation_at)
+        VALUES (?, ?, ?, ?, ?)
       `);
-      const result = insertStmt.run(yearName, startDate, endDate, 1);
+      const result = insertStmt.run(yearName, startDate, endDate, 1, currentTime);
       const acYearId = result.lastInsertRowid;
 
       const allExams = db.prepare(`SELECT * FROM Exams`).all();
@@ -73,8 +73,10 @@ ipcMain.handle('add-academic-year', async (event, { yearName, startDate, endDate
           MinorMaxMark,
           PassingPercentage,
           IsActive,
-          Result_Published
-        ) VALUES (?, ?, ?, ?, ?, ?, ?)
+          Result_Published,
+          Creation_at,
+          Modified_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
       `);
 
       // Step 6: Insert each exam with logic based on ExamType
@@ -95,7 +97,9 @@ ipcMain.handle('add-academic-year', async (event, { yearName, startDate, endDate
           minorMaxMark,
           40,  // PassingPercentage
           0,   // IsActive
-          0    // Result_Published
+          0,
+          currentTime,
+          currentTime
         );
       }
     });

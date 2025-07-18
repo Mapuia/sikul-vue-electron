@@ -1,5 +1,6 @@
 const { ipcMain } = require('electron');
 const { db } = require('../database.cjs');
+const currentTime = new Date(new Date().getTime() + 5.5 * 60 * 60 * 1000).toISOString();
 
 function toCamelCase(obj) {
   return Object.fromEntries(
@@ -73,13 +74,14 @@ ipcMain.handle('insert-active-exam', async (event, examData) => {
 
 // Update active exam
 ipcMain.handle('update-active-exam', async (event, examData) => {
+    
   try {
     const stmt = db.prepare(`
       UPDATE ActiveExams SET
         MajorMaxMark = ?,
         MinorMaxMark = ?,
         PassingPercentage = ?,
-        Modified_at = CURRENT_TIMESTAMP
+        Modified_at = ?
       WHERE Id = ?
     `);
     
@@ -87,6 +89,7 @@ ipcMain.handle('update-active-exam', async (event, examData) => {
       examData.MajorMaxMark,
       examData.MinorMaxMark,
       examData.PassingPercentage,
+      currentTime,
       examData.Id
     );
     
@@ -112,10 +115,10 @@ ipcMain.handle('deactivate-all-active-exams', async (event, academicYearId) => {
   try {
     const stmt = db.prepare(`
       UPDATE ActiveExams 
-      SET IsActive = 0, Modified_at = CURRENT_TIMESTAMP
+      SET IsActive = 0, Modified_at = ?
       WHERE AcademicYearId = ?
     `);
-    stmt.run(academicYearId);
+    stmt.run(currentTime, academicYearId);
     return { success: true };
   } catch (error) {
     return { success: false, message: error.message };
@@ -124,6 +127,7 @@ ipcMain.handle('deactivate-all-active-exams', async (event, academicYearId) => {
 
 // Get Current Active exams for current academic year only
 ipcMain.handle('get-current-exam', async (event, yearId) => {
+  
   try {
     // Prepare all statements first
     const periodicStmt = db.prepare(`

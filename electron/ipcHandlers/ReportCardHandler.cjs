@@ -2,7 +2,7 @@
 
 const { ipcMain } = require('electron');
 const { db } = require('../database.cjs'); // Your database interfac
-
+const currentTime = new Date(new Date().getTime() + 5.5 * 60 * 60 * 1000).toISOString();
 
   // Get Signatory
 ipcMain.handle('get-head-signatory', () => {
@@ -43,12 +43,16 @@ ipcMain.handle('generate-report-card', async (event, {
           TotalWorkingDays,
           TotalPresentDays,
           ReportCardType,
-          TeachersRemark  
-        ) VALUES (?, ?, ?, ?, ?, ?, ?)
+          TeachersRemark,
+          Creation_at,
+          Last_Modified_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
          ON CONFLICT (StudentId, AcademicYearId, ActiveExamId, ReportCardType) DO UPDATE SET
          TotalWorkingDays = EXCLUDED.TotalWorkingDays,
          TotalPresentDays = EXCLUDED.TotalPresentDays,
-         TeachersRemark = EXCLUDED.TeachersRemark
+         TeachersRemark = EXCLUDED.TeachersRemark,
+         Creation_at = EXCLUDED.Creation_at,
+         Last_Modified_at = EXCLUDED.Last_Modified_at
       `).run(
         studentId,
         academicYearId,
@@ -56,7 +60,9 @@ ipcMain.handle('generate-report-card', async (event, {
         totalWorkingDays,
         attendance,
         resultType,
-        teachersRemark
+        teachersRemark,
+        currentTime,
+        currentTime
       );
 
       db.prepare(`

@@ -1,6 +1,7 @@
 const { ipcMain } = require('electron');
 const { db } = require('../database.cjs');
 const authService  = require('./auth.cjs');
+const currentTime = new Date(new Date().getTime() + 5.5 * 60 * 60 * 1000).toISOString();
 
 ipcMain.handle('get-students-by-class-and-section', (event, data) => {
 
@@ -50,15 +51,16 @@ ipcMain.handle('save-marks', async (event, { marksData, subjectData }) => {
   if (!subjectData || typeof subjectData !== 'object') {
     return { success: false, error: "No subject data provided" };
   }
-
-  const totalMarks = db.prepare(`
+  let totalMarks = 0;
+  totalMarks = db.prepare(`
     SELECT SUM(s.FullMark) AS TotalFullMark
     FROM ClassSubjectMapping csm
-    JOIN Subjects s ON csm.SubjectId = s.Id
+    LEFT JOIN Subjects s ON csm.SubjectId = s.Id
     WHERE csm.ClassId = ?
-    `).run(subjectData.ClassId).TotalFullMark;
+    `).get(subjectData.ClassId).TotalFullMark;
 
-  //console.log('Check MarksData:', marksData);
+ 
+  //console.log('Check Total Marks:', totalMarks);
   // Prepare all statements outside transaction first
   let upsertMarkStmt, upsertEntryStatusStmt, upsertTotalMarksStmt, studentTotalsStmt, finalTotalsStmt, finalCumulativeStmt;
     const currentUser = await authService.getCurrentUser();
@@ -81,9 +83,11 @@ ipcMain.handle('save-marks', async (event, { marksData, subjectData }) => {
         TerminalMarksObtained,
         TotalMarksObtained,
         SubjectResult,
+        Creation_at,
+        Last_Modified_at,
         CreatedBy,
         ModifiedBy       
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       ON CONFLICT(StudentId, SubjectId, ActiveExamId) 
       DO UPDATE SET
         PeriodicMaxMark = excluded.PeriodicMaxMark,
@@ -93,7 +97,7 @@ ipcMain.handle('save-marks', async (event, { marksData, subjectData }) => {
         TerminalMarksObtained = excluded.TerminalMarksObtained,
         TotalMarksObtained = excluded.TotalMarksObtained,
         SubjectResult = excluded.SubjectResult,        
-        Last_Modified_at = CURRENT_TIMESTAMP,
+        Last_Modified_at = excluded.Last_Modified_at,
         ModifiedBy = excluded.ModifiedBy
     `);
 
@@ -103,12 +107,14 @@ ipcMain.handle('save-marks', async (event, { marksData, subjectData }) => {
         ClassId,
         SectionId, 
         SubjectId,
-        FinishedEntry
-      ) VALUES (?, ?, ?, ?, ?)
+        FinishedEntry,
+        Creation_at,
+        Last_Modified_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?)
       ON CONFLICT(ActiveExamId, ClassId, SectionId, SubjectId) 
       DO UPDATE SET
         FinishedEntry = excluded.FinishedEntry,
-        Last_Modified_at = CURRENT_TIMESTAMP
+        Last_Modified_at = excluded.Last_Modified_at
     `);
 
     upsertTotalMarksStmt = db.prepare(`
@@ -118,14 +124,16 @@ ipcMain.handle('save-marks', async (event, { marksData, subjectData }) => {
         StudentId,
         TotalMaxMarks,
         TotalMarksObtained,
-        Percentage
-      ) VALUES (?, ?, ?, ?, ?, ?)       
+        Percentage,
+        Creation_at,
+        Last_Modified_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)       
       ON CONFLICT(StudentId, ActiveExamId, AcademicYearId) 
       DO UPDATE SET
         TotalMaxMarks = excluded.TotalMaxMarks,
         TotalMarksObtained = excluded.TotalMarksObtained,
         Percentage = excluded.Percentage,
-        Last_Modified_at = CURRENT_TIMESTAMP
+        Last_Modified_at = excluded.Last_Modified_at
     `); 
 
     finalCumulativeStmt = db.prepare(`
@@ -134,14 +142,16 @@ ipcMain.handle('save-marks', async (event, { marksData, subjectData }) => {
         StudentId,
         TotalMaxMarks,
         TotalMarksObtained,
-        Percentage
-      ) VALUES (?, ?, ?, ?, ?)
+        Percentage,
+        Creation_at,
+        Last_Modified_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?)
       ON CONFLICT(StudentId, AcademicYearId) 
       DO UPDATE SET
         TotalMaxMarks = excluded.TotalMaxMarks,
         TotalMarksObtained = excluded.TotalMarksObtained,
         Percentage = excluded.Percentage,
-        Last_Modified_at = CURRENT_TIMESTAMP
+        Last_Modified_at = excluded.Last_Modified_at
     `);
 
     // Direct query to calculate totals from Marks table
@@ -180,6 +190,8 @@ ipcMain.handle('save-marks', async (event, { marksData, subjectData }) => {
           mark.TerminalMarksObtained,
           mark.TotalMarksObtained,
           mark.SubjectResult,
+          currentTime,
+          currentTime,
           currentUser.id,
           currentUser.id
 
@@ -193,7 +205,9 @@ ipcMain.handle('save-marks', async (event, { marksData, subjectData }) => {
         subjectData.ClassId,
         subjectData.SectionId,
         subjectData.SubjectId,
-        1
+        1,
+        currentTime,
+        currentTime
       );
       
       const studentTotals = [];
@@ -215,7 +229,9 @@ ipcMain.handle('save-marks', async (event, { marksData, subjectData }) => {
           student.StudentId,
           student.totalMax || 0,
           student.totalObtained || 0,
-          student.percentage || 0
+          student.percentage || 0,
+          currentTime,
+          currentTime
         );
       }
 
@@ -258,7 +274,9 @@ ipcMain.handle('save-marks', async (event, { marksData, subjectData }) => {
             final.StudentId,
             final.finalTotalMax,
             final.finalTotalObtained,
-            final.finalPercentage
+            final.finalPercentage,
+            currentTime,
+            currentTime
           );
         }     
     //console.log('Final Totals:', finalTotals);

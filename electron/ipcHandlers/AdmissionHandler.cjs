@@ -1,6 +1,6 @@
 const { ipcMain } = require('electron');
 const { db } = require('../database.cjs');
-
+const currentTime = new Date(new Date().getTime() + 5.5 * 60 * 60 * 1000).toISOString();
 
 ///////////////////////////////////////////////////////////////////////////////////////                CREATE
 
@@ -12,18 +12,18 @@ ipcMain.handle('insert-student-admission', (event, form) => {
   const insertStudent = db.prepare(`
     INSERT INTO Students (
       Id, Name, Gender, FathersName, MothersName, DOB, Aadhaar, APAR, PEN, Contact, Address, PIN,
-      FirstAdmissionDate, Status, Caste, Religion, Height, Weight, BloodGroup
+      FirstAdmissionDate, Status, Caste, Religion, Height, Weight, BloodGroup, Creation_at
     ) VALUES (
       @Id, @Name, @Gender, @FathersName, @MothersName, @DOB, @Aadhaar, @APAR, @PEN, @Contact, @Address, @PIN,
-      @FirstAdmissionDate, @Status, @Caste, @Religion, @Height, @Weight, @BloodGroup
+      @FirstAdmissionDate, @Status, @Caste, @Religion, @Height, @Weight, @BloodGroup, @Creation_at
     )
   `);
 
   const insertAdmission = db.prepare(`
     INSERT INTO Admissions (
-      StudentId, AcademicYearId, ClassId, SectionId, RollNo, AdmissionType
+      StudentId, AcademicYearId, ClassId, SectionId, RollNo, AdmissionType, Creation_at
     ) VALUES (
-      @StudentId, @AcademicYearId, @ClassId, @SectionId, @RollNo, @AdmissionType
+      @StudentId, @AcademicYearId, @ClassId, @SectionId, @RollNo, @AdmissionType, @Creation_at
     )
   `);
 
@@ -48,7 +48,8 @@ ipcMain.handle('insert-student-admission', (event, form) => {
       Religion: form.religion,
       Height: form.height,
       Weight: form.weight,
-      BloodGroup: form.bloodGroup
+      BloodGroup: form.bloodGroup,
+      Creation_at: currentTime
     });
 
     // Step 2: Insert into Admission table
@@ -59,7 +60,8 @@ ipcMain.handle('insert-student-admission', (event, form) => {
         ClassId: form.classId,
         SectionId: form.sectionId,
         RollNo: form.rollNo,
-        AdmissionType: form.admissionType
+        AdmissionType: form.admissionType,
+        Creation_at: currentTime
       });
 
       return {
@@ -159,35 +161,34 @@ ipcMain.handle('admit-student', async (event, admissionData) => {
     // Get admission details
     //console.log('Promoted:', admissionData)
     try{
-
-
       const promoteAdmission = db.prepare(`
         INSERT OR REPLACE INTO Admissions
-        (StudentId, AcademicYearId, ClassId, SectionId, RollNo, AdmissionType)
+        (StudentId, AcademicYearId, ClassId, SectionId, RollNo, AdmissionType, Creation_at)
         VALUES
-        (?, ?, ?, ?, ?, ?)        
+        (?, ?, ?, ?, ?, ?, ?)        
 
       `);
-      const promoteAdmissionResult = promoteAdmission.run(
+      promoteAdmission.run(
         admissionData.StudentId,
         admissionData.AcademicYearId,
         admissionData.ClassId,
         admissionData.SectionId,
         admissionData.RollNo,
-        admissionData.AdmissionType
+        admissionData.AdmissionType,
+        currentTime
       );
 
       const updatePreviousAdmission = db.prepare(`
         UPDATE Admissions
         SET reAdmitted = 1
-        WHERE StudentId = ? AND AcademicYearId = ?
+        WHERE StudentId = ? AND AcademicYearId = ? AND Last_Modified_at = ?
       `);
       updatePreviousAdmission.run(
         admissionData.StudentId,
-        admissionData.PreviousYearId
+        admissionData.PreviousYearId,
+        currentTime
       );
-
-      //console.log('Promotion Result:', promoteAdmissionResult);
+      
       return { success: true };
     } catch (error) {
       console.error('Promotion Error:', error.message);
@@ -201,7 +202,7 @@ ipcMain.handle('update-admission',(event,payload)=>{
   try{
     const updateAdmission = db.prepare(`
       UPDATE Admissions
-      SET ClassId = ?, SectionId = ?, RollNo = ?, AdmissionType = ?
+      SET ClassId = ?, SectionId = ?, RollNo = ?, AdmissionType = ?, Last_Modified_at = ?
       WHERE Id = ?
     `);
     const updateAdmissionResult = updateAdmission.run(
@@ -209,7 +210,8 @@ ipcMain.handle('update-admission',(event,payload)=>{
       payload.SectionId,
       payload.RollNo,
       payload.AdmissionType,
-      payload.AdmissionId
+      payload.AdmissionId,
+      currentTime
     );
    // console.log('Admission Update Result:', updateAdmissionResult);
     return { success: true };

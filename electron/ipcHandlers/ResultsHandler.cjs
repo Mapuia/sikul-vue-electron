@@ -1,6 +1,6 @@
 const { ipcMain } = require('electron');
 const { db } = require('../database.cjs');
-
+const currentTime = new Date(new Date().getTime() + 5.5 * 60 * 60 * 1000).toISOString();
 
 // IPC Handlers for Result
 //////////////////////////////////////////////////////////////////////////////
@@ -114,7 +114,7 @@ ipcMain.handle('verify-result-status', async (event, { academicYearId, resultTyp
       }
     }
 
-    console.log('Result status:', result);
+    //console.log('Result status:', result);
     return { 
       success: true,
       isVerified: result.isGenerated || false,
@@ -634,6 +634,7 @@ ipcMain.handle('get-section-results', async (event, { academicYearId, examId, cl
         s.Name ASC
     `).all(examId, academicYearId, academicYearId, classId, sectionId);
 
+    //console.log("Results fetched: ", results)
     // Calculate summary statistics from the results we already fetched
     const noOfStudents = db.prepare(`
       SELECT COUNT(*) as count
