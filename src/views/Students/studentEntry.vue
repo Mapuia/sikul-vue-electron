@@ -512,6 +512,17 @@ const classId = ref(null);
 const sectionId = ref(0);
 const rollNo = ref(null);
 
+watch(message, (newValue) => {
+  if (newValue) {
+    // Set timeout to clear the message after 5 seconds (5000 milliseconds)
+    const timeoutId = setTimeout(() => {
+      message.value = '';
+      clearTimeout(timeoutId); // Clean up the timeout
+    }, 5000);
+  }
+});
+
+
 const errors = reactive({
   name: '',
   fathersName: '',

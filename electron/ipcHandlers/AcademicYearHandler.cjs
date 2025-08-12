@@ -141,8 +141,6 @@ ipcMain.handle('activate-academic-year', async (event,  AcademicYearId) => {
   }
 });
 
-
-
 //////////////////////////////////////////////////////////////////////////////////////
 ipcMain.handle('delete-academic-year', async (event, AcademicYearId) => {
   try {

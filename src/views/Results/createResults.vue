@@ -44,7 +44,8 @@
           </button>
         </div>
         <div v-else class="is-flex is-fullwidth is-justify-content-center">
-          <p> Generate Results for all the Class-Sections one by one. Once the Results for all the Classes and Sections are generated. Publish Button will appear here</p>
+          <p v-if="examType === 'selection'">Generate Class X Selection Test Results.</p>
+          <p v-else> Generate Results for all the Class-Sections one by one. Once the Results for all the Classes and Sections are generated. Publish Button will appear here</p>
         </div>  
         
       </div>  
@@ -248,7 +249,15 @@ const userRole = ref('')
 watch(() => route.query.type, (newType) => {
   examType.value = newType
   getExam()
-  resultName.value = newType === 'terminal'? 'Half Yearly Results' : 'Final Results'  
+  if (newType === 'terminal') {
+    resultName.value = 'Half Yearly Results'
+  }
+   if (newType === 'annual') {
+    resultName.value = 'Final Results'
+  }
+  if (newType === 'selection') {
+    resultName.value = 'Class X Selection Test Results'
+  }
 }, { immediate: true })
 
 async function getExam() {
@@ -275,6 +284,9 @@ const filteredClassSectionStatus = computed(() => {
 })
 console.log("Filtered Class Section Status:", filteredClassSectionStatus.value)
 const canPublish = computed(() => {
+  if (examType.value === 'selection') {
+    return markEntryCount.value > 0 && resultStatusCount.value > 0
+  }
   return markEntryCount.value > 0 && 
          markEntryCount.value === resultStatusCount.value && 
          resultStatusCount.value > 0
@@ -376,7 +388,7 @@ onMounted(async () => {
 
 async function fetchMarkEntryStatus() {
   try {
-    const response = await window.electronAPI.getmarkEntryStatus(currentExamId.value)
+    const response = await window.electronAPI.getmarkEntryStatus(currentExamId.value, examType.value)
     if (response.success) {
       const verifiedStatus = await Promise.all(
         response.data.map(async item => ({
@@ -384,14 +396,19 @@ async function fetchMarkEntryStatus() {
           resultGenerating: false,
           resultStatus: await window.electronAPI.verifyResultStatus({
             academicYearId: CurrentYearId.value,
-            resultType: examType.value === 'terminal' ? examType.value : 'final', //if examType is not terminal, result will be final
+            resultType: examType.value === 'terminal' ? examType.value : examType.value === 'annual' ? 'final' : 'selection', //if examType is not terminal, result will be final
             examId: currentExamId.value,
             classId: item.classId,
             sectionId: item.sectionId || 0
           })
         }))
-      )     
-      classSectionStatus.value = verifiedStatus
+      )
+      if( examType.value === 'selection'){
+        classSectionStatus.value = verifiedStatus.filter(item => item.className === 'X')
+      }   else {
+        classSectionStatus.value = verifiedStatus
+      }
+
     }
   } catch (error) {
     console.error('Error:', error)
@@ -413,7 +430,7 @@ async function generateResult(classId, sectionId) {
     //console.log("Passing Percentage in API:", PassingPercentage.value)
     const response = await window.electronAPI.generateResults({
       academicYearId: CurrentYearId.value,
-      resultType: examType.value === 'terminal' ? examType.value : 'final',  //if examType is not terminal, result will be final
+      resultType: examType.value === 'terminal' ? 'terminal' :examType.value === 'annual' ? 'final' : 'selection',  //if examType is not terminal, result will be final
       examId: currentExamId.value,
       classId,
       sectionId,

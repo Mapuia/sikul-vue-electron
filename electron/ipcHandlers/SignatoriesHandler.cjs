@@ -46,8 +46,8 @@ ipcMain.handle('insert-signatory', (event, data) => {
       ) VALUES (?, ?, ?, ?, ?, ?, ?)
     `);
     stmt.run(
-      data.ClassId,
-      data.SectionId,
+      data.ClassId || null,
+      data.SectionId || null,
       data.SignatoryType,
       data.Designation,
       data.Name,
@@ -112,4 +112,19 @@ ipcMain.handle('get-teacher-signatory', (event,  { classId, sectionId }) => {
     console.error('Error fetching teacher signatory:', error)
     return { success: false, error: error.message }
   }
+})
+
+ipcMain.handle('get-head-signatory', () => {
+  try {
+    const stmt = db.prepare(`
+      SELECT Name, Designation FROM Signatories
+      WHERE SignatoryType = 'Head' AND IsActive = 1
+    `);
+    const result = stmt.get();
+    //console.log("Head Signatory:", result);
+    return { success: true, data: result || null };
+  } catch (error) {
+    console.error('Error fetching head signatory:', error);
+    return { success: false, error: error.message };
+  } 
 })

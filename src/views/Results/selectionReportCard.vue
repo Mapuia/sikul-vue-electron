@@ -1,8 +1,8 @@
 <template>
   <div class="form-container box wide">
     <div class="has-text-centered mb-4">
-      <h1 class="title is-4">Half Yearly Examination Result, {{ CurrentYear }}</h1>
-      <h2 class="subtitle is-5">Select Class and Section to generate Report Card</h2>      
+      <h1 class="title is-4">Selection Test Result, {{ CurrentYear }}</h1>
+      <h2 class="subtitle is-5">Select Section to generate Report Card</h2>      
     </div>
 
     <!-- Class and Section Selection -->
@@ -12,10 +12,10 @@
             <div class="field">
               <label class="label">Class</label>
               <div class="select is-fullwidth">
-                <select v-model="selectedClassId" @change="fetchSections">
+                <select v-model="selectedClassId">
                   <option disabled value="">-- Select Class --</option>
-                  <option v-for="cls in classes" :key="cls.Id" :value="cls.Id">
-                    {{ cls.ClassName }}
+                  <option v-for="cls in classes" :key="cls.Id" :value="cls.Id" >
+                    Class - {{ cls.ClassName }}
                   </option>
                 </select>
               </div>
@@ -49,7 +49,7 @@
           <div class="level mt-4">
             <!-- Centered heading -->
             <div class="level-item has-text-left">
-              <h2 class="subtitle is-5">Detail Results</h2>
+              <h2 class="subtitle is-5">Quick Results</h2>
             </div>
 
           </div>
@@ -175,7 +175,7 @@
                   <h2 class="subtitle print-subtitle  m-0">Mission Compound, Tuidu. Gomati District, Tripura – 799101 </h2>
                   <h2 class="subtitle print-subtitle  m-0">Phone No: (+91) 8787793883, email: calvaryhighschool2019@gmail.com</h2>
                   <h2 class="subtitle print-subtitle ">Academic Session : {{ CurrentYear }}</h2>
-                  <h1 class="title print-title is-5 mt-2 mb-7">REPORT CARD (Half Yealy)</h1>
+                  <h1 class="title print-title is-5 mt-2 mb-7">REPORT CARD (Selection Test)</h1>
 
                 </div>
 
@@ -212,8 +212,8 @@
                         <th>SUBJECTS</th>
                         <th>FULL MARK</th>
                         <th>PASS MARK</th>
-                        <th>FIRST PERIODIC</th>
-                        <th>HALF YEARLY</th>
+                        <th>INTERNAL</th>
+                        <th>SELECTION TEST</th>
                         <th>TOTAL</th>
                         <th>RESULT</th>
                       </tr>                   
@@ -250,25 +250,6 @@
                   </table>
                 </div>
                   <div class="columns is-vcentered" style="align-items: flex-end;">
-                    <div class="column is-half is-flex is-flex-direction-column is-justify-content-flex-end">
-                        <table class="report-card-b">
-                          <tbody>
-                            <tr>
-                              <th colspan="4" class="summary-header">COSCHOLASTIC ACTIVITIES</th>
-                            </tr>
-                            <tr>
-                            
-                              <th class="summary-header">ACTIVITY NAME</th>
-                              <th >GRADE</th>
-                              
-                            </tr>
-                            <tr v-for="activity in activities" :key="activity.Id">
-                              <th class = "summary">{{ activity.ActivityName }}</th>
-                              <td>{{ activity.Grade }}</td>
-                            </tr>
-                          </tbody>
-                        </table> 
-                    </div>
                     <div class="column is-half is-flex is-flex-direction-column is-justify-content-flex-end">
                     <table class="report-card-b">
                           <tbody>                            
@@ -377,7 +358,7 @@ const userRole = ref('')
 const isLoading = ref(false)
 const modalVisible = ref(false)
 
-const examType= ref('terminal')
+const examType= ref('selection') // Default to selection test
 const currentExamId = ref('')
 const currentExamName = ref('')
 const subjects = ref([])
@@ -486,13 +467,25 @@ onMounted(async () => {
 
 async function fetchClasses() {
   try {
-    const response = await window.electronAPI.getClasses()
+    const response = await window.electronAPI.getClasses();
     if (response.success) {
-      classes.value = response.classes
+      // Filter classes to only include class X
+      classes.value = response.classes.filter(cls => cls.ClassName === 'X');
+      //console.log("Classes for Selection Test:", classes.value);
+      
+      // If class X is found, assign its ID to selectedClassId
+      if (classes.value.length > 0) {
+        // Make sure to use the correct property name (Id vs id)
+        selectedClassId.value = classes.value[0].Id; // or .id depending on your actual data
+        //console.log("Selected Class ID:", selectedClassId.value);
+      } else {
+        console.warn('Class X not found in the response');
+        selectedClassId.value = ''; // Reset if not found
+      }
     }
-  
   } catch (error) {
-    console.error('Error fetching classes:', error)
+    console.error('Error fetching classes:', error);
+    selectedClassId.value = ''; // Reset on error
   }
 }
 
@@ -612,6 +605,7 @@ async function generateReportCard(studentId, totalWorkingDays, attendance, remar
 }
 
 async function fetchReportCard(studentId, Name) {
+
   selectedStudentName.value = Name
  const reports = await window.electronAPI.getReportCard({
         examId: currentExamId.value,
@@ -621,6 +615,7 @@ async function fetchReportCard(studentId, Name) {
         resultType: examType.value,
         academicYearId: CurrentYearId.value
       })
+      
       if(reports?.success){ 
         studentData.value = reports.studentData || []
         marksData.value = reports.marksData || []
@@ -628,6 +623,7 @@ async function fetchReportCard(studentId, Name) {
         reportCardData.value = reports.reportCardData || []
         activities.value = reports.activities || []
         modalVisible.value = true
+        
       }
 }
 

@@ -1,10 +1,10 @@
 <template>
   <section class="hero">
     <div class="hero-body">
-      <div class="container ">
-        <div class="columns is-centered ">
+      <div class="container">
+       
           <div class="column is-3-desktop is-4-tablet is-4-widescreen">
-            <div class="box " >
+            <div class="box" >
     
               <div class="is-flex is-justify-content-center">
               <img class="logo has-text-centered" src="../assets/sikul_logo.png" alt="School Logo"/>
@@ -64,7 +64,7 @@
               </div>
             </div>
           </div>
-        </div>
+       
       </div>
     </div>
   </section>
@@ -116,7 +116,9 @@ export default {
 
 <style scoped>
 .hero {
-  height: calc(100vh - 60px);  
+  height: calc(100vh - 60px); 
+  padding-bottom: 60px;
+  
 }
 .title{
   color: rgb(78, 85, 101);
@@ -134,8 +136,14 @@ export default {
 }
 .box{
   vertical-align: middle;
+  margin: 0 auto;
 }
-
+.container {
+  display: flex;
+  justify-content: center; /* Horizontal center */
+  align-items: center; /* Vertical center */
+  min-height: 100%; /* Ensure it takes full height */
+}
 .button.is-primary {
   background-color: #667eea;
   border-color: transparent;

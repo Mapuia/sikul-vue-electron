@@ -4,7 +4,7 @@ const currentTime = new Date(new Date().getTime() + 5.5 * 60 * 60 * 1000).toISOS
 
 // IPC Handlers for Result
 //////////////////////////////////////////////////////////////////////////////
-ipcMain.handle('get-mark-entry-status', async (event, examId) => {
+ipcMain.handle('get-mark-entry-status', async (event, examId, examType) => {
   try {
     //console.log('Fetching mark entry status for exam:', examId);
     // Get all class-section mappings with details.. If 
@@ -59,7 +59,10 @@ ipcMain.handle('get-mark-entry-status', async (event, examId) => {
 
     // Prepare final result
     const result = classSections.map(cs => {
-      const total = totalSubjectsMap.get(cs.classId) || 0
+      let total = totalSubjectsMap.get(cs.classId) || 0
+      if(examType === 'selection'){
+        total-= 1; // Exclude English for selection test
+      }
       const finished = finishedSubjectsMap.get(`${cs.classId}-${cs.sectionId || 0}`) || 0
       
       return {
@@ -143,30 +146,36 @@ ipcMain.handle('generate-results', async (event, { academicYearId, resultType, e
     }
     const Class = romanToInt(classInfo.ClassName);    
     try {
-      // 1. Check for incomplete mark entry
-      // In the MaarkEntryStatus table, check if there are any subjects for the given exam and class-section that have not been fully entered
-      const { count } = db.prepare(`
-        SELECT COUNT(*) as count
-        FROM ClassSubjectMapping csm
-        JOIN Subjects s ON csm.SubjectId = s.Id
-        LEFT JOIN MarkEntryStatus mes ON 
-          mes.SubjectId = csm.SubjectId AND        
-          mes.ActiveExamId = ? AND 
-          mes.ClassId = ? AND 
-          mes.SectionId = ?
-        WHERE 
-          csm.ClassId = ? AND 
-          s.SubjectCategory != 'Co-Scholastic' AND 
-          (mes.FinishedEntry IS NULL OR mes.FinishedEntry = 0)
-      `).get(examId, classId, sectionId, classId);
-
-      if (count > 0) {
-        throw new Error(`${count} academic subjects still need mark entry.`);
-      }
-
       // 2. Fetch students with cumulative data
      let students; 
-     if(resultType === 'terminal') {
+     
+     if(resultType === 'final'){
+      students = db.prepare(`
+        SELECT 
+          s.Id as studentId,
+          s.Name,
+          a.RollNo,
+          ctm.TotalMarksObtained,
+          ctm.TotalMaxMarks,
+          ctm.Percentage
+        FROM FinalCumulativeTotalMarks ctm
+        JOIN Students s ON s.Id = ctm.StudentId
+        JOIN Admissions a ON 
+          s.Id = a.StudentId AND 
+          a.AcademicYearId = ? AND 
+          a.ClassId = ? AND 
+          a.SectionId = ?
+        WHERE 
+          ctm.AcademicYearId = ? AND
+          ctm.TotalMarksObtained IS NOT NULL
+        ORDER BY ctm.TotalMarksObtained DESC
+      `).all(academicYearId, classId, sectionId, academicYearId);
+
+      if (students.length === 0) {
+        throw new Error('No students with calculated marks found.');
+      }
+     }
+     else {
       students = db.prepare(`
         SELECT 
           s.Id as studentId,
@@ -192,32 +201,7 @@ ipcMain.handle('generate-results', async (event, { academicYearId, resultType, e
       if (students.length === 0) {
         throw new Error('No students with calculated marks found.');
       }
-     }else{
-      students = db.prepare(`
-        SELECT 
-          s.Id as studentId,
-          s.Name,
-          a.RollNo,
-          ctm.TotalMarksObtained,
-          ctm.TotalMaxMarks,
-          ctm.Percentage
-        FROM FinalCumulativeTotalMarks ctm
-        JOIN Students s ON s.Id = ctm.StudentId
-        JOIN Admissions a ON 
-          s.Id = a.StudentId AND 
-          a.AcademicYearId = ? AND 
-          a.ClassId = ? AND 
-          a.SectionId = ?
-        WHERE 
-          ctm.AcademicYearId = ? AND
-          ctm.TotalMarksObtained IS NOT NULL
-        ORDER BY ctm.TotalMarksObtained DESC
-      `).all(academicYearId, classId, sectionId, academicYearId);
-
-      if (students.length === 0) {
-        throw new Error('No students with calculated marks found.');
-      }
-     }     
+     }    
       // 3. Prepare insert
       const insertResult = db.prepare(`
         INSERT OR REPLACE INTO Results (
@@ -729,8 +713,8 @@ ipcMain.handle('get-publish-status', async (event, { academicYearId, activeExamI
       FROM ActiveExams 
       WHERE Id = ? AND AcademicYearId = ?
     `);
-    const publishDate = publishDateStmt.get(activeExamId, academicYearId).PublishDate || ''
-
+    const publishDate = publishDateStmt.get(activeExamId, academicYearId)?.PublishDate;
+    //console.log("Publish Date ", publishDate)
     return {
       success: true,
       markEntryCount,

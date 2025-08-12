@@ -1,8 +1,8 @@
 <template>
-  <div v-if="resultPublished" class="form-container box wide">
+  <div v-if="!resultPublished" class="form-container box wide">
     <div class="has-text-centered mb-4">
-      <h1 class="title is-4">{{ currentExamName ? currentExamName : 'Final' }} Result, {{ CurrentYear }}</h1>
-      <h2 class="subtitle is-5">Select Class and Section</h2>
+      <h1 class="title is-4">{{ resultName }}, {{ CurrentYear }}</h1>
+      <h2 class="subtitle is-5" v-if="examType !== 'selection'">Select Class and Section</h2>
     </div>
 
     <div v-if="examType">
@@ -49,7 +49,7 @@
         <div class="level mt-4">
             <!-- Centered heading -->
             <div class="level-item has-text-left">
-              <h2 class="subtitle is-5">Detail Results</h2>
+              <h2 class="subtitle is-5">Quick Results</h2>
             </div>
         </div>
 
@@ -60,7 +60,7 @@
             <!-- Logo (Option 1: if using public folder) -->
             <img src="/sikul_logo.png" alt="School Logo" style="position: absolute; top: 0; left: 0; height: 60px;" />
             <h1 class="result-title ">CALVARY HIGHER SECONDARY SCHOOL, TUIDU</h1>
-            <h2 class="result-subtitle ">{{ currentExamName }} : {{ CurrentYear }}</h2>
+            <h2 class="result-subtitle ">{{ resultName }} : {{ CurrentYear }}</h2>
             <h1 class="result-title "> Class {{ resultSummary.className }}{{ resultSummary.sectionName? ', Section ' + resultSummary.sectionName : '' }}</h1>
             </div>
             <div class="mt-4" v-if="results.length > 0">
@@ -196,9 +196,9 @@
       </div>
     </div>
   </div>
-  <div v-else class="container single pb-1" >
+  <div v-else class="form-container wide pb-1" >
     <div class="notification is-success has-text-centered " >
-      <p>{{ resultName }} Results has not been published.</p>      
+      <p>{{ resultName }} has not been published.</p>      
     </div>    
   </div>
 </template>
@@ -208,7 +208,7 @@ import { ref, watch, onMounted, computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { useAcademicYear } from '../../composables/useAcademicYear'
 import { useActiveExam } from '../../composables/useActiveExam'
-import html2pdf from 'html2pdf.js'
+
 
 const { CurrentYearId, CurrentYear } = useAcademicYear()
 const { 
@@ -223,7 +223,7 @@ const route = useRoute()
 const examType = ref('')
 const resultName = ref('')
 const currentExamId = ref('')
-const currentExamName = ref('')
+//const currentExamName = ref('')
 const resultSummary = ref([]) 
 const isLoading = ref(false)
 const classes = ref([])
@@ -250,7 +250,8 @@ const currentDate = ref(new Date().toLocaleDateString('en-IN', {
 
 watch(() => route.query.type, (newType) => {
   examType.value = newType
-  resultName.value = newType === 'terminal'? 'Half Yearly' : 'Final'  
+  resultName.value = newType === 'terminal'? 'Half Yearly Results' : newType === 'annual' ? 'Final Results' : 'Selection Test Results'
+  console.log("Exam Type:", examType.value)
   getExam()  
   selectedClassId.value = ''
   selectedSectionId.value = ''  
@@ -261,12 +262,13 @@ watch(examType, async (newType) => {
     selectedClassId.value = ''
     selectedSectionId.value = ''     
   }
+  await fetchClasses()
 }, { immediate: true })
 
 async function getExam() {
   const result = await window.electronAPI.getExamByType(examType.value, CurrentYearId.value)
   currentExamId.value = result.exam.Id
-  currentExamName.value = examType.value === 'terminal' ? result.exam.ExamName : 'Final'
+  //currentExamName.value = examType.value === 'terminal' ? result.exam.ExamName : examType.value === 'selection'? 'Class X Selection Test' :'Final'
   checkPublishStatus()
  //console.log("Current Exam ID in getExam:", currentExamId.value)
 }
@@ -297,22 +299,24 @@ async function fetchClassTeacherInfo() {
 }
 
 onMounted(async () => {
+  checkPublishStatus()
   await getExam()  
   await loadActiveExam()
-  await fetchClasses()
-  
+  await fetchClasses()  
 })
 const resultPublished = ref(false)
 const publishDate = ref('')
 async function checkPublishStatus() {
-  try {
-  
+  try {  
     const status = await window.electronAPI.getPublishStatus({
       academicYearId: CurrentYearId.value,
       activeExamId: currentExamId.value      
     })   
     publishDate.value = status.publishDate || ''
-    if(publishDate.value){
+
+    //console.log("Publish Date:", publishDate.value)
+
+    if(publishDate.value !== '') {
       resultPublished.value = true
     }
     else {
@@ -323,17 +327,36 @@ async function checkPublishStatus() {
   }
 }
 
+
 async function fetchClasses() {
-  try {
-    const response = await window.electronAPI.getClasses()
-    if (response.success) {
-      classes.value = response.classes
+  const result = await window.electronAPI.getClasses();
+  if (result.success) {
+    switch (examType.value) {
+      case 'selection':
+        // Only show Class X for selection tests
+        classes.value = result.classes.filter(cls => cls.ClassName === 'X');
+        if (classes.value.length > 0) {
+          selectedClassId.value = classes.value[0].Id;
+          console.log("Selection a ni tur a ni", examType.value, classes.value);
+        }
+        break;
+        
+      case 'annual':
+        // Exclude Class X for annual exams
+        classes.value = result.classes.filter(cls => cls.ClassName !== 'X');
+       console.log("Annual a ni tur a ni", examType.value, classes.value);
+        break;
+        
+      
+      default:
+        // Show all classes for terminal exams (or any other type)
+        classes.value = result.classes;
+        console.log("Terminal a ni tur a ni", examType.value, classes.value);
+        break;
     }
-  
-  } catch (error) {
-    console.error('Error fetching classes:', error)
   }
 }
+
 
 watch(selectedClassId, async (newClassId) => {
   if (newClassId) {

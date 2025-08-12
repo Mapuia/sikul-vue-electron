@@ -18,7 +18,7 @@ ipcMain.handle('get-exams', async () => {
 ipcMain.handle('insert-exam', async (event, examName, ExamType, description) => {
   try {
       const stmt = db.prepare(
-        'INSERT INTO Exams (ExamName, ExamType, Description) VALUES (?, ?)'
+        'INSERT INTO Exams (ExamName, ExamType, Description) VALUES (?, ?, ?)'
       );
       stmt.run(examName, ExamType, description);
       return {success: true};

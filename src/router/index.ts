@@ -88,6 +88,11 @@ const routes = [
     meta: { allowedRoles: [ROLES.ADMIN, ROLES.TEACHER, ROLES.DEO] }
   },
   {
+    path: '/result/report-card/selection',
+    component: () => import('@/views/Results/selectionReportCard.vue'),
+    meta: { allowedRoles: [ROLES.ADMIN, ROLES.TEACHER, ROLES.DEO] }
+  },
+  {
     path: '/result/report-card/halfyearly',
     component: () => import('@/views/Results/halfYearReportCard.vue'),
     meta: { allowedRoles: [ROLES.ADMIN, ROLES.TEACHER, ROLES.DEO] }
@@ -104,11 +109,13 @@ const routes = [
     component: () => import('@/views/Marks/MarksView.vue'),
     meta: { allowedRoles: [ROLES.ADMIN, ROLES.TEACHER, ROLES.DEO] }
   },
+
   {
     path: '/marks/marks-entry',
     component: () => import('@/views/Marks/marksEntry.vue'),
     meta: { allowedRoles: [ROLES.ADMIN, ROLES.TEACHER, ROLES.DEO] }
   },
+
 
   // Masters
   {

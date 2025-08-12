@@ -5,7 +5,7 @@
    
     <div>
       <!--selected Tabs-->
-      <div class="box columns mb-4" v-if="examType !== 'selection'">
+      <div class="box columns mb-4">
         <div class="column">
           <div
             class="tab-button has-text-centered is-clickable p-3"
@@ -101,7 +101,7 @@
                   </tr>
                   <tr>
                     <th class="has-text-centered" style="min-width: 100px;">
-                      {{examType === "terminal" ? 'First Periodic Test' : examType === "annual" ? 'Second Periodic Test' : 'Internal'}}<br />
+                      {{examType === "terminal" ? 'First' : 'Second'}} Periodic Test<br />
                       (FM: {{ selectedSubjectCategory === 'Major' ? periodicMajorMaxMark : periodicMinorMaxMark }})
                     </th>
                     <th class="has-text-centered" style="min-width: 100px;">
@@ -499,25 +499,7 @@ async function getExam() {
 
 async function fetchClasses() {
   const result = await window.electronAPI.getClasses()
-  if (result.success) {
-    if (examType.value === 'selection') {      
-      classes.value = result.classes.filter(cls => cls.ClassName === 'X')
-      console.log("Classes for Selection Test:", classes.value)
-      if (classes.value.length > 0) {
-        selectedClassId.value = classes.value[0].Id
-      }
-    } 
-    if (examType.value === 'annual') {      
-      classes.value = result.classes.filter(cls => cls.ClassName !== 'X')
-      console.log("Classes for Selection Test:", classes.value)
-      if (classes.value.length > 0) {
-        selectedClassId.value = classes.value[0].Id
-      }
-    }
-    else {     
-      classes.value = result.classes
-    }
-  }
+  if (result.success) classes.value = result.classes
 }
 
 async function fetchSections(classId) {
@@ -533,15 +515,8 @@ async function fetchSections(classId) {
 }
 
 async function fetchSubjects(classId) {
-  const result = await window.electronAPI.getSubjectsByClassId(classId, selected.value);
-  if (result.success) {
-    if (examType.value === 'selection' && classes.value.some(cls => cls.ClassName === 'X')) {
-      // Filter out EVS subject for selection exam type and Class X
-      subjects.value = result.subjects.filter(subject => subject.SubjectName !== 'EVS');
-    } else {
-      subjects.value = result.subjects;
-    }
-  }
+  const result = await window.electronAPI.getSubjectsByClassId(classId, selected.value)
+  if (result.success) subjects.value = result.subjects
 }
 
 async function loadStudentsBySectionId() {

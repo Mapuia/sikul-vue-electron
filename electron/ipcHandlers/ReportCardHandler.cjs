@@ -4,22 +4,6 @@ const { ipcMain } = require('electron');
 const { db } = require('../database.cjs'); // Your database interfac
 const currentTime = new Date(new Date().getTime() + 5.5 * 60 * 60 * 1000).toISOString();
 
-  // Get Signatory
-ipcMain.handle('get-head-signatory', () => {
-  try {
-    const stmt = db.prepare(`
-      SELECT * FROM Signatories
-      WHERE SignatoryType = 'Head' AND IsActive = 1     
-    `)
-    const result = stmt.get()
-
-    return { success: true, data: result || null }
-  } catch (error) {
-    console.error('Error fetching head signatory:', error)
-    return { success: false, error: error.message }
-  }
-})
-
 ipcMain.handle('generate-report-card', async (event, {
   academicYearId,
   examId,
@@ -167,7 +151,7 @@ ipcMain.handle('get-report-card', (event, { studentId, classId, sectionId, examI
       const terminalResultStudents = db.prepare(`
         SELECT DISTINCT StudentId FROM Results
         WHERE resultType = ?
-      `).all("terminal").map(row => row.StudentId);
+      `).all(resultType).map(row => row.StudentId);
 
       const TerminalNoOfStudents = studentIdsInAdmissions.filter(id => terminalResultStudents.includes(id)).length;
      

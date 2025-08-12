@@ -7,14 +7,14 @@
       <div class="box single">
         <h2 class="subtitle has-text-centered">Mark Entry Disabled!</h2>
         <div class="notification is-danger">
-          {{ resultName }} for Current Session <strong>{{ CurrentYear }}</strong> is Published. <br />       
+          {{ resultName }} is Published. <br />       
           <p class="has-text-weight-bold">You cannot enter marks after the Result is published.</p>
         </div>
       </div>
     </div>
     <div v-else>
       <!--selected Tabs-->
-      <div class="box columns mb-4">
+      <div class="box columns mb-4" v-if="examType !== 'selection'">
         <div class="column">
           <div
             class="tab-button has-text-centered is-clickable p-3"
@@ -121,7 +121,7 @@
                   </tr>
                   <tr>
                     <th class="has-text-centered" style="min-width: 100px;">
-                      {{examType === "terminal" ? 'First' : 'Second'}} Periodic Test<br />
+                      {{examType === "terminal" ? 'First Periodic Test' : examType === "annual" ? 'Second Periodic Test' : 'Internal'}}<br />
                       (FM: {{ selectedSubjectCategory === 'Major' ? periodicMajorMaxMark : periodicMinorMaxMark }})
                     </th>
                     <th class="has-text-centered" style="min-width: 100px;">
@@ -413,7 +413,7 @@ const appeared = ref({})
 const Grades = ref({})
 
 // ============== COMPUTED PROPERTIES ==============
-const resultName = computed(() => examType.value === 'terminal' ? 'Half Yearly Result' : 'Final Result')
+const resultName = computed(() => examType.value === 'terminal' ? 'Half Yearly Result' : examType.value === 'annual' ? 'Final Result': 'Selection Test')
 
 const selectedSubjectName = computed(() => 
   subjects.value.find(sub => sub.Id === selectedSubjectId.value)?.SubjectName || ''
@@ -427,9 +427,12 @@ const selectedSubjectCategory = computed(() =>
   selectedSubject.value?.SubjectCategory || null
 )
 
-const isMarkEntryDisabled = computed(() => 
-  examType.value === 'annual' ? Final_Published.value : Terminal_Published.value
-)
+const isMarkEntryDisabled = computed(() => {
+  if (examType.value === 'annual') return Final_Published.value
+  if (examType.value === 'terminal') return Terminal_Published.value
+  if (examType.value === 'selection') return false // or some other condition
+  return false
+})
 
 // ============== WATCHERS ==============
 // Watch route changes
@@ -531,7 +534,22 @@ async function getExam() {
 
 async function fetchClasses() {
   const result = await window.electronAPI.getClasses()
-  if (result.success) classes.value = result.classes
+  if (result.success) {
+    if (examType.value === 'selection') {      
+      classes.value = result.classes.filter(cls => cls.ClassName === 'X')
+      console.log("Classes for Selection Test:", classes.value)
+      if (classes.value.length > 0) {
+        selectedClassId.value = classes.value[0].Id
+      }
+    } 
+    else if (examType.value === 'annual') {      
+      classes.value = result.classes.filter(cls => cls.ClassName !== 'X')
+      console.log("Classes for Annual Exam:", classes.value)      
+    }
+    else {     
+      classes.value = result.classes
+    }
+  }
 }
 
 async function fetchSections(classId) {
@@ -547,8 +565,15 @@ async function fetchSections(classId) {
 }
 
 async function fetchSubjects(classId) {
-  const result = await window.electronAPI.getSubjectsByClassId(classId, selected.value)
-  if (result.success) subjects.value = result.subjects
+  const result = await window.electronAPI.getSubjectsByClassId(classId, selected.value);
+  if (result.success) {
+    if (examType.value === 'selection' && classes.value.some(cls => cls.ClassName === 'X')) {
+      // Filter out EVS subject for selection exam type and Class X
+      subjects.value = result.subjects.filter(subject => subject.SubjectName !== 'EVS');
+    } else {
+      subjects.value = result.subjects;
+    }
+  }
 }
 
 async function loadStudentsBySectionId() {
@@ -754,7 +779,7 @@ async function submitGrades() {
 async function saveMarks() {
   const invalidStudents = students.value.filter(student => 
     markInvalid(student.StudentId, 'periodic') || 
-    markInvalid(student.StudentId, examType.value === 'terminal' ? 'terminal' : 'annual')
+    markInvalid(student.StudentId, examType.value === 'terminal' ? 'terminal' : examType.value === 'annual' ? 'annual' : 'selection')
   )
   
   if (invalidStudents.length > 0) {
@@ -826,7 +851,8 @@ async function saveMarks() {
 async function verifyResultStatus() { 
   const result = await window.electronAPI.verifyResultStatus({
     academicYearId: CurrentYearId.value,
-    resultType: examType.value === 'terminal' ? examType.value : 'final',
+    resultType: examType.value === 'terminal' ? examType.value : 
+               examType.value === 'selection' ? 'selection' : 'final',
     examId: currentExamId.value,
     classId: selectedClassId.value,
     sectionId: selectedSectionId.value

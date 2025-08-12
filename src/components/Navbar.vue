@@ -60,6 +60,17 @@
                   <router-link class="navbar-item" to="/result/summary?type=annual" @click="closeDropdown">View Result Summary</router-link>
                 </div>
               </div>
+              <!-- Class X Selection Submenu -->
+              <div class="navbar-item has-subdropdown">
+                <span class="navbar-link">Class X Selection Test</span>
+                <div class="navbar-subdropdown">
+                  <router-link class="navbar-item" to="/marks/marks-entry?type=selection" @click="closeDropdown">Marks Entry</router-link>
+                  <router-link class="navbar-item" to="/marks/view?type=selection" @click="closeDropdown">View Marks</router-link>
+                  <router-link v-if="canAccess(['admin','teacher'])" class="navbar-item" to="/result/create?type=selection" @click="closeDropdown">Generate Result</router-link>
+                  <router-link class="navbar-item" to="/result/section?type=selection" @click="closeDropdown">View Selection Result</router-link>
+                  
+                </div>
+              </div>
             </div>
           </div>
 
@@ -72,8 +83,9 @@
               <span class="fa-solid fa-chart-pie"></span>Report Card
             </a>
             <div class="navbar-dropdown">
-              <router-link class="navbar-item" to="/result/report-card/halfyearly" @click="closeDropdown">Half Yearly</router-link>
+              <router-link class="navbar-item" to="/result/report-card/halfyearly" @click="closeDropdown">Half Yearly Report Card</router-link>
               <router-link class="navbar-item" to="/result/report-card/final" @click="closeDropdown">Final Report Card</router-link>
+              <router-link class="navbar-item" to="/result/report-card/selection" @click="closeDropdown">Selection Report Card</router-link>
             </div>
           </div>
 

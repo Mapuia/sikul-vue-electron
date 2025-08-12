@@ -506,6 +506,7 @@ INSERT INTO Exams (ExamName, ExamType, Description) VALUES
     ('Half Yearly Examination', 'terminal', 'Mid-term comprehensive examination'),
     ('Second Periodic Test', 'periodic', 'Second periodic assessment of the term'),
     ('Annual Examination', 'annual', 'Final annual examination');
+    ('Selection Test', 'selection', 'Selection Test for Class X students for Board Exam');
 
 -- Insert Active Exams
 INSERT INTO ActiveExams (AcademicYearId, ExamId, MajorMaxMark, MinorMaxMark, PassingPercentage, IsActive, Result_Published)

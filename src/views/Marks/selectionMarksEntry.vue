@@ -1,50 +1,38 @@
 <template>
   <div class="form-container full">
-    <h1 class="title has-text-centered is-4">View {{ selected === 'Scholastic' ? 'Marks' : 'Grade' }} for {{ currentExamName }}</h1>
-    <h2 class="subtitle has-text-centered">{{ examType ? "" : 'There is something wrong. Logout and login again'}}</h2>
-   
-    <div>
-      <!--selected Tabs-->
-      <div class="box columns mb-4" v-if="examType !== 'selection'">
-        <div class="column">
-          <div
-            class="tab-button has-text-centered is-clickable p-3"
-            :class="selected === 'Scholastic' ? 'has-background-primary has-text-black' : ''"
-            @click="selected = 'Scholastic'"
-          >
-            Scholastic Subjects
-          </div>
-        </div>
-        <div class="column">
-          <div
-            class="tab-button has-text-centered is-clickable p-3"
-            :class="selected === 'Co-Scholastic' ? 'has-background-primary has-text-black' : ''"
-            @click="selected = 'Co-Scholastic'"
-          >
-            Co-Scholastic Activities
-          </div>
+    <h1 class="title has-text-centered is-4 mb-4">Class X Selection Marks Entry</h1>
+    
+
+    <div v-if="isMarkEntryDisabled">
+      <div class="box single">
+        <h2 class="subtitle has-text-centered">Mark Entry Disabled!</h2>
+        <div class="notification is-danger">
+          <strong>{{ CurrentYear }}</strong> is Published. <br />       
+          <p class="has-text-weight-bold">You cannot enter marks after the Result is published.</p>
         </div>
       </div>
+    </div>
+    <div v-else>        
 
       <!-- Notifications -->
       <div v-if="successMessage" class="notification is-success fixed-notification pr-4" @click="successMessage = ''">
+      
         {{ successMessage }}
       </div>
 
       <div v-if="errorMessage" class="notification is-danger fixed-notification pr-4" @click="errorMessage = ''">
+       
         {{ errorMessage }}
       </div>
+
       <div class="marks-entry-container">
         <aside class="left-panel box">
           <!-- Class Dropdown -->
           <div class="field">
             <label class="label">Class</label>
             <div class="select is-fullwidth is-small">
-              <select v-model="selectedClassId">
-                <option disabled value="">-- Select Class --</option>
-                <option v-for="cls in classes" :key="cls.Id" :value="cls.Id">
-                  Class - {{ cls.ClassName }}
-                </option>
+              <select >
+                <option value="" selected>Class X</option>                
               </select>
             </div>
           </div>         
@@ -76,32 +64,40 @@
           </div>
         </aside>
       
-        <!-- Scholastic Marks View -->
+          <!-- Scholastic Marks Entry -->
         <div v-if="selected === 'Scholastic'" class="main-content box column p-5">
           <div v-if="studentloaded && selectedSubjectId">
-            <div class="title tab-heading has-text-weight-bold is-primary is-flex is-justify-content-space-between is-align-items-center">
+            <div class="title tab-heading has-text-weight-bold is-primary is-flex is-justify-content-space-between ">
               <div>
                 {{ selectedSubjectName }}
               </div>
               <div class="tags are-medium">
                 <span class="tag ml-2">Pass Mark ({{ PassingPercentage }}%)</span>
               </div>
-            </div>
+            </div>            
           
-            <div v-if="students.length > 0" class="is-flex is-flex-direction-column">
-              <table class="table is-bordered is-striped is-fullwidth mt-4">
+            <div v-if="students.length > 0 || students.length === 1" class="is-flex is-flex-direction-column">
+              <table class="table is-bordered is-striped is-fullwidth">
                 <thead>
                   <tr>
                     <th rowspan="2" style="width: 100px; vertical-align: middle">Roll No.</th>
                     <th rowspan="2" style="min-width: 250px; vertical-align: middle">Student Name</th>
-                    <th colspan="3" class="has-text-centered">Marks Scored</th>                   
-                    <th rowspan="2" style="vertical-align: middle">Appeared</th>
+                    <th colspan="3" class="has-text-centered">Marks Scored</th>
+                    <th rowspan="2" class="has-text-centered " style="vertical-align: middle">Appeared
+                      <p class="control is-small">Select All</p>
+                      <label class="checkbox"> 
+                        <input 
+                          type="checkbox" 
+                          v-model="selectAllAppeared"
+                          @change="toggleAllAppeared"                         
+                        >
+                      </label>
+                    </th>
                     <th rowspan="2" style="vertical-align: middle">Status</th>
-                    <th rowspan="2" style="vertical-align: middle">Action</th>
                   </tr>
                   <tr>
                     <th class="has-text-centered" style="min-width: 100px;">
-                      {{examType === "terminal" ? 'First Periodic Test' : examType === "annual" ? 'Second Periodic Test' : 'Internal'}}<br />
+                      {{examType === "terminal" ? 'First' : 'Second'}} Periodic Test<br />
                       (FM: {{ selectedSubjectCategory === 'Major' ? periodicMajorMaxMark : periodicMinorMaxMark }})
                     </th>
                     <th class="has-text-centered" style="min-width: 100px;">
@@ -115,48 +111,91 @@
                   <tr v-for="student in students" :key="student.StudentId">
                     <td style="text-align: center;">{{ student.RollNo }}</td>
                     <td>{{ student.Name }}</td>
-                    <!-- First Periodic Test Mark -->
-                    <td style="text-align: center;">
-                      {{ periodicMarks[student.StudentId] }}
+                    <!-- First Periodic Test Input -->
+                    <td>
+                      <input
+                        :disabled="isMarkEntryDisabled || !appeared[student.StudentId]"
+                          type="number"
+                          :class="{
+                            'is-danger': markInvalid(student.StudentId, 'periodic'),
+                            'is-light': !appeared[student.StudentId]
+                          }"
+                        :min="0"
+                        :max="selectedSubjectCategory === 'Major' ? periodicMajorMaxMark : periodicMinorMaxMark"
+                        class="input is-small"
+                        
+                        v-model.number="periodicMarks[student.StudentId]"
+                        @keydown.enter="handleEnterKey($event, student.StudentId, 'periodic')"
+                        @input="updateStatus(student.StudentId)"
+                        data-type="periodic" 
+                        :data-student-id="student.StudentId"
+                      />
                     </td>
-                    <!-- Terminal Mark -->
-                    <td style="text-align: center;">
-                      {{ termMarks[student.StudentId] }}
+
+                    <!-- Marks Input -->
+                    <td>
+                      <input
+                        :disabled="isMarkEntryDisabled || !appeared[student.StudentId]"
+                          type="number"
+                          :class="{
+                            'is-danger': markInvalid(student.StudentId, 'terminal'),
+                            'is-light': !appeared[student.StudentId]
+                          }"
+                        :min="0"
+                        :max="selectedSubjectCategory === 'Major' ? terminalMajorMaxMark : terminalMinorMaxMark"
+                        class="input is-small"
+                        
+                        v-model.number="termMarks[student.StudentId]"
+                        @keydown.enter="handleEnterKey($event, student.StudentId, 'terminal')" 
+                        @input="updateStatus(student.StudentId)"
+                        data-type="terminal" 
+                        :data-student-id="student.StudentId"
+                      />
                     </td>
 
                     <!-- Total -->
-                    <td class="has-text-centered">
-                      {{calculateTotal(student.StudentId)}}
+                    <td class="has-text-centered has-text-centered">
+                      <input
+
+                        :disabled="true"
+                        type="number"
+                        class="input is-small has-text-centered"
+                        :value="calculateTotal(student.StudentId)"
+                      />
                     </td>
-                    <td class="has-text-centered ">
+                    <td class="has-text-centered has-text-centered">
                       <input
                         :checked="appeared[student.StudentId]"
-                        :disabled="true"
+                        :disabled="isMarkEntryDisabled"
                         type="checkbox"
                         v-model="appeared[student.StudentId]"
                         :true-value="1"
                         :false-value="0"
                       />
                     </td>
+
                     <!-- Status -->
                     <td>
                       <span class="tag" :class="statuses[student.StudentId] === 'Pass' ? 'is-success' : 'is-danger'">
                         {{ statuses[student.StudentId] || 'N/A' }}
                       </span>
                     </td>
-                    <td v-if="Result_Published"><p class = "help has-text-danger">Result Published! Can not update marks</p></td>
-                    <td v-else-if="appeared[student.StudentId] && canAccess(['admin', 'teacher'])">
-                      <button class="button is-info is-small" @click="openEditModal(student)"><i class="fas fa-edit mr-2"></i> Update</button>
-                    </td>
-                    <td v-else-if = "!appeared[student.StudentId]">
-                      <span class="has-text-grey">Not Appeared</span>
-                    </td>
-                    <td v-else>
-                      <span class="help has-text-danger">No Access</span>
-                    </td>
                   </tr>
                 </tbody>
-              </table> 
+              </table>
+                                
+              <div class="is-flex is-align-items-center mt-3">
+                <div class="buttons mt-2">
+                  <button class="button is-primary mr-2" @click="saveMarks" :disabled="isSaving">
+                    <i class="fas fa-save mr-2"></i>
+                    {{ isSaving ? 'Saving...' : 'Save' }}
+                  </button>
+                  <button class="button is-dark" @click="resetMarkData" :disabled="isSaving">
+                    <i class="fas fa-times mr-2"></i>
+                    Clear all Marks
+                  </button>
+                </div>
+              </div>
             </div>            
           
             <div v-else class="notification is-info is-dark is-fullwidth has-text-centered">
@@ -165,177 +204,136 @@
           </div>
         
           <div v-else class="is-flex is-flex-direction-column p-5">
-            <div class="subtitle">Steps to Update Marks for Scholastic Subjects:</div>
+          <div class="subtitle">Steps to Enter Marks for Scholastic Subjects:</div>
             <div class="px-5">
               <ol class="mb-5"> 
                 <li>Select Class
                   <span v-if="selectedClassId" class="icon has-text-info"><i class="fas fa-check"></i></span>
                 </li>
-                <li>Select Section 
+                <li>Select Section if available.
                   <span v-if="selectedSectionId" class="icon has-text-info"><i class="fas fa-check"></i></span>
                 </li>
                 <li>
                   Select Subject
                   <span v-if="selectedSubjectId" class="icon has-text-info"><i class="fas fa-check"></i></span>           
                 </li>
-                <li>
-                  Click Update for to edit the marks for student one by one.                            
-                </li>               
-              </ol>
-            </div>
-            <hr />
-            <div class="subtitle">
-              Information <span class="icon has-text-info">
-              <i class="fas fa-info-circle"></i></span>
-            </div>
-            <div class="px-5">
-              <ol class="mb-5"> 
-                <li>
-                  Student list and marks entered for the selected section will be opened.
-                </li>              
-                <li>
-                  Update button will appear if Result has not been published. 
-                </li></br>
+                <li>Enter Marks obtained in the input box.
+                  <span v-if="marksEntered" class="icon has-text-info"><i class="fas fa-check"></i></span>
+                </li>
+                <li>Check "Select All" to select all students and uncheck "Un-Appeared student."
                   
-                
+                </li>
               </ol>
-              <strong>Note:</strong> You can not update marks after result is published.
             </div>
+          <hr />
+          <div class="subtitle">
+            Information <span class="icon has-text-info">
+            <i class="fas fa-info-circle"></i></span>
+          </div>
+          <div class="px-5">
+            <ol class="mb-5"> 
+              
+              <li>
+                Student list for the selected section will be opened and enter the mark in the mark entry form.
+              </li>
+              <li>
+                Pass/ Fail Status will be displayed automatically.
+              </li>
+              <li>
+                Full Mark and Pass Marks are set up in the Master Data - Subjects and Exams.
+              </li>
+            </ol>
+          </div>
           </div>              
         </div>
      
-        <!-- Co-Scholastic Marks Entry -->
+          <!-- Co-Scholastic Marks Entry -->
         <div v-else class="main-content box column p-5">         
             <div v-if="studentloaded && selectedSubjectId" class="is-flex is-flex-direction-column">
-              <div class="title tab-heading has-text-weight-bold is-primary">
+              <div class="title tab-heading has-text-weight-bold">
                 {{ selectedSubjectName }}
               </div>
 
-              <div v-if="students.length > 0" class="is-flex is-flex-direction-column">
+              <div v-if="students.length > 0 || students.length === 1" class="is-flex is-flex-direction-column">
                 <table class="table is-bordered is-striped is-fullwidth">
                   <thead>
                     <tr>
-                      <th style="text-align: center;">Roll No.</th>
-                      <th>Student Name</th>                   
-                      <th style="text-align: center;">Grade</th>
-                      <th style="text-align: center;">Action</th>
+                      <th style="width: 80px">Roll No.</th>
+                      <th >Student Name</th>
+                      <th class="has-text-centered">Grade</th>           
+                      <th class="has-text-centered">Appeared
+                        <p class="control is-small">Select All</p>
+                      <label class="checkbox"> 
+                        <input 
+                          type="checkbox" 
+                          v-model="selectAllAppeared"
+                          @change="toggleAllAppeared"
+                          :disabled="isMarkEntryDisabled"
+                        >
+                      </label>
+                      </th>                   
+                      
                     </tr>
                   </thead>
                   <tbody>
                     <tr v-for="student in students" :key="student.StudentId">
-                      <td style="text-align: center;">{{ student.RollNo }}</td>
-                      <td>{{ student.Name }}</td>
-                  
+                      <td>{{ student.RollNo }}</td>
+                      <td>{{ student.Name }}</td>                      
+                      <td>
+                        <div class="select is-small is-fullwidth">
+                          <select :disabled="!appeared[student.StudentId]"
+                            v-model="Grades[student.StudentId]"                         
+                          >
+                            <option disabled value="">-- Select Grade --</option>
+                            <option value="A">A</option>
+                            <option value="B">B</option>
+                            <option value="C">C</option>
+                            <option value="D">D</option>
+                          </select>
+                        </div>
+                      </td>
                       <td class="has-text-centered">
-                        {{ existingGrades[student.StudentId] || 'N/A' }}
-                      </td>
-                      <td v-if="Result_Published"><p class = "help has-text-danger">Result Published! Can not update grades</p></td>
-                      <td v-else-if="appeared[student.StudentId] && canAccess(['admin', 'teacher'])" style="text-align: center;">                      
-                        <button class="button is-info is-small" @click="openEditModal(student)"><i class="fas fa-edit"></i> Update</button>
-                      </td>
-                      <td v-else-if = "!appeared[student.StudentId]">
-                        <span class="has-text-grey">Not Appeared</span>
-                      </td>
-                      <td v-else>
-                        <span class="help has-text-danger">No Access</span>
+                      <input
+                        :checked="appeared[student.StudentId]"
+                        :disabled="isMarkEntryDisabled"
+                        type="checkbox"
+                        v-model="appeared[student.StudentId]"
+                        :true-value="1"
+                        :false-value="0"
+                        />
                       </td>
                     </tr>
                   </tbody>
                 </table>
-                
+                <div class="is-flex is-justify-content-center mt-3">
+                  <button 
+                    class="button is-primary" 
+                    @click="submitGrades"
+                    :disabled="isSaving"
+                  >
+                    <span v-if="isSaving" class="icon is-small">
+                      <i class="fas fa-spinner fa-spin"></i>
+                    </span>
+                    <span>{{ isSaving ? 'Saving...' : 'Submit Grades' }}</span>
+                  </button>
+                </div>
               </div>
               <p v-else class="has-text-grey has-text-centered mt-4">
                 No students found for this section.
               </p>       
             </div>
-            <div v-else class="button is-info column has-text-centered is-flex is-align-items-center is-flex-direction-column p-5">
+            <div v-else class="button is-info has-text-centered is-flex is-align-items-center is-flex-direction-column p-5">
               Select Class, Section and Co-Scholastic Activity to enter Grades
-            </div>
+            </div>         
         </div>
+        <!--End of Marks Entry-->
       </div>     
     </div> 
-  </div>
-  
-  <!-- Edit Modal -->
-  <div class="modal" :class="{ 'is-active': isEditModalOpen }">
-    <div class="modal-background" @click="closeEditModal"></div>
-    <div class="modal-card">
-      <header class="modal-card-head">
-        <p class="modal-card-title">Edit {{ selected === 'Scholastic' ? 'Marks' : 'Grade' }}</p>
-        <button class="delete" aria-label="close" @click="closeEditModal"></button>
-      </header>
-      <section class="modal-card-body">
-        <div v-if="selected === 'Scholastic'">
-          <div class="field">
-            <label class="label">Student</label>
-            <p>{{ selectedStudent.Name }} (Roll No: {{ selectedStudent.RollNo }})</p>
-          </div>
-          
-          <div class="field">
-            <label class="label">First Periodic Test (Max: {{ selectedSubjectCategory === 'Major' ? periodicMajorMaxMark : periodicMinorMaxMark }})</label>
-            <input 
-              type="number" 
-              class="input" 
-              v-model="editForm.periodicMarks"
-              :max="selectedSubjectCategory === 'Major' ? periodicMajorMaxMark : periodicMinorMaxMark"
-              min="0"
-            >
-          </div>
-          
-          <div class="field">
-            <label class="label">Half Yearly Exam (Max: {{ selectedSubjectCategory === 'Major' ? terminalMajorMaxMark : terminalMinorMaxMark }})</label>
-            <input 
-              type="number" 
-              class="input" 
-              v-model="editForm.termMarks"
-              :max="selectedSubjectCategory === 'Major' ? terminalMajorMaxMark : terminalMinorMaxMark"
-              min="0"
-            >
-          </div>
-          
-          <div class="field">
-            <label class="label">Total Marks</label>
-            <p>{{ (parseInt(editForm.periodicMarks) || 0) + (parseInt(editForm.termMarks) || 0) }}</p>
-          </div>
-          
-          <div class="field">
-            <label class="label">Status</label>
-            <span class="tag" :class="calculateEditStatus() === 'Pass' ? 'is-success' : 'is-danger'">
-              {{ calculateEditStatus() }}
-            </span>
-          </div>
-        </div>
-        
-        <div v-else>
-          <div class="field">
-            <label class="label">Student</label>
-            <p>{{ selectedStudent.Name }} (Roll No: {{ selectedStudent.RollNo }})</p>
-          </div>
-          
-          <div class="field">
-            <label class="label">Grade</label>
-            <div class="select is-fullwidth">
-              <select v-model="editForm.grade">
-                <option value="">-- Select Grade --</option>
-                <option value="A">A</option>
-                <option value="B">B</option>
-                <option value="C">C</option>
-                <option value="D">D</option>
-              </select>
-            </div>
-          </div>
-        </div>
-      </section>
-      <footer class="modal-card-foot">
-        <button class="button is-success" @click="saveChanges">Save changes</button>
-        <button class="button" @click="closeEditModal">Cancel</button>
-      </footer>
-    </div>
   </div>   
 </template>
 
 <script setup>
-import { ref, watch, computed, onMounted } from 'vue'
+import { ref, watch, watchEffect, computed, onMounted, reactive } from 'vue'
 import { useAcademicYear } from '../../composables/useAcademicYear'
 import { useActiveExam } from '../../composables/useActiveExam'
 import { useRoute, useRouter } from 'vue-router'
@@ -350,32 +348,34 @@ const {
   periodicMinorMaxMark,
   terminalMajorMaxMark,
   terminalMinorMaxMark,
+  Terminal_Published,
+  Final_Published,
   PassingPercentage,      
   loadActiveExam 
 } = useActiveExam()
 
 // ============== REACTIVE STATE ==============
 // Exam related
-const examType = ref('')
+const examType = ref('selection')
 const currentExamId = ref('')
 const currentExamName = ref('')
 const Result_Published = ref(false)
 
 // UI state
-const selected = ref('Scholastic') // Default tab
+
 const successMessage = ref('')
 const errorMessage = ref('')
 const isSaving = ref(false)
 const studentloaded = ref(false)
+const selectAllAppeared = ref(false)
 
 // Data lists
-const classes = ref([])
 const sections = ref([])
 const subjects = ref([])
 const students = ref([])
 
 // Selected values
-const selectedClassId = ref('')
+const ClassId = ref('')
 const selectedSectionId = ref('')
 const selectedSubjectId = ref('')
 const marksEntered = ref(false)
@@ -385,24 +385,11 @@ const periodicMarks = ref({})
 const termMarks = ref({})
 const statuses = ref({})
 const appeared = ref({})
-
-// Grades data
-const existingGrades = ref({})
-const newGrades = ref({})
-
-// Edit modal state
-const isEditModalOpen = ref(false)
-const selectedStudent = ref({})
-const editForm = ref({
-  periodicMarks: 0,
-  termMarks: 0,
-  grade: ''
-})
-
-// User role
-const userRole = ref('')
+const Grades = ref({})
 
 // ============== COMPUTED PROPERTIES ==============
+const resultName = computed(() => examType.value === 'terminal' ? 'Half Yearly Result' : 'Final Result')
+
 const selectedSubjectName = computed(() => 
   subjects.value.find(sub => sub.Id === selectedSubjectId.value)?.SubjectName || ''
 )
@@ -415,10 +402,13 @@ const selectedSubjectCategory = computed(() =>
   selectedSubject.value?.SubjectCategory || null
 )
 
+const isMarkEntryDisabled = computed(() => 
+  examType.value === 'annual' ? Final_Published.value : Terminal_Published.value
+)
+
 // ============== WATCHERS ==============
 // Watch route changes
 watch(() => route.query.type, (newType) => {
-  Result_Published.value = false
   examType.value = newType
   getExam()
   fetchClasses() 
@@ -450,10 +440,6 @@ watch(selectedClassId, async (classId) => {
   selectedSectionId.value = ''
   marksEntered.value = false
   await fetchSections(classId)
-  if (sections.value.length === 0) {
-    selectedSectionId.value = 0
-  }
-  await verifyResultStatus()
   await fetchSubjects(classId)
   studentloaded.value = false 
 })
@@ -478,15 +464,36 @@ watch(selectedSubjectId, async (subjectId) => {
   } else if (selected.value === "Co-Scholastic") {
     await loadExistingGrades()
   }
+  
   studentloaded.value = true
+  selectAllAppeared.value = false
+  
+  if (marksEntered.value) {
+    const confirmed = await window.electronAPI.showConfirmationDialog(
+      `${selected.value === "Scholastic" ? "Marks" : "Grades"} are entered for the selected Subject. Are you sure you want to re-enter? All the existing entries will be replaced.`
+    )
+    if (!confirmed) {
+      selectedSubjectId.value = ''
+      studentloaded.value = false
+    } 
+  }
 })
+
+// Watch appeared status changes
+watch(appeared, (newVal) => {
+  for (const studentId in newVal) {
+    if (newVal[studentId] === 0) {
+      periodicMarks.value[studentId] = null
+      termMarks.value[studentId] = null
+    }
+  }
+}, { deep: true })
 
 // ============== LIFECYCLE HOOKS ==============
 onMounted(async () => {
   await Promise.all([
     loadAcademicYear(),
-    loadActiveExam(),
-    getUser()       
+    loadActiveExam()       
   ])  
 })
 
@@ -499,25 +506,7 @@ async function getExam() {
 
 async function fetchClasses() {
   const result = await window.electronAPI.getClasses()
-  if (result.success) {
-    if (examType.value === 'selection') {      
-      classes.value = result.classes.filter(cls => cls.ClassName === 'X')
-      console.log("Classes for Selection Test:", classes.value)
-      if (classes.value.length > 0) {
-        selectedClassId.value = classes.value[0].Id
-      }
-    } 
-    if (examType.value === 'annual') {      
-      classes.value = result.classes.filter(cls => cls.ClassName !== 'X')
-      console.log("Classes for Selection Test:", classes.value)
-      if (classes.value.length > 0) {
-        selectedClassId.value = classes.value[0].Id
-      }
-    }
-    else {     
-      classes.value = result.classes
-    }
-  }
+  if (result.success) classes.value = result.classes
 }
 
 async function fetchSections(classId) {
@@ -533,15 +522,8 @@ async function fetchSections(classId) {
 }
 
 async function fetchSubjects(classId) {
-  const result = await window.electronAPI.getSubjectsByClassId(classId, selected.value);
-  if (result.success) {
-    if (examType.value === 'selection' && classes.value.some(cls => cls.ClassName === 'X')) {
-      // Filter out EVS subject for selection exam type and Class X
-      subjects.value = result.subjects.filter(subject => subject.SubjectName !== 'EVS');
-    } else {
-      subjects.value = result.subjects;
-    }
-  }
+  const result = await window.electronAPI.getSubjectsByClassId(classId, selected.value)
+  if (result.success) subjects.value = result.subjects
 }
 
 async function loadStudentsBySectionId() {
@@ -577,13 +559,13 @@ async function loadExistingMarks() {
     termMarks.value = {}
     
     result.forEach(mark => {
-      periodicMarks.value[mark.StudentId] = mark.PeriodicMarksObtained || 'No Entry'
-      termMarks.value[mark.StudentId] = mark.TerminalMarksObtained || 'No Entry'
+      periodicMarks.value[mark.StudentId] = mark.PeriodicMarksObtained || ''
+      termMarks.value[mark.StudentId] = mark.TerminalMarksObtained || ''
       statuses.value[mark.StudentId] = mark.SubjectResult || "N.A."
       appeared.value[mark.StudentId] = mark.SubjectResult === 'N.A.' ? 0 : 1
-    }) 
+    })
+ 
     marksEntered.value = result.length > 0
-    
   } catch (error) {
     console.error("Failed to load marks:", error)
     errorMessage.value = "Failed to load existing marks"
@@ -595,18 +577,17 @@ async function loadExistingGrades() {
   try {
     const result = await window.electronAPI.getCoScholasticMarks({
       examId: currentExamId.value,
-      subjectId: selectedSubjectId.value      
+      subjectId: selectedSubjectId.value,
+      classId: selectedClassId.value,
+      sectionId: selectedSectionId.value || 0
     })
-
-    existingGrades.value = {}
-    newGrades.value = {}
     
+    Grades.value = {}    
     if (result.success) {
       result.grades.forEach(grade => {
-        existingGrades.value[grade.StudentId] = grade.Grade
-        newGrades.value[grade.StudentId] = grade.Grade
-        appeared.value[grade.StudentId] = grade.Grade ? 1 : 0
+        Grades.value[grade.StudentId] = grade.Grade
       })
+      marksEntered.value = result.length > 0
     }   
   } catch (error) {
     console.error("Error loading existing grades:", error)
@@ -643,15 +624,40 @@ function resetMarkData() {
 }
 
 function resetGrades() {
-  existingGrades.value = {}
-  newGrades.value = {}
+  Grades.value = {}
 }
 
-// ============== MARK CALCULATION FUNCTIONS ==============
+// ============== MARK ENTRY FUNCTIONS ==============
+function toggleAllAppeared() {
+  students.value.forEach(student => {
+    appeared.value[student.StudentId] = selectAllAppeared.value
+  })
+}
+
 function calculateTotal(studentId) {
-  const pmarks = periodicMarks.value[studentId] || 0
+  const pmarks = periodicMarks.value[studentId] || 0 
   const tmarks = termMarks.value[studentId] || 0
   return pmarks + tmarks
+}
+
+function markInvalid(studentId, type) {
+  const val = type === 'periodic' 
+    ? periodicMarks.value[studentId] 
+    : termMarks.value[studentId]
+  
+  if (!appeared.value[studentId]) return false
+  
+  if(appeared.value[studentId] && (periodicMarks.value[studentId] === '' || termMarks.value[studentId] === '')) {
+    return true 
+  }
+  
+  if (val === null || val === undefined) return true
+  
+  const maxMark = selectedSubjectCategory.value === 'Major' 
+    ? (type === 'periodic' ? periodicMajorMaxMark.value : terminalMajorMaxMark.value)
+    : (type === 'periodic' ? periodicMinorMaxMark.value : terminalMinorMaxMark.value)
+  
+  return val < 0 || val > maxMark
 }
 
 function updateStatus(studentId) {
@@ -664,66 +670,74 @@ function updateStatus(studentId) {
   statuses.value[studentId] = total >= passMark ? 'Pass' : 'Fail'
 }
 
-// ============== MODAL FUNCTIONS ==============
-async function openEditModal(student) {
-  await verifyResultStatus()
-  if(Result_Published.value) return
+function handleEnterKey(event, studentId, type) {
+  if (event.key === 'Enter') {
+    event.preventDefault()
+    const currentIndex = students.value.findIndex(s => s.StudentId === studentId)
 
-  selectedStudent.value = student
-  if (selected.value === 'Scholastic') {
-    editForm.value = {
-      periodicMarks: periodicMarks.value[student.StudentId] || 0,
-      termMarks: termMarks.value[student.StudentId] || 0,
-      grade: ''
-    }
-  } else {
-    editForm.value = {
-      periodicMarks: 0,
-      termMarks: 0,
-      grade: newGrades.value[student.StudentId] || existingGrades.value[student.StudentId] || ''
+    if (type === 'periodic') {
+      const terminalInput = document.querySelector(
+        `input[data-student-id="${studentId}"][data-type="terminal"]`
+      )
+      if (terminalInput) terminalInput.focus()
+    } else if (type === 'terminal' && currentIndex < students.value.length - 1) {
+      const nextStudentId = students.value[currentIndex + 1].StudentId
+      const nextInput = document.querySelector(
+        `input[data-student-id="${nextStudentId}"][data-type="periodic"]`
+      )
+      if (nextInput) nextInput.focus()
     }
   }
-  isEditModalOpen.value = true
-}
-
-function closeEditModal() {
-  isEditModalOpen.value = false
-  selectedStudent.value = {}
-  editForm.value = {
-    periodicMarks: 0,
-    termMarks: 0,
-    grade: ''
-  }
-}
-
-function calculateEditStatus() {
-  const periodic = parseInt(editForm.value.periodicMarks) || 0
-  const half = parseInt(editForm.value.termMarks) || 0
-  const total = periodic + half
-  
-  const maxTotal = (selectedSubjectCategory.value === 'Major' 
-    ? (periodicMajorMaxMark.value + terminalMajorMaxMark.value)
-    : (periodicMinorMaxMark.value + terminalMinorMaxMark.value))
-  
-  const passMark = Math.ceil(maxTotal * (PassingPercentage.value / 100))
-  return total >= passMark ? 'Pass' : 'Fail'
 }
 
 // ============== DATA SAVING FUNCTIONS ==============
-async function saveChanges() {
-  if (selected.value === 'Scholastic') {
-    periodicMarks.value[selectedStudent.value.StudentId] = editForm.value.periodicMarks
-    termMarks.value[selectedStudent.value.StudentId] = editForm.value.termMarks
-    updateStatus(selectedStudent.value.StudentId)
-    await saveMarks()
-  } else {
-    newGrades.value[selectedStudent.value.StudentId] = editForm.value.grade
-    await submitGrades()
+async function submitGrades() {
+  if (!selectedClassId.value || selectedSectionId.value === '' || !selectedSubjectId.value) {
+    window.electronAPI.showInfoDialog('Please select class, section, and co-scholastic activity')
+    return
   }
-  closeEditModal()
+  
+  isSaving.value = true
+  try {
+    const gradesData = students.value
+      .filter(student => appeared.value[student.StudentId])
+      .map(student => ({
+        StudentId: student.StudentId,
+        SubjectId: selectedSubjectId.value,
+        ActiveExamId: currentExamId.value,
+        Grade: Grades.value[student.StudentId]
+      }))
+    
+    const result = await window.electronAPI.saveCoScholasticMarks(gradesData)
+
+    if (result.success) {
+      successMessage.value = 'Grades submitted successfully!'
+      setTimeout(() => successMessage.value = '', 3000)
+      selectedSubjectId.value = ''
+      await loadExistingGrades()
+    } else {
+      throw new Error(result.error || 'Failed to save grades')
+    }
+  } catch (error) {
+    window.electronAPI.showErrorDialog(`Error: ${error.message}`)
+    console.error("Error submitting grades:", error)
+  } finally {
+    isSaving.value = false
+  }
 }
 
 async function saveMarks() {
+  const invalidStudents = students.value.filter(student => 
+    markInvalid(student.StudentId, 'periodic') || 
+    markInvalid(student.StudentId, examType.value === 'terminal' ? 'terminal' : 'annual')
+  )
+  
+  if (invalidStudents.length > 0) {
+    errorMessage.value = 'Please enter valid marks for all appeared students'
+    setTimeout(() => errorMessage.value = '', 5000)
+    return
+  }  
+  
   isSaving.value = true
   errorMessage.value = ''
 
@@ -767,51 +781,17 @@ async function saveMarks() {
 
     const result = await window.electronAPI.saveMarks({marksData, subjectData})
     if (result.success) {
-      successMessage.value = 'Marks updated successfully!'
+      selectedSubjectId.value = ''
+      successMessage.value = 'Marks submitted successfully!'
       setTimeout(() => successMessage.value = '', 3000)
       marksEntered.value = true
       studentloaded.value = true
     } else {
-      throw new Error(result.message || 'Failed to update marks') 
+      throw new Error(result.message || 'Failed to save marks.....') 
     }
   } catch (err) {
     errorMessage.value = err.message
     setTimeout(() => errorMessage.value = '', 5000)
-  } finally {
-    isSaving.value = false
-  }
-}
-
-async function submitGrades() {
-  if (!selectedClassId.value || selectedSectionId.value === '' || !selectedSubjectId.value) {
-    window.electronAPI.showInfoDialog('Please select class, section, and co-scholastic activity')
-    return
-  }
-
-  isSaving.value = true
-  try {
-    const gradesData = students.value
-      .filter(student => appeared.value[student.StudentId])
-      .map(student => ({
-        StudentId: student.StudentId,
-        SubjectId: selectedSubjectId.value,
-        ActiveExamId: currentExamId.value,
-        Grade: newGrades.value[student.StudentId] || existingGrades.value[student.StudentId]
-      }))
-
-    const result = await window.electronAPI.saveCoScholasticMarks(gradesData)
-
-    if (result.success) {
-      successMessage.value = 'Grades submitted successfully!'
-      setTimeout(() => successMessage.value = '', 3000)
-      await loadExistingGrades()
-    } else {
-      throw new Error(result.error || 'Failed to save grades')
-    }
-  } catch (error) {
-    errorMessage.value = `Error: ${error.message}`
-    setTimeout(() => errorMessage.value = '', 5000)
-    console.error("Error submitting grades:", error)
   } finally {
     isSaving.value = false
   }
@@ -829,18 +809,8 @@ async function verifyResultStatus() {
   
   if (result.success) {
     Result_Published.value = result.isPublished
+    return    
   }
-}
-
-async function getUser() {
-  const user = await window.electronAuth.getCurrentUser()
-  if (user) {    
-    userRole.value = user.role
-  }
-}
-
-const canAccess = (requiredRoles) => {
-  return requiredRoles.includes(userRole.value)
 }
 </script>
 
@@ -859,7 +829,8 @@ const canAccess = (requiredRoles) => {
 }
 .title{
   padding-bottom: 0rem;
-  margin-bottom: 0rem;  
+  margin-bottom: 0rem;
+  
 }
 .main-content {
   flex: 1;

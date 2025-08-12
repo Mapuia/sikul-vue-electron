@@ -72,6 +72,7 @@ contextBridge.exposeInMainWorld('electronAuth', {
   insertSignatory: (data) => ipcRenderer.invoke('insert-signatory', data),
   updateSignatory: (id, data) => ipcRenderer.invoke('update-signatory', id, data),
   deleteSignatory: (id) => ipcRenderer.invoke('delete-signatory', id),
+  getTeacherSignatory:(params) => ipcRenderer.invoke('get-teacher-signatory', params),
 
   //getSubjectsByClass: (className) => ipcRenderer.invoke('get-subjects-by-class', className),
   //handled in AdmissionHandler.cjs
@@ -130,7 +131,7 @@ contextBridge.exposeInMainWorld('electronAuth', {
   getStudentAdmissionDetails: (studentId, YearId) => ipcRenderer.invoke('get-admission-details', studentId, YearId),
   getPreviousAdmission: (studentId, YearId) => ipcRenderer.invoke('get-previous-admission', studentId, YearId),
 
-  getmarkEntryStatus: (examId) => ipcRenderer.invoke('get-mark-entry-status', examId),
+  getmarkEntryStatus: (examId, examType) => ipcRenderer.invoke('get-mark-entry-status', examId, examType),
 
   getExamStatus: (data) => ipcRenderer.invoke('get-exam-status', data),
   getPublishStatus: (yearId) =>ipcRenderer.invoke('get-publish-status', yearId),
@@ -155,8 +156,6 @@ contextBridge.exposeInMainWorld('electronAuth', {
   getReportCard: (params) => ipcRenderer.invoke('get-report-card', params),
   getFinalReportCard: (params) => ipcRenderer.invoke('get-final-report-card', params),
 
-  getHeadSignatory:() => ipcRenderer.invoke('get-head-signatory'),
-  getTeacherSignatory:(params) => ipcRenderer.invoke('get-teacher-signatory', params),
 
   exportStudentData: (params) => ipcRenderer.invoke('export-student-data', params),
   exportMarksData: (params) => ipcRenderer.invoke('export-marks-data', params),

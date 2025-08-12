@@ -33,6 +33,7 @@
                 <option>periodic</option>
                 <option>term</option>
                 <option>annual</option>
+                <option>selection</option>
               </select>
             </div>
           </div>
