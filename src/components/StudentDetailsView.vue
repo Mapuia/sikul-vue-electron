@@ -22,11 +22,11 @@
 
     <!-- Academic Information -->
     <div class="box">
-      <h3 class="title is-5">Academic Information</h3>
+      <h3 class="title is-5">Academic Information for {{ admission.YearName || '-' }}</h3>
       <table class="sikul-table is-fullwidth">
         <thead>
-          <tr><th>Academic Year:</th><td>{{ admission.YearName || '-' }}</td></tr>
-          <tr><th>Current Class:</th><td>{{ admission.ClassName || '-' }}</td></tr>
+         
+          <tr><th>Class:</th><td>{{ admission.ClassName || '-' }}</td></tr>
           <tr><th>Section:</th><td>{{ admission.SectionName || '-' }}</td></tr>
           <tr><th>Roll No:</th><td>{{ admission.RollNo || '-' }}</td></tr>
           <tr><th>Admission Type:</th><td>{{ admission.AdmissionType || '-' }}</td></tr>

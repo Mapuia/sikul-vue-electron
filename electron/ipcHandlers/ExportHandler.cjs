@@ -39,7 +39,10 @@ ipcMain.handle('export-master-data', async (event) => {
       
       // 6. Export Exams
       const exams = db.prepare('SELECT * FROM Exams').all();
-      
+
+      // 7. Export Signatories
+      const signatories = db.prepare('SELECT * FROM Signatories').all();
+
       // Combine all data
       const exportData = {
         metadata: {
@@ -50,7 +53,8 @@ ipcMain.handle('export-master-data', async (event) => {
             'ClassSectionMapping',
             'Subjects',
             'ClassSubjectMapping',
-            'Exams'
+            'Exams',
+            'Signatories'
           ],
           recordCounts: {
             classes: classes.length,
@@ -58,7 +62,8 @@ ipcMain.handle('export-master-data', async (event) => {
             classSectionMappings: classSectionMappings.length,
             subjects: subjects.length,
             classSubjectMappings: classSubjectMappings.length,
-            exams: exams.length
+            exams: exams.length,
+            signatories: signatories.length
           }
         },
         data: {
@@ -67,7 +72,8 @@ ipcMain.handle('export-master-data', async (event) => {
           classSectionMappings,
           subjects,
           classSubjectMappings,
-          exams
+          exams,
+          signatories
         }
       };
 

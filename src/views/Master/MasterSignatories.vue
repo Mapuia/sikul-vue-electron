@@ -28,12 +28,18 @@
         <section class="modal-card-body">
           <form @submit.prevent="submitForm">
             <div class="field">
+              <label class="label">Name</label>
+              <div class="control">
+                <input class="input" type="text" v-model="newSignatory.Name" required placeholder="Enter full name" />
+              </div>
+            </div>
+            <div class="field">
               <label class="label">Signatory Type</label>
               <div class="control">
                 <div class="select is-fullwidth">
                   <select v-model="newSignatory.SignatoryType" required>
                     <option value="" disabled>Select Type</option>
-                    <option value="ClassTeacher">Class-Teacher</option>
+                    <option value="ClassTeacher">Teacher</option>
                     <option value="Head">Head</option>
                   </select>
                 </div>
@@ -69,7 +75,7 @@
                 </div>
               </div>
             </div>
-
+            <div v-else>
             <div class="field">
               <label class="label">Designation</label>
               <div class="control">
@@ -84,19 +90,6 @@
                 </div>
               </div>
             </div>
-
-            <div class="field">
-              <label class="label">Name</label>
-              <div class="control">
-                <input class="input" type="text" v-model="newSignatory.Name" required placeholder="Enter full name" />
-              </div>
-            </div>
-
-            <div class="field">
-              <label class="label">Signature Image (Optional)</label>
-              <div class="control">
-                <input class="input" type="text" v-model="newSignatory.SignatureImage" placeholder="Path to signature image" />
-              </div>
             </div>
 
             <div class="field">
@@ -123,6 +116,12 @@
         </header>
         <section class="modal-card-body">
           <form @submit.prevent="saveEdit(editingSignatory)">
+            <div class="field">
+              <label class="label">Name</label>
+              <div class="control">
+                <input class="input" type="text" v-model="editSignatory.Name" required placeholder="Enter full name" />
+              </div>
+            </div>
             <div class="field">
               <label class="label">Signatory Type</label>
               <div class="control">
@@ -175,15 +174,9 @@
                     <option value="Class Teacher">Class Teacher</option>
                     <option value="Headmaster">Headmaster</option>
                     <option value="Headmistress">Headmistress</option>
+                    <option value="Principal">Principal</option>
                   </select>
                 </div>
-              </div>
-            </div>
-
-            <div class="field">
-              <label class="label">Name</label>
-              <div class="control">
-                <input class="input" type="text" v-model="editSignatory.Name" required placeholder="Enter full name" />
               </div>
             </div>
 
@@ -240,9 +233,7 @@
               </td>
               <td class="has-text-right">
                 <div class="buttons is-grouped is-justify-content-end">
-                  <button class="button is-small is-info" @click="openEditModal(signatory)">
-                    <i class="fas fa-edit"></i>
-                  </button>
+                 
                   <button class="button is-small is-danger" @click="deleteSignatory(signatory)">
                     <i class="fas fa-trash-alt"></i>
                   </button>
@@ -362,6 +353,9 @@ async function fetchClasses() {
 async function fetchSections() {
   const response = await window.electronAPI.getSectionsByClassId(newSignatory.value.ClassId);
   if (response.success) sections.value = response.sections;
+  if(sections.value.length === 0) {
+    newSignatory.value.SectionId = 0; // No sections available
+  } 
 }
 
 async function submitForm() {

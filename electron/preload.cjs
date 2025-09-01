@@ -79,7 +79,8 @@ contextBridge.exposeInMainWorld('electronAuth', {
   insertStudentAndAdmission: (studentForm) => ipcRenderer.invoke('insert-student-admission', studentForm),
      
   //Class Subject Mapping
-  getClassSubjectMappings: () => ipcRenderer.invoke('get-class-subject-mappings'),
+  //getClassSubjectMappings: () => ipcRenderer.invoke('get-class-subject-mappings'),
+  getSubjectsForClass: (classId) => ipcRenderer.invoke('get-subjects-for-class', classId),
   saveClassSubjectMappings: (mappings) => ipcRenderer.invoke('save-class-subject-mappings', mappings),
 
   // Class-Section Mapping methods
@@ -124,7 +125,7 @@ contextBridge.exposeInMainWorld('electronAuth', {
   getStudentDetails: (studentId, YearId) => ipcRenderer.invoke('get-student-details', studentId, YearId),
   updateStudent: (studentData) => ipcRenderer.invoke('update-student', studentData),
   deleteStudent: (studentId) => ipcRenderer.invoke('delete-student', studentId),
-  admitStudent: (studentData) => ipcRenderer.invoke('admit-student', studentData),
+  reAdmitStudent: (studentData) => ipcRenderer.invoke('readmit-student', studentData),
   updateAdmission:(payload)=> ipcRenderer.invoke('update-admission', payload),
   fetchUpperClasses:(className)=>ipcRenderer.invoke('fetch-upper-classes', className),
 

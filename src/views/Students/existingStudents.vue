@@ -153,24 +153,24 @@
                   <thead>       
                     <tr>
                       <th>Name:</th> 
-                      <td>{{promotionData.Name}}</td>
+                      <td>{{admissionData.Name}}</td>
                     </tr>
                     <tr>
                       <th>APAR:</th> 
-                      <td>{{promotionData.APAR}}</td>
+                      <td>{{admissionData.APAR}}</td>
                     </tr>
                     <tr>
                       <th>PEN:</th> 
-                      <td>{{promotionData.PEN}}</td>
+                      <td>{{admissionData.PEN}}</td>
                     </tr>
                     <tr>
                       <th>Previous Class</th> 
 
-                      <td>{{promotionData.ClassName}} </td>
+                      <td>{{admissionData.ClassName}} </td>
                     </tr>    
-                    <tr>
+                    <tr v-if="!isClassX">
                       <th>Previous Result:</th> 
-                      <td>{{promotionData.ResultStatus}}</td>
+                      <td>{{lastResultData.ResultStatus}}</td>
                     </tr>
                   </thead>
                 </table>
@@ -179,7 +179,7 @@
             <div class="columns is-multiline">
               <div class="column is-half">                
                 <div class="field">
-                  <label class="label">New Class</label>
+                  <label class="label">Class</label>
                   <div class="control">
                     <div class="select is-fullwidth">
                       <select v-model="newClassId">
@@ -217,9 +217,9 @@
                   <div class="control">
                     <div class="select is-fullwidth">
                       <select v-model="admissionType" required>
-                        <option disabled selected>-- Select Admission Type --</option> 
-                        <option>Promoted</option> 
-                        <option>Repeat</option>
+                        <option value='' disabled>-- Select Admission Type --</option> 
+                        <option value="Promoted">Promotion</option> 
+                        <option value="Repeat">Admit to same class</option>
                       </select>
                     </div>
                   </div>
@@ -229,7 +229,7 @@
          </div>
         </section>
         <footer class="modal-card-foot">
-          <button class="button is-primary mr-2" @click="promoteStudent" :disabled="isSaving">
+          <button class="button is-primary mr-2" @click="reAdmitStudent" :disabled="isSaving">
             <span v-if="isSaving" class="icon is-small">
               <i class="fas fa-spinner fa-spin"></i>
             </span>
@@ -283,12 +283,14 @@ const modalMode = ref('view'); // 'view' | 'promote'
 // Student Data
 const selectedStudent = ref(null);
 const selectedAdmission = ref(null);
-const promotionData = ref({});
+const admissionData = ref({});
+const lastResultData = ref({});
 
 // Messages
 const errorMessage = ref('');
 const successMessage = ref('');
 const searchQuery = ref('');
+const isClassX = ref(false);
 
 // ======================
 // Computed Properties
@@ -338,7 +340,9 @@ async function fetchSections() {
 async function fetchNewClasses() {
   try {
     const response = await window.electronAPI.fetchUpperClasses(className.value);
-    if (response.success) newClasses.value = response.classes;
+    if (response.success) {      
+      newClasses.value = response.classes;
+    }
   } catch (error) {
     errorMessage.value = 'Failed to load classes';
   }
@@ -438,12 +442,28 @@ async function viewStudentDetails(studentId) {
 async function openPromotionModal(student) {
   try {
     const response = await window.electronAPI.getPreviousAdmission(student.id, PreviousYearId.value);
+    // Here filter class X, for class X Readmission Roll not based on Rank
     if (response.success) {
-      promotionData.value = response.admission;      
-      newRollNo.value = promotionData.value.Rank;
+      admissionData.value = response.admission;      
+      lastResultData.value = response.lastResults;      
+      newRollNo.value = lastResultData.value.Rank;
       showPromotionModal.value = true;
       errorMessage.value = '';
       await fetchNewClasses();
+      newClassId.value = newClasses.value[1].Id; // Default to next class
+      if (admissionData.value.ClassName !== 'X'){
+        isClassX.value = false;
+        if(lastResultData.value.ResultStatus === 'Fail' || lastResultData.value.ResultStatus === 'fail'){       
+          newClassId.value = newClasses.value[0].Id;// Stay in same class if failed 
+          newClasses.value = newClasses.value.filter(cls => cls.Id === newClasses.value[0].Id);
+        } else {
+          newClassId.value = newClasses.value[1].Id; // Promote to next class if passed
+          newClasses.value = newClasses.value.filter(cls => cls.Id === newClasses.value[1].Id); 
+        }
+      }
+      else {
+        isClassX.value = true;
+      }
     } else {
       errorMessage.value = response.message || 'Failed to load student details for promotion';
     }
@@ -452,7 +472,7 @@ async function openPromotionModal(student) {
   }
 }
 
-async function promoteStudent() {
+async function reAdmitStudent() {
   if (!newClassId.value || !newRollNo.value) {
     errorMessage.value = 'Please select a class and enter a roll number';
     return;
@@ -460,8 +480,8 @@ async function promoteStudent() {
 
   isSaving.value = true;
   try {
-    const response = await window.electronAPI.promoteStudent({
-      StudentId: promotionData.value.studentId,
+    const response = await window.electronAPI.reAdmitStudent({
+      StudentId: admissionData.value.studentId,
       ClassId: newClassId.value,
       SectionId: newSectionId.value || 0,
       RollNo: newRollNo.value,
@@ -472,9 +492,9 @@ async function promoteStudent() {
     
     if (response.success) {
       showPromotionModal.value = false;
-      successMessage.value = 'Student promoted successfully';
+      successMessage.value = 'Student readmitted successfully';
     } else {
-      throw new Error(response.message || 'Failed to promote student');
+      throw new Error(response.error || 'Failed to readmit student');
     }
   } catch (error) {
     errorMessage.value = error.message;

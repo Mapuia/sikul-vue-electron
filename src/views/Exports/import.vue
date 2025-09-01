@@ -1,38 +1,43 @@
 <template>
   <div class="form-container box wide">
-    <div class="has-text-centered mb-4">
-      <h1 class="title is-4">Import System Data for {{ CurrentYear }}</h1>      
-    </div>
+    <div v-if="canAccess(['deo','teacher'])">     
 
-    <div class="box mt-6 is-flex is-flex-direction-horizontal is-justify-content-center">
-      <table class="table" style="margin: 0 auto;">
-        <tbody>          
-          <tr>  
-            <td class="has-text-weight-semibold">Import Master Data</td>
-            <td>
-              <button class="button is-primary is-small" @click="importMasterData">
-                <i class="fas fa-file-import mr-2"></i>Import Master Data
-              </button>
-            </td>
-          </tr>
-          <tr>
-            <td class="has-text-weight-semibold">Import Current Year Exam Settings</td>
-            <td>
-              <button class="button is-primary is-small" @click="importSettings">
-                <i class="fas fa-file-import mr-2"></i>Import Settings
-              </button>
-              <p class="help is-warning">(Import MasterData before Exam Settings)</p>
-            </td>
-          </tr>
-        </tbody>
-      </table>    
-    </div>
+      <div class="box mb-4 is-justify-content-center">
+        <div class="has-text-centered mb-4">
+        <h1 class="title is-4">Import System Data for {{ CurrentYear }}</h1> 
+        <p class="help is-warning">(Import MasterData before Exam Settings)</p>    
+        </div>
+        <table class="table" style="margin: 0 auto;">
+          <tbody>          
+            <tr>  
+              <td class="has-text-weight-semibold">Import Master Data</td>
+              <td>
+                <button class="button is-primary is-small" @click="importMasterData">
+                  <i class="fas fa-file-import mr-2"></i>Import Master Data
+                </button>
+              </td>
+            </tr>
+            <tr>
+              <td class="has-text-weight-semibold">Import Current Year Settings</td>
+              <td>
+                <button class="button is-primary is-small" @click="importSettings">
+                  <i class="fas fa-file-import mr-2"></i>Import Settings
+                </button>
+                
+              </td>
+            </tr>
+          </tbody>
+        </table>    
+      </div>
 
+    </div>
     <!-- Class and Section Selection -->
     
     
-    <div  class="box is-flex is-flex-direction-column" style="display: flex;">
-      <p class="subtitle is-6">Selected Class: {{ className }} - Section: {{ sectionName }}, Date: {{ currentDate }} </p>
+    <div  class="box ">
+      <div class="has-text-centered mb-4">
+        <h1 class="title is-4">Import Student Data for {{ CurrentYear }}</h1>      
+      </div>
       <table class="table" style="margin: 0 auto;">
         <tbody>
           <tr>
@@ -89,6 +94,25 @@ const currentDate = ref(new Date().toLocaleDateString('en-IN', {
   month: 'numeric',
   day: 'numeric'
 }))
+
+const currentUser = ref('');
+const userRole = ref('');
+
+async function getUser(){
+  const user = await window.electronAuth.getCurrentUser();
+  if (user) {
+    currentUser.value = user.username.charAt(0).toUpperCase() + user.username.slice(1);
+    userRole.value = user.role;
+  }
+}
+
+// Role-based access control
+const canAccess = (requiredRoles) => {
+  return requiredRoles.includes(userRole.value);
+};
+
+console.log('Current User:', currentUser.value);
+console.log('User Role:', userRole.value);
 
 // Helper function to show success message
 function showSuccess(message, details = '') {
@@ -314,6 +338,7 @@ watch(selectedSectionId, (newSectionId) => {
 })
 
 onMounted(async () => {
+  await getUser()
   await fetchClasses()
 })
 </script>

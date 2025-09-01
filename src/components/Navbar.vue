@@ -90,7 +90,7 @@
           </div>
 
           <!-- Settings -->
-          <div v-if="canAccess(['admin','teacher'])"
+          <div 
                class="navbar-item has-dropdown"
                :class="{ 'is-active': openDropdown === 'manage' }"
                @mouseleave="closeDropdown">
@@ -158,15 +158,6 @@ const { CurrentYear, loadAcademicYear } = useAcademicYear();
 const currentUser = ref('');
 const userRole = ref('');
 
-// Track dropdown state
-const openDropdown = ref('');
-
-// Load user data and academic year
-onMounted(async () => {
-  await loadAcademicYear();
-  await getUser();
-});
-
 async function getUser(){
   const user = await window.electronAuth.getCurrentUser();
   if (user) {
@@ -179,6 +170,15 @@ async function getUser(){
 const canAccess = (requiredRoles) => {
   return requiredRoles.includes(userRole.value);
 };
+
+// Track dropdown state
+const openDropdown = ref('');
+
+// Load user data and academic year
+onMounted(async () => {
+  await loadAcademicYear();
+  await getUser();
+});
 
 // Dropdown handlers
 const toggleDropdown = (name) => {

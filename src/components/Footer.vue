@@ -5,7 +5,7 @@
           Developed by Capritech IT Solutions.
         </div>
         <div class="column has-text-centered">
-          {{ currentYear }} Calvary Higher Secondary School. All rights reserved.
+          {{ currentYear }} Calvary Higher Secondary School. 
         </div>
         <div class="column has-text-right">
           <a href="mailto:ell.rpa@gmail.com" class="button is-small is-light" style="font-weight: 400;">email: ell.rpa@gmail.com</a>

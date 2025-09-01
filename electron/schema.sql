@@ -1,3 +1,4 @@
+--30.08.2025
 -- Users Table
 CREATE TABLE IF NOT EXISTS Users (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -52,7 +53,7 @@ CREATE TABLE IF NOT EXISTS Subjects (
     SubjectCode TEXT UNIQUE,
     SubjectName TEXT UNIQUE,
     SubjectCategory TEXT NOT NULL, -- CHECK(SubjectCategory IN ('Major', 'Minor', 'Co-Scholastic')),
-    FullMark DECIMAL(5,2) NOT NULL CHECK(FullMark > 0),
+    FullMark DECIMAL(5,2),
     IsCore BOOLEAN DEFAULT 0,
     DisplayOrder INTEGER,
     Creation_at DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -81,28 +82,30 @@ CREATE TABLE IF NOT EXISTS Exams (
 );
 
 -- ActiveExam Table
-CREATE TABLE IF NOT EXISTS ActiveExams (
+
+
+CREATE TABLE ActiveExams (
     Id INTEGER PRIMARY KEY AUTOINCREMENT,
     AcademicYearId INTEGER NOT NULL,
     ExamId INTEGER NOT NULL,
-    MajorMaxMark DECIMAL(5,2) NOT NULL,
-    MinorMaxMark DECIMAL(5,2) NOT NULL,
-    PassingPercentage DECIMAL(5,2) DEFAULT 40.00 CHECK(PassingPercentage BETWEEN 0 AND 100),
+    MajorMaxMark DECIMAL (5, 2) NOT NULL,
+    MinorMaxMark DECIMAL (5, 2) NOT NULL,
+    PassingPercentage DECIMAL (5, 2) DEFAULT 40.0 CHECK (PassingPercentage BETWEEN 0 AND 100),
     IsActive BOOLEAN DEFAULT 0,
     Result_Published BOOLEAN DEFAULT 0,
     PublishDate DATETIME,
     Creation_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     Modified_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (ExamId) REFERENCES Exams(Id) ON DELETE CASCADE,
-    FOREIGN KEY (AcademicYearId) REFERENCES AcademicYears(Id) ON DELETE CASCADE,
-    UNIQUE(AcademicYearId, ExamId)
+    FOREIGN KEY (ExamId) REFERENCES Exams (Id) ON DELETE CASCADE,
+    FOREIGN KEY (AcademicYearId) REFERENCES AcademicYears (Id) ON DELETE CASCADE,
+    UNIQUE (AcademicYearId, ExamId)
 );
 
 -- Students Table
-CREATE TABLE IF NOT EXISTS Students (    
+CREATE TABLE Students (
     Id TEXT PRIMARY KEY,
     Name TEXT NOT NULL,
-    Gender TEXT CHECK(Gender IN ('Male', 'Female')),
+    Gender TEXT CHECK (Gender IN ('Male', 'Female')),
     FathersName TEXT,
     MothersName TEXT,
     DOB DATE,
@@ -113,19 +116,19 @@ CREATE TABLE IF NOT EXISTS Students (
     Email TEXT,
     Address TEXT,
     PIN TEXT,
-    FirstAdmissionDate DATE DEFAULT CURRENT_DATE,
-    Status TEXT NOT NULL DEFAULT 'Admitted', -- CHECK(Status IN ('Admitted', 'Passed Out', 'Transferred', 'Withdrawn')),
+    FirstAdmissionDate DATE DEFAULT (CURRENT_TIMESTAMP),
+    Status TEXT NOT NULL DEFAULT 'Admitted',
     Caste TEXT,
     Religion TEXT,
     Height INTEGER,
-    Weight DECIMAL(5,2),
+    Weight DECIMAL (5, 2),
     BloodGroup TEXT,
     Creation_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     Last_Modified_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Admission Table
-CREATE TABLE IF NOT EXISTS Admissions (
+CREATE TABLE Admissions (
     Id INTEGER PRIMARY KEY AUTOINCREMENT,
     StudentId TEXT NOT NULL,
     AcademicYearId INTEGER NOT NULL,
@@ -136,12 +139,13 @@ CREATE TABLE IF NOT EXISTS Admissions (
     reAdmitted BOOLEAN DEFAULT 0,
     Creation_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     Last_Modified_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (StudentId) REFERENCES Students(Id) ON DELETE CASCADE,
-    FOREIGN KEY (ClassId) REFERENCES Classes(Id) ON DELETE CASCADE,    
-    FOREIGN KEY (AcademicYearId) REFERENCES AcademicYears(Id) ON DELETE CASCADE, 
-    UNIQUE (AcademicYearId, StudentId)
-    UNIQUE (AcademicYearId, ClassId, SectionId, RollNo)
+    FOREIGN KEY (StudentId) REFERENCES Students (Id) ON DELETE CASCADE ON UPDATE CASCADE,
+    FOREIGN KEY (ClassId) REFERENCES Classes (Id) ON DELETE CASCADE,
+    FOREIGN KEY (AcademicYearId) REFERENCES AcademicYears (Id) ON DELETE CASCADE,
+    UNIQUE (AcademicYearId, ClassId, SectionId, RollNo),
+    UNIQUE (StudentId, AcademicYearId)
 );
+
 
 -- Marks Table
 CREATE TABLE IF NOT EXISTS Marks (
@@ -256,21 +260,22 @@ CREATE TABLE IF NOT EXISTS Results (
 );
 
 --Result Creation Status
-CREATE TABLE IF NOT EXISTS ResultStatus (
+CREATE TABLE ResultStatus (
     Id INTEGER PRIMARY KEY AUTOINCREMENT,
     AcademicYearId INTEGER NOT NULL,
     ActiveExamId INTEGER NOT NULL,
     ClassId INTEGER NOT NULL,
     SectionId INTEGER,
-    ResultType TEXT NOT NULL, -- terminal, annual, final
-    isGenerated BOOLEAN DEFAULT 1,
+    ResultType TEXT NOT NULL,
+    isGenerated BOOLEAN DEFAULT (1),
     isPublished BOOLEAN DEFAULT 0,
     Creation_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    Last_Modified_at DATETIME DEFAULT CURRENT_TIMESTAMP,   
-    FOREIGN KEY (AcademicYearId) REFERENCES AcademicYears(Id) ON DELETE CASCADE,
-    FOREIGN KEY (ClassId) REFERENCES Classes(Id) ON DELETE CASCADE,
-    UNIQUE(AcademicYearId, ActiveExamId, ClassId, SectionId)
+    Last_Modified_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (AcademicYearId) REFERENCES AcademicYears (Id) ON DELETE CASCADE,
+    FOREIGN KEY (ClassId) REFERENCES Classes (Id) ON DELETE CASCADE,
+    UNIQUE (AcademicYearId, ActiveExamId, ClassId, SectionId)
 );
+
 
 -- ReportCards Table with Versioning
 CREATE TABLE IF NOT EXISTS ReportCards (
@@ -286,15 +291,15 @@ CREATE TABLE IF NOT EXISTS ReportCards (
     Last_Modified_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (StudentId) REFERENCES Students(Id) ON DELETE CASCADE,
     FOREIGN KEY (AcademicYearId) REFERENCES AcademicYears(Id) ON DELETE CASCADE,
-    FOREIGN KEY (ActiveExamId) REFERENCES ActiveExamId(Id) ON DELETE CASCADE,
+    FOREIGN KEY (ActiveExamId) REFERENCES ActiveExams(Id) ON DELETE CASCADE,
     UNIQUE (StudentId, AcademicYearId, ActiveExamId, ReportCardType)
 );
 
 -- Signatories Table
 CREATE TABLE IF NOT EXISTS Signatories (
     Id INTEGER PRIMARY KEY AUTOINCREMENT,
-    ClassId INTEGER NOT NULL,
-    SectionId INTEGER NOT NULL,
+    ClassId INTEGER,
+    SectionId INTEGER,
     SignatoryType TEXT NOT NULL,
     Designation TEXT NOT NULL,
     Name TEXT NOT NULL,
@@ -505,7 +510,7 @@ INSERT INTO Exams (ExamName, ExamType, Description) VALUES
     ('First Periodic Test', 'periodic', 'First periodic assessment of the term'),
     ('Half Yearly Examination', 'terminal', 'Mid-term comprehensive examination'),
     ('Second Periodic Test', 'periodic', 'Second periodic assessment of the term'),
-    ('Annual Examination', 'annual', 'Final annual examination');
+    ('Annual Examination', 'annual', 'Final annual examination'),
     ('Selection Test', 'selection', 'Selection Test for Class X students for Board Exam');
 
 -- Insert Active Exams
@@ -531,6 +536,12 @@ INSERT INTO ActiveExams (AcademicYearId, ExamId, MajorMaxMark, MinorMaxMark, Pas
 SELECT 
     (SELECT Id FROM AcademicYears WHERE IsActive = 1),
     (SELECT Id FROM Exams WHERE ExamName = 'Annual Examination'),
+    80, 20, 40, 0, 0;
+
+INSERT INTO ActiveExams (AcademicYearId, ExamId, MajorMaxMark, MinorMaxMark, PassingPercentage, IsActive, Result_Published)
+SELECT 
+    (SELECT Id FROM AcademicYears WHERE IsActive = 1),
+    (SELECT Id FROM Exams WHERE ExamName = 'Selection Test'),
     80, 20, 40, 0, 0;
 
 

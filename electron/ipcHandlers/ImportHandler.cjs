@@ -24,6 +24,9 @@ ipcMain.handle('import-master-data', async (event, filePath) => {
     db.exec('BEGIN TRANSACTION');
 
     try {
+      // Disable FK checks so we can safely clear tables
+      db.exec('PRAGMA foreign_keys = OFF');
+
       const results = {
         classes: { imported: 0, skipped: 0 },
         sections: { imported: 0, skipped: 0 },
@@ -35,11 +38,13 @@ ipcMain.handle('import-master-data', async (event, filePath) => {
 
       // 3. Import Classes
       if (importData.data.classes?.length > 0) {
+        db.exec('DELETE FROM Classes');
+
         const stmt = db.prepare(`
-          INSERT OR IGNORE INTO Classes (Id, ClassId, ClassName, Creation_at)
+          INSERT INTO Classes (Id, ClassId, ClassName, Creation_at)
           VALUES (?, ?, ?, ?)
         `);
-        
+
         for (const cls of importData.data.classes) {
           try {
             stmt.run(
@@ -50,22 +55,21 @@ ipcMain.handle('import-master-data', async (event, filePath) => {
             );
             results.classes.imported++;
           } catch (err) {
-            if (err.message.includes('UNIQUE constraint failed')) {
-              results.classes.skipped++;
-              continue;
-            }
-            throw err;
+            results.classes.skipped++;
+            continue;
           }
         }
       }
 
       // 4. Import Sections
       if (importData.data.sections?.length > 0) {
+        db.exec('DELETE FROM Sections');
+
         const stmt = db.prepare(`
-          INSERT OR IGNORE INTO Sections (Id, SectionName, Creation_at)
+          INSERT INTO Sections (Id, SectionName, Creation_at)
           VALUES (?, ?, ?)
         `);
-        
+
         for (const sec of importData.data.sections) {
           try {
             stmt.run(
@@ -75,24 +79,23 @@ ipcMain.handle('import-master-data', async (event, filePath) => {
             );
             results.sections.imported++;
           } catch (err) {
-            if (err.message.includes('UNIQUE constraint failed')) {
-              results.sections.skipped++;
-              continue;
-            }
-            throw err;
+            results.sections.skipped++;
+            continue;
           }
         }
       }
 
       // 5. Import Subjects
       if (importData.data.subjects?.length > 0) {
+        db.exec('DELETE FROM Subjects');
+
         const stmt = db.prepare(`
-          INSERT OR IGNORE INTO Subjects (
+          INSERT INTO Subjects (
             Id, SubjectCode, SubjectName, SubjectCategory, 
             FullMark, IsCore, DisplayOrder, Creation_at, Last_Modified_at
           ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
         `);
-        
+
         for (const sub of importData.data.subjects) {
           try {
             stmt.run(
@@ -108,23 +111,22 @@ ipcMain.handle('import-master-data', async (event, filePath) => {
             );
             results.subjects.imported++;
           } catch (err) {
-            if (err.message.includes('UNIQUE constraint failed')) {
-              results.subjects.skipped++;
-              continue;
-            }
-            throw err;
+            results.subjects.skipped++;
+            continue;
           }
         }
       }
 
       // 6. Import Exams
       if (importData.data.exams?.length > 0) {
+        db.exec('DELETE FROM Exams');
+
         const stmt = db.prepare(`
-          INSERT OR IGNORE INTO Exams (
+          INSERT INTO Exams (
             Id, ExamName, ExamType, Description, Creation_at, Modified_at
           ) VALUES (?, ?, ?, ?, ?, ?)
         `);
-        
+
         for (const exam of importData.data.exams) {
           try {
             stmt.run(
@@ -137,38 +139,30 @@ ipcMain.handle('import-master-data', async (event, filePath) => {
             );
             results.exams.imported++;
           } catch (err) {
-            if (err.message.includes('UNIQUE constraint failed')) {
-              results.exams.skipped++;
-              continue;
-            }
-            throw err;
+            results.exams.skipped++;
+            continue;
           }
         }
       }
 
-      // 7. Import Class-Section Mappings (only if both class and section exist)
+      // 7. Import Class-Section Mappings
       if (importData.data.classSectionMappings?.length > 0) {
+        db.exec('DELETE FROM ClassSectionMapping');
+
         const stmt = db.prepare(`
-          INSERT OR IGNORE INTO ClassSectionMapping (Id, ClassId, SectionId, Creation_at)
-          SELECT ?, c.Id, s.Id, ?
-          FROM Classes c, Sections s
-          WHERE c.Id = ? AND s.Id = ?
+          INSERT INTO ClassSectionMapping (Id, ClassId, SectionId, Creation_at)
+          VALUES (?, ?, ?, ?)
         `);
-        
+
         for (const mapping of importData.data.classSectionMappings) {
           try {
-            const { changes } = stmt.run(
+            stmt.run(
               mapping.Id,
-              mapping.Creation_at || new Date().toISOString(),
               mapping.ClassId,
-              mapping.SectionId
+              mapping.SectionId,
+              mapping.Creation_at || new Date().toISOString()
             );
-            
-            if (changes > 0) {
-              results.classSectionMappings.imported++;
-            } else {
-              results.classSectionMappings.skipped++;
-            }
+            results.classSectionMappings.imported++;
           } catch (err) {
             results.classSectionMappings.skipped++;
             continue;
@@ -176,29 +170,24 @@ ipcMain.handle('import-master-data', async (event, filePath) => {
         }
       }
 
-      // 8. Import Class-Subject Mappings (only if both class and subject exist)
+      // 8. Import Class-Subject Mappings
       if (importData.data.classSubjectMappings?.length > 0) {
+        db.exec('DELETE FROM ClassSubjectMapping');
+
         const stmt = db.prepare(`
-          INSERT OR IGNORE INTO ClassSubjectMapping (Id, ClassId, SubjectId, Creation_at)
-          SELECT ?, c.Id, s.Id, ?
-          FROM Classes c, Subjects s
-          WHERE c.Id = ? AND s.Id = ?
+          INSERT INTO ClassSubjectMapping (Id, ClassId, SubjectId, Creation_at)
+          VALUES (?, ?, ?, ?)
         `);
-        
+
         for (const mapping of importData.data.classSubjectMappings) {
           try {
-            const { changes } = stmt.run(
+            stmt.run(
               mapping.Id,
-              mapping.Creation_at || new Date().toISOString(),
               mapping.ClassId,
-              mapping.SubjectId
+              mapping.SubjectId,
+              mapping.Creation_at || new Date().toISOString()
             );
-            
-            if (changes > 0) {
-              results.classSubjectMappings.imported++;
-            } else {
-              results.classSubjectMappings.skipped++;
-            }
+            results.classSubjectMappings.imported++;
           } catch (err) {
             results.classSubjectMappings.skipped++;
             continue;
@@ -206,8 +195,10 @@ ipcMain.handle('import-master-data', async (event, filePath) => {
         }
       }
 
+      // Commit changes
       db.exec('COMMIT');
-      
+      db.exec('PRAGMA foreign_keys = ON');
+
       return { 
         success: true,
         results,
@@ -216,8 +207,9 @@ ipcMain.handle('import-master-data', async (event, filePath) => {
 
     } catch (err) {
       db.exec('ROLLBACK');
+      db.exec('PRAGMA foreign_keys = ON');
       console.error('Import transaction error:', err);
-      
+
       return { 
         success: false, 
         message: 'Database error during import',
@@ -228,7 +220,7 @@ ipcMain.handle('import-master-data', async (event, filePath) => {
 
   } catch (err) {
     console.error('Import master data error:', err);
-    
+
     if (err.code === 'ENOENT') {
       return { 
         success: false, 
@@ -236,7 +228,7 @@ ipcMain.handle('import-master-data', async (event, filePath) => {
         code: 'FILE_NOT_FOUND' 
       };
     }
-    
+
     if (err instanceof SyntaxError) {
       return { 
         success: false, 
@@ -244,7 +236,7 @@ ipcMain.handle('import-master-data', async (event, filePath) => {
         code: 'INVALID_JSON' 
       };
     }
-    
+
     return { 
       success: false, 
       message: 'An error occurred while importing master data',
@@ -254,10 +246,11 @@ ipcMain.handle('import-master-data', async (event, filePath) => {
   }
 });
 
+
 // Import Settings Handler
 ipcMain.handle('import-settings', async (event, { academicYearId, filePath }) => {
   let transactionStarted = false;
-
+  
   try {
     if (!filePath || typeof filePath !== 'string') {
       return { success: false, message: 'Invalid file path provided.' };
@@ -328,7 +321,7 @@ ipcMain.handle('import-settings', async (event, { academicYearId, filePath }) =>
       success: true,
       message: 'Year and Active Exam Settings imported successfully.',
       inserted: {
-        academicYear: academicYear.Id,
+        academicYear: academicYear.YearName,
         exams: new Set(activeExams.map(a => a.ExamId)).size,
         activeExams: activeExams.length,
       },

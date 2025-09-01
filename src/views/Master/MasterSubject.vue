@@ -55,7 +55,7 @@
           <p class="help is-danger" v-if="addSubjectCategoryErrorMessage">{{ addSubjectCategoryErrorMessage }}</p>
         </div>
 
-        <div class="field">
+        <div v-if="newSubjectCategory !== 'Co-Scholastics'" class="field">
           <label class="label">Full Mark</label>
           <div class="control">
             <input
@@ -69,11 +69,12 @@
           <p class="help is-danger" v-if="addFullMarkErrorMessage">{{ addFullMarkErrorMessage }}</p>
         </div>
 
-        <div class="field">
+        <div v-if="newSubjectCategory === 'Major'" class="field">
           <label class="label">Set as Core Subject</label>
+          <i class='help'>Students need to score at least 25% in core subjects to be promoted (e.g. Maths & Science)</i>
           <div class="control">            
             <input type="checkbox" v-model="newIsCore" />
-            Usually Maths & Science, Students need to score at least 25% to be promoted     
+            
           </div>
           <p class="help is-danger" v-if="addIsCoreErrorMessage">{{ addIsCoreErrorMessage }}</p>
         </div>
@@ -235,7 +236,15 @@
                   >
                     <i class="fas fa-times"></i>
                   </button>
-                  
+                  <!--Delete button -->
+                  <button
+                    class="button is-small is-danger no-padding"
+                    @click="deleteSubject(subject)"
+                    v-if="editingId !== subject.Id"
+                    :disabled="isSubmitting"
+                  >
+                    <i class="fas fa-trash"></i>
+                  </button>
                 </div>
               </td>
             </tr>
@@ -293,7 +302,9 @@ async function fetchSubjects() {
     const response = await window.electronAPI.getSubjects();
     if (response.success) {
       subjects.value = response.subjects;
-    } else {
+      newDisplayOrder.value = subjects.value.length + 1; // Set default display order
+      
+    }else{
       errorMessage.value = response.message || 'Failed to fetch subjects.';
     }
   } catch (err) {
@@ -328,10 +339,12 @@ async function submitSubjectForm() {
     return;
   }
   if (!newFullMark.value.trim() || isNaN(newFullMark.value)) {
-    addFullMarkErrorMessage.value = 'Valid Full Mark is required.';
-    return;
+    if(newSubjectCategory.value !== 'Co-Scholastic'){
+      addFullMarkErrorMessage.value = 'Valid Full Mark is required.';
+      return;
+    }
   }
-  if (!newDisplayOrder.value.trim() || isNaN(newDisplayOrder.value)) {
+  if (!newDisplayOrder.value) {
     addDisplayOrderErrorMessage.value = 'Valid Display Order is required.';
     return;
   }
@@ -342,7 +355,7 @@ async function submitSubjectForm() {
       subjectCode: newSubjectCode.value.trim().toUpperCase(),
       subjectName: newSubjectName.value.trim(),
       subjectCategory: newSubjectCategory.value,
-      fullMark: parseInt(newFullMark.value),
+      fullMark: parseInt(newFullMark.value) || 0,
       isCore: newIsCore.value ? 1 : 0,
       displayOrder: parseInt(newDisplayOrder.value)
     };
@@ -350,7 +363,15 @@ async function submitSubjectForm() {
     const response = await window.electronAPI.insertSubject(subjectData);
     
     if (response.success) {
-      // ... success handling ...
+      successMessage.value = 'Subject added successfully.';
+      showAddSubjectForm.value = false;
+      newSubjectCode.value = '';
+      newSubjectName.value = '';
+      newSubjectCategory.value = '';
+      newFullMark.value = '';
+      newIsCore.value = false;
+      newDisplayOrder.value = '';
+      await fetchSubjects();
     } else {
       errorMessage.value = response.message || 'Failed to add subject.';
     }

@@ -122,33 +122,41 @@ ipcMain.handle('get-admission-details', async (event, studentId, AcademicYearId)
 
 ipcMain.handle('get-previous-admission', async (event, studentId, AcademicYearId) => {  
   try {
-    // Get admission details
+    // Get previous admission details
     console.log('Student and YearID:', studentId, AcademicYearId) 
  
     const admissionStmt = db.prepare(`
       SELECT s.Id as studentId, s.Name as Name,
         a.RollNo, a.AdmissionType, c.ClassName, sec.SectionName,
-        s.PEN, s.APAR,
-        r.ResultStatus, 
-        r.Rank
+        s.PEN, s.APAR
       FROM Students s
       LEFT JOIN Admissions a ON s.Id = a.StudentId
       LEFT JOIN Classes c ON a.ClassId = c.Id
-      LEFT JOIN Sections sec ON a.SectionId = sec.Id 
-      LEFT JOIN Results r ON a.StudentId = r.StudentId      
+      LEFT JOIN Sections sec ON a.SectionId = sec.Id       
       WHERE s.Id = ? 
-        AND a.AcademicYearId = ? 
-        AND r.ResultType = 'final'
+        AND a.AcademicYearId = ?       
         AND a.reAdmitted = 0     
     `);
+    const lastResultStmt = db.prepare(`
+      SELECT * FROM Results
+      WHERE StudentId = ? AND AcademicYearId = ? AND ResultType = 'final'
+    `);
     const admission = admissionStmt.get(studentId, AcademicYearId);
+    let lastResults = null;
+    if(admission.ClassName!== 'X'){
+      lastResults = lastResultStmt.all(studentId, AcademicYearId); 
+    }
 
-   console.log('AdmissionHandler- for ReAdmission:', admission)
+    console.log('Admission Data:', admission)
+    console.log('Last Result Data:', lastResults)
     return { 
       success: true, 
       admission: {
         ...admission
-      } 
+      },
+      lastResults: {
+        ...lastResults
+      }
     };
   } catch (error) {
     //console.log('Error:', error.message)
@@ -156,14 +164,14 @@ ipcMain.handle('get-previous-admission', async (event, studentId, AcademicYearId
   }
 });
 
-ipcMain.handle('admit-student', async (event, admissionData) => {
+ipcMain.handle('readmit-student', async (event, admissionData) => {
   
     // Get admission details
     //console.log('Promoted:', admissionData)
     try{
       const promoteAdmission = db.prepare(`
         INSERT OR REPLACE INTO Admissions
-        (StudentId, AcademicYearId, ClassId, SectionId, RollNo, AdmissionType, Creation_at)
+        (StudentId, AcademicYearId, ClassId, SectionId, RollNo, Admissiong, Creation_at)
         VALUES
         (?, ?, ?, ?, ?, ?, ?)        
 

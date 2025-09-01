@@ -1,32 +1,33 @@
 <template>
   <div class="form-container box wide">
-    <div class="has-text-centered mb-4">
-      <h1 class="title is-4">Export System Data for {{ CurrentYear }}</h1>      
-    </div>
-
-    <div class="box mt-6 is-flex is-flex-direction-horizontal is-justify-content-center">
-      <table class="table" style="margin: 0 auto;">
-        <tbody>          
-          <tr>  
-            <td class="has-text-weight-semibold">Export Master Data</td>
-            <td>
-              <button class="button is-primary is-small " @click="exportMasterData"><i class="fas fa-file-export mr-2"></i>Export Master Data</button>
-            </td>
-          </tr>
-          <tr>
-            <td class="has-text-weight-semibold">Export Current Year Exam Settings</td>
-            <td>
-              <button class="button is-primary is-small " @click="exportSettings"><i class="fas fa-file-export mr-2"></i>Export Settings</button>
-            </td>
-          </tr>
-        </tbody>
-      </table> 
-    </div>
-
-    <!-- Class and Section Selection -->
-    <div class="box">
+    <div v-if="canAccess(['admin'])">
       <div class="has-text-centered mb-4">
-        <h1 class="title is-4">Export Stydent Data for {{ CurrentYear }}</h1>
+        <h1 class="title is-4">Export System Data for {{ CurrentYear }}</h1>      
+      </div>
+
+      <div class="box mt-5 mb-4 is-flex is-flex-direction-horizontal is-justify-content-center">
+        <table class="table" style="margin: 0 auto;">
+          <tbody>          
+            <tr>  
+              <td class="has-text-weight-semibold">Export Master Data</td>
+              <td>
+                <button class="button is-primary is-small " @click="exportMasterData"><i class="fas fa-file-export mr-2"></i>Export Master Data</button>
+              </td>
+            </tr>
+            <tr>
+              <td class="has-text-weight-semibold">Export Current Year Exam Settings</td>
+              <td>
+                <button class="button is-primary is-small " @click="exportSettings"><i class="fas fa-file-export mr-2"></i>Export Settings</button>
+              </td>
+            </tr>
+          </tbody>
+        </table> 
+      </div>
+    </div>
+    <!-- Class and Section Selection -->
+    <div class="box" v-if="canAccess(['admin','teacher'])">
+      <div class="has-text-centered mb-4">
+        <h1 class="title is-4">Export Student Data for {{ CurrentYear }}</h1>
         <h2 class="subtitle is-5">Select Class and Section you want to export</h2>      
       </div>
       <div class="columns is-vcentered">
@@ -108,13 +109,27 @@ const selectedClassId = ref('')
 const selectedSectionId = ref('')
 const examType = ref('')
 
-
-
 const currentDate = ref(new Date().toLocaleDateString('en-IN', {
   year: 'numeric',
   month: 'numeric',
   day: 'numeric'
 }))
+
+const currentUser = ref('');
+const userRole = ref('');
+
+async function getUser(){
+  const user = await window.electronAuth.getCurrentUser();
+  if (user) {
+    currentUser.value = user.username.charAt(0).toUpperCase() + user.username.slice(1);
+    userRole.value = user.role;
+  }
+}
+
+// Role-based access control
+const canAccess = (requiredRoles) => {
+  return requiredRoles.includes(userRole.value);
+};
 
 async function getExam() {
   const result = await window.electronAPI.getExamByType(examType.value, CurrentYearId.value)
@@ -134,6 +149,7 @@ const sectionName = computed(() => {
 })
 
 onMounted(async () => {
+  await getUser()
   await fetchClasses()
 })
 

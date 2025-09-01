@@ -480,7 +480,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, nextTick } from 'vue';
+import { ref, reactive, onMounted, nextTick, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAcademicYear } from '../../composables/useAcademicYear';
 

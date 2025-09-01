@@ -33,6 +33,9 @@ ipcMain.handle('insert-subject', async (event, subjectData) => {
     
     return { success: true };
   } catch (error) {
+    if (error.message.includes("UNIQUE constraint failed")) {
+      return { success: false, message: "Duplicate Subject Code or Subject Name" };
+    }
     return { success: false, message: error.message };
   }
 });
@@ -56,7 +59,10 @@ ipcMain.handle('update-subject', async (event, subject) => {  // Remove the dest
       subject.id
     );
     return { success: true };
-  } catch (error) {
+    } catch (error) {
+    if (error.message.includes("UNIQUE constraint failed")) {
+      return { success: false, message: "Duplicate Subject Code or Subject Name" };
+    }
     return { success: false, message: error.message };
   }
 });
@@ -84,7 +90,7 @@ ipcMain.handle('get-coscholastic', async () => {
     //console.log("Activities:", subjects);
     return { success: true, subjects };
   } catch (err) {
-    console.error('Failed to get subjects:', err);
+    console.error('Failed to get Co-Scholastic subjects:', err);
     return { success: false, message: err.message };
   }
 });

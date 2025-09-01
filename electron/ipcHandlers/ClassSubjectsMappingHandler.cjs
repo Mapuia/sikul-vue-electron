@@ -2,6 +2,41 @@ const { ipcMain } = require('electron');
 const { db } = require('../database.cjs');
 //console.log("Mapping Handler");
 ////////////////////////////////////////////////////////////////////////////////Select Subjects based on Class
+
+///For Managing Class-Subject Mapping
+ipcMain.handle('get-subjects-for-class', async (event, classId) => {
+  try {
+    // 1. Get all subjects
+    const allSubjectsStmt = db.prepare(`
+      SELECT Id, SubjectName, SubjectCategory 
+      FROM Subjects WHERE SubjectCategory IN ('Major', 'Minor')
+      ORDER BY DisplayOrder, SubjectName
+    `)
+    const allSubjects = allSubjectsStmt.all()
+
+    // 2. Get mapped subjects for the class
+    const mappedStmt = db.prepare(`
+      SELECT s.Id, s.SubjectName, s.SubjectCategory
+      FROM ClassSubjectMapping csm
+      JOIN Subjects s ON csm.SubjectId = s.Id
+      WHERE csm.ClassId = ?
+      ORDER BY s.DisplayOrder, s.SubjectName
+    `)
+    const mapped = mappedStmt.all(classId)
+
+    // 3. Find unmapped by filtering out mapped
+    const mappedIds = mapped.map(s => s.Id)
+    const unmapped = allSubjects.filter(s => !mappedIds.includes(s.Id))
+
+    return { success: true, mapped, unmapped }
+  } catch (err) {
+    console.error('Error fetching subjects for class:', err)
+    return { success: false, message: err.message }
+  }
+})
+
+
+
 ipcMain.handle('get-subjects-by-class', async (event, className) => {
   try {
    // Get the database connection
@@ -105,28 +140,36 @@ ipcMain.handle('get-class-subject-mappings', () => {
   }
 });
 
-///////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////Save Class Subject Mappings/////////////////////////////////////////
+
 ipcMain.handle('save-class-subject-mappings', async (event, mappings) => {
   try {
-    const idToDelete = mappings[0].ClassId;
-    const delstmt = db.prepare('DELETE FROM ClassSubjectMapping WHERE ClassId = ?').run(idToDelete);
-    if(delstmt){
-      const stmt = db.prepare('INSERT OR REPLACE INTO ClassSubjectMapping (ClassId, SubjectId) VALUES (?, ?)')
-
-      const insert = db.transaction(() => {
-        for (const mapping of mappings) {
-          stmt.run(mapping.ClassId, mapping.SubjectId)
-        }
-      })
-      insert()
-      return { success: true }
+    const classId = mappings.length > 0 ? mappings[0].ClassId : null;
+    if (!classId) {
+      return { success: false, message: 'No class selected' };
     }
-    else{
-      console.error('Error saving mappings:', err)
-      return { success: false, message: "Failed to remove existing Mapping" }
-    }  
-  } catch (err) {
-    console.error('Error saving mappings:', err)
-    return { success: false, message: err.message }
+
+    // Use a transaction to ensure atomic operation
+    const transaction = db.transaction(() => {
+      // Clear old mappings for this class
+      db.prepare('DELETE FROM ClassSubjectMapping WHERE ClassId = ?').run(classId);
+
+      // Insert new mappings
+      const insertStmt = db.prepare(`
+        INSERT INTO ClassSubjectMapping (ClassId, SubjectId)
+        VALUES (?, ?)
+      `);
+
+      mappings.forEach(m => {
+        insertStmt.run(m.ClassId, m.SubjectId);
+      });
+    });
+
+    transaction();
+
+    return { success: true };
+  } catch (error) {
+    console.error('Error saving mappings:', error);
+    return { success: false, message: error.message };
   }
-})
+});

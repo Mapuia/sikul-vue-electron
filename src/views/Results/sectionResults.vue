@@ -1,5 +1,5 @@
 <template>
-  <div v-if="!resultPublished" class="form-container box wide">
+  <div v-if="resultPublished" class="form-container box wide">
     <div class="has-text-centered mb-4">
       <h1 class="title is-4">{{ resultName }}, {{ CurrentYear }}</h1>
       <h2 class="subtitle is-5" v-if="examType !== 'selection'">Select Class and Section</h2>

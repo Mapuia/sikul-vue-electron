@@ -180,7 +180,6 @@
                     <!-- Total -->
                     <td class="has-text-centered has-text-centered">
                       <input
-
                         :disabled="true"
                         type="number"
                         class="input is-small has-text-centered"

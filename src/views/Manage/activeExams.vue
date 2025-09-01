@@ -1,7 +1,7 @@
 <template>
   <div class="form-container full">
-    <h1 class="title has-text-centered is-4">Available Exams</h1>
-    <h2 class="subtitle has-text-centered">for Academic Year: {{ CurrentYear }}</h2>
+    <h1 class="title has-text-centered is-4">Available Exams for Academic Year: {{ CurrentYear }}</h1>
+    
 
     <div class="buttons mt-4">
       <button class="button is-primary" @click="prepareNewExam" :disabled="loading">
