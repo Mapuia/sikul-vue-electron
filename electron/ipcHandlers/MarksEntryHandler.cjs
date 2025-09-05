@@ -170,9 +170,6 @@ ipcMain.handle('save-marks', async (event, { marksData, subjectData }) => {
         GROUP BY StudentId
       `);
 
-
-
-
         // Begin transaction
     db.prepare('BEGIN').run();
 

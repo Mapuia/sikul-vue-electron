@@ -209,9 +209,13 @@
                                 
               <div class="is-flex is-align-items-center mt-3">
                 <div class="buttons mt-2">
-                  <button class="button is-primary mr-2" @click="saveMarks" :disabled="isSaving">
-                    <i class="fas fa-save mr-2"></i>
-                    {{ isSaving ? 'Saving...' : 'Save' }}
+                  <button class="button is-primary mr-2" @click="saveMarks(true)" :disabled="isSaving">
+                    <i class="fas fa-pencil-alt mr-2"></i>
+                    {{ isSaving ? 'Saving...' : 'Save as Draft' }}
+                  </button>
+                  <button class="button is-primary mr-2" @click="saveMarks(false)" :disabled="isSaving">
+                    <i class="fas fa-check-circle mr-2"></i>
+                    {{ isSaving ? 'Saving...' : 'Submit Final Marks' }}
                   </button>
                   <button class="button is-dark" @click="resetMarkData" :disabled="isSaving">
                     <i class="fas fa-times mr-2"></i>
@@ -497,7 +501,9 @@ watch(selectedSubjectId, async (subjectId) => {
   
   if (marksEntered.value) {
     const confirmed = await window.electronAPI.showConfirmationDialog(
-      `${selected.value === "Scholastic" ? "Marks" : "Grades"} are entered for the selected Subject. Are you sure you want to re-enter? All the existing entries will be replaced.`
+      `There are existing ${selected.value === "Scholastic" ? "Marks" : "Grades"} entered for the selected Subject. 
+      If you change the existing entries, the existing entries will be replaced. 
+      You can continue adding more entries, existing entries will not be lost.`
     )
     if (!confirmed) {
       selectedSubjectId.value = ''
@@ -775,18 +781,18 @@ async function submitGrades() {
   }
 }
 
-async function saveMarks() {
+async function saveMarks(isDraft = false) {
   const invalidStudents = students.value.filter(student => 
     markInvalid(student.StudentId, 'periodic') || 
     markInvalid(student.StudentId, examType.value === 'terminal' ? 'terminal' : examType.value === 'annual' ? 'annual' : 'selection')
   )
-  
-  if (invalidStudents.length > 0) {
+
+  if (!isDraft && invalidStudents.length > 0) {
     errorMessage.value = 'Please enter valid marks for all appeared students'
     setTimeout(() => errorMessage.value = '', 5000)
     return
   }  
-  
+
   isSaving.value = true
   errorMessage.value = ''
 
@@ -825,16 +831,21 @@ async function saveMarks() {
       ExamType: examType.value,   
       ClassId: selectedClassId.value,
       SectionId: selectedSectionId.value === '' ? 0 : selectedSectionId.value,
-      SubjectId: selectedSubjectId.value
+      SubjectId: selectedSubjectId.value      
     }
 
     const result = await window.electronAPI.saveMarks({marksData, subjectData})
     if (result.success) {
-      selectedSubjectId.value = ''
-      successMessage.value = 'Marks submitted successfully!'
+      if (isDraft) {
+        successMessage.value = 'Draft saved successfully!'
+        selectedSubjectId.value = ''
+      } else {
+        successMessage.value = 'Marks submitted successfully!'
+        selectedSubjectId.value = ''
+        marksEntered.value = true
+        studentloaded.value = true
+      }
       setTimeout(() => successMessage.value = '', 3000)
-      marksEntered.value = true
-      studentloaded.value = true
     } else {
       throw new Error(result.message || 'Failed to save marks.....') 
     }
@@ -845,6 +856,7 @@ async function saveMarks() {
     isSaving.value = false
   }
 }
+
 
 // ============== UTILITY FUNCTIONS ==============
 async function verifyResultStatus() { 

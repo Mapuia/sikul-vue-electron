@@ -159,7 +159,7 @@ CREATE TABLE IF NOT EXISTS Marks (
     PeriodicMarksObtained DECIMAL(5,2),    
     TerminalMarksObtained DECIMAL(5,2),
     TotalMarksObtained DECIMAL(5,2),
-    SubjectResult TEXT,
+    SubjectResult TEXT,    
     Appeared BOOLEAN,
     Creation_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     Last_Modified_at DATETIME DEFAULT CURRENT_TIMESTAMP,
