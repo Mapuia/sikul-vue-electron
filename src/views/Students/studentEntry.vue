@@ -156,11 +156,11 @@
                   @keyup.enter="focusNext('height')"
                 >
                   <option value="">Select Religion</option>
-                  <option value="Hindu">Hindu</option>
-                  <option value="Muslim">Muslim</option>
-                  <option value="Christianity">Christianity</option>
-                  <option value="Sikh">Sikh</option>
-                  <option value="Others">Others</option>
+                  <option>Hindu</option>
+                  <option>Muslim</option>
+                  <option>Christian</option>
+                  <option>Sikh</option>
+                  <option>Others</option>
                 </select>
               </div>
             </td>
@@ -221,12 +221,27 @@
       <table class="table is-fullwidth student-entry">
         <thead>
           <tr>
+            <th>Registration Number*</th>
+            <td>
+              <input 
+                ref="registrationNumber"
+                class="input" 
+                type="text" 
+                v-model="form.registrationNumber" 
+                maxlength="12" 
+                @keyup.enter="focusNext('apar')"
+                :class="{ 'is-danger': errors.registrationNumber }"
+              />
+              <p v-if="errors.registrationNumber" class="help is-danger">{{ errors.registrationNumber }}</p>
+            </td>
+          </tr>
+          <tr>
             <th>PEN</th>
             <td>
               <input 
                 ref="pen"
                 class="input" 
-                type="text" 
+                type="number" 
                 v-model="form.pen" 
                 maxlength="12" 
                 @keyup.enter="focusNext('apar')"
@@ -236,7 +251,7 @@
             </td>
           </tr>
           <tr>
-            <th>APAR</th>
+            <th>APAAR</th>
             <td>
               <input 
                 ref="apar"
@@ -265,11 +280,11 @@
       </table>
     </div>   
     <div class="box ">
-      <legend class="title is-5">Admitted To</legend>
+      <legend class="title is-5">Admission Details</legend>
       <table class="table is-fullwidth student-entry">
         <thead>
           <tr>
-            <th>Class</th>
+            <th style="width: 90px;">Class</th>
             <td>
               <div class="select is-fullwidth" :class="{ 'is-danger': errors.classId }">
                 <select 
@@ -357,7 +372,7 @@
         <!-- Personal Info -->
         <div class="box">
           <legend class="title is-5">Personal Information</legend>
-          <table class="sikul-table">
+          <table class="table is-fullwidth">
             <thead>
               <tr>
                 <th>Full Name</th>
@@ -398,14 +413,18 @@
         <!-- Unique ID -->
         <div class="box">
           <legend class="title is-5 bottom-border">Unique ID</legend>
-          <table class="sikul-table">
+          <table class="table is-fullwidth">
             <thead>
+              <tr>
+                <th>Regn. No.</th>
+                <td>{{ form.registrationNumber }}</td>
+              </tr>
               <tr>
                 <th>PEN</th>
                 <td>{{ form.pen }}</td>
               </tr>
               <tr>
-                <th>APAR</th>
+                <th>APAAR</th>
                 <td>{{ form.apar }}</td>
               </tr>
               <tr>
@@ -419,7 +438,7 @@
         <!-- Additional Info -->
         <div class="box">
           <legend class="title is-5">Additional Information</legend>
-          <table class="sikul-table">
+          <table class="table is-fullwidth">
             <thead>
               <tr>
                 <th>Caste</th>
@@ -448,7 +467,7 @@
         <!-- Admission Info -->
         <div class="box">
           <legend class="title is-5">Admission Details</legend>
-          <table class="sikul-table">
+          <table class="table is-fullwidth">
             <thead>
               <tr>
                 <th>Class</th>
@@ -456,7 +475,7 @@
               </tr>
               <tr>
                 <th>Section</th>
-                <td>{{ getSectionName(form.sectionId) }}</td>
+                <td>{{ getSectionName(form.sectionId) || '-'}}</td>
               </tr>
               <tr>
                 <th>Roll No</th>
@@ -500,6 +519,7 @@ const dob = ref(null);
 const contact = ref(null);
 const address = ref(null);
 const pin = ref(null);
+const registrationNumber = ref(null);
 const pen = ref(null);
 const apar = ref(null);
 const aadhaar = ref(null);
@@ -530,9 +550,9 @@ const errors = reactive({
   dob: '',
   contact: '',
   address: '',
-  pin: '',
+  registrationNumber: '',
   classId: '',
-  sectionId: 0
+  sectionId: ''
 });
 
 const form = reactive({
@@ -546,6 +566,7 @@ const form = reactive({
   pin: '',
   apar: '',
   aadhaar: '',
+  registrationNumber: '',
   pen: '',
   rollNo: '',
   caste: '',
@@ -581,6 +602,11 @@ function validateForm() {
     errors.gender = 'Gender is required';
     isValid = false;
   }
+
+  if (!form.registrationNumber.trim()) {
+    errors.registrationNumber = 'Registration Number is required';
+    isValid = false;
+  }
   
   if (!form.dob) {
     errors.dob = 'Date of birth is required';
@@ -613,9 +639,13 @@ function validateForm() {
   if (!form.sectionId) {
     const isSection =  window.electronAPI.getSectionsByClassId(form.classId)
     if(form.classId) {
-      if(isSection.sections.length === 0){
+      //console.log('Validating section for classId:', form.classId);
+      
+      if(isSection.sections === null || isSection.sections === undefined){
+        errors.sectionId = '';
       isValid = true;
       form.sectionId = 0;
+      //console.log('sections Id Value:', form.sectionId);
       }else{
         errors.sectionId = 'Section is required';
         isValid = false;
@@ -787,7 +817,7 @@ onMounted(async() => {
 
 <style scoped>
 .table{
-  border: 1px solid #565555;
+  border: 1px solid #393939;
 }
 .table th{
   width: 300px;

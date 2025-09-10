@@ -220,6 +220,7 @@
               <div class="select is-fullwidth">
                 <select v-model="studentData.AdmissionType" required>
                   <option disabled selected>-- Select Admission Type --</option>                   
+                  <option>New</option> 
                   <option>Promoted</option> 
                   <option>Repeat</option>
                   </select>

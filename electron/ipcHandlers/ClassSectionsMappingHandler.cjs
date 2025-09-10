@@ -11,14 +11,14 @@ ipcMain.handle('get-sections-by-classId', async (event, ClassId) => {
       JOIN
       ClassSectionMapping AS m
       ON
-      s.Id = m.SectionId
+      s.Id = m.SectionId 
       WHERE
       m.ClassId = ?`);
     const sections = stmt.all(ClassId);
     //console.log("Handler Sections:", sections)
-    return { success: true, sections };
+    return { success: true, sections: sections };
   } catch (err) {
-    console.error('Failed to get subjects:', err);
+    console.error('Failed to get sections:', err);
     return { success: false, message: err.message };
   }
 });

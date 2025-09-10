@@ -117,6 +117,7 @@ CREATE TABLE Students (
     Address TEXT,
     PIN TEXT,
     FirstAdmissionDate DATE DEFAULT (CURRENT_TIMESTAMP),
+    RegistrationNumber TEXT,
     Status TEXT NOT NULL DEFAULT 'Admitted',
     Caste TEXT,
     Religion TEXT,

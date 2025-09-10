@@ -289,6 +289,10 @@ ipcMain.handle('generate-results', async (event, { academicYearId, resultType, e
             if(failCount > 0){
               resultStatus = 'Fail';
             }
+            else{
+            division = getDivision(Percentage, failCount);
+            //resultStatus = getResultStatus(Percentage, failCount, PassingPercentage);
+            }
           }
           else{
             division = getDivision(Percentage, failCount);

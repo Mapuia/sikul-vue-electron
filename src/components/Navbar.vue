@@ -25,7 +25,7 @@
             <div class="navbar-dropdown">
               <router-link class="navbar-item" to="/students/new" @click="closeDropdown">New Student</router-link>
               <router-link class="navbar-item" to="/students/re" @click="closeDropdown">Re-Admission</router-link>
-              <router-link class="navbar-item" to="/manage/student" @click="closeDropdown">Manage Student</router-link>
+              <router-link class="navbar-item" to="/manage/student" @click="closeDropdown">Manage Student ({{ CurrentYear }})</router-link>
             </div>
           </div>
 

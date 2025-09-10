@@ -6,16 +6,16 @@ const currentTime = new Date(new Date().getTime() + 5.5 * 60 * 60 * 1000).toISOS
 
 //Insert Student and Admission
 ipcMain.handle('insert-student-admission', (event, form) => {
-  console.log("Student Insert:", form);
+  //console.log("Student Insert:", form);
   const studentId = crypto.randomUUID();
   
   const insertStudent = db.prepare(`
     INSERT INTO Students (
       Id, Name, Gender, FathersName, MothersName, DOB, Aadhaar, APAR, PEN, Contact, Address, PIN,
-      FirstAdmissionDate, Status, Caste, Religion, Height, Weight, BloodGroup, Creation_at
+      FirstAdmissionDate, RegistrationNumber, Status, Caste, Religion, Height, Weight, BloodGroup, Creation_at
     ) VALUES (
       @Id, @Name, @Gender, @FathersName, @MothersName, @DOB, @Aadhaar, @APAR, @PEN, @Contact, @Address, @PIN,
-      @FirstAdmissionDate, @Status, @Caste, @Religion, @Height, @Weight, @BloodGroup, @Creation_at
+      @FirstAdmissionDate, @RegistrationNumber, @Status, @Caste, @Religion, @Height, @Weight, @BloodGroup, @Creation_at
     )
   `);
 
@@ -43,6 +43,7 @@ ipcMain.handle('insert-student-admission', (event, form) => {
       Address: form.address,
       PIN: form.pin,
       FirstAdmissionDate: form.admissionDate,
+      RegistrationNumber: form.registrationNumber || null, // Ensure NULL instead of empty string
       Status: form.status || 'Admitted',
       Caste: form.caste,
       Religion: form.religion,

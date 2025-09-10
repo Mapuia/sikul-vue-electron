@@ -124,7 +124,7 @@ ipcMain.handle('get-student-details', async (event, studentId, AcademicYearId) =
       SELECT * FROM Students WHERE Id = ?
     `);
     const student = studentStmt.get(studentId);
-
+      //console.log("Student Handler get student detail- Student:", student)
     if (!student) {
       return { success: false, error: 'Student not found' };
     }

@@ -6,33 +6,34 @@
       <h3 class="title is-5">Personal Information</h3>
       <table class="sikul-table is-fullwidth">
         <thead>
-          <tr><th>Name:</th><td>{{ student.Name || '-' }}</td></tr>
-          <tr><th>Gender:</th><td>{{ student.Gender || '-' }}</td></tr>
-          <tr><th>Date of Birth:</th><td>{{ formatDate(student.DOB) }}</td></tr>
-          <tr><th>Father's Name:</th><td>{{ student.FathersName || '-' }}</td></tr>
-          <tr><th>Mother's Name:</th><td>{{ student.MothersName || '-' }}</td></tr>
-          <tr><th>Contact:</th><td>{{ student.Contact || '-' }}</td></tr>
-          <tr><th>Caste:</th><td>{{ student.Caste || '-' }}</td></tr>
-          <tr><th>Religion:</th><td>{{ student.Religion || '-' }}</td></tr>
-          <tr><th>Blood Group:</th><td>{{ student.BloodGroup || '-' }}</td></tr>
-          <tr><th>Address:</th><td>{{ student.Address || '-' }}</td></tr>
+          <tr><th>Regn. No.</th><td>{{ student.RegistrationNumber || '-' }}</td></tr>
+          <tr><th>Name</th><td>{{ student.Name || '-' }}</td></tr>
+          <tr><th>Gender</th><td>{{ student.Gender || '-' }}</td></tr>
+          <tr><th>Date of Birth</th><td>{{ formatDate(student.DOB) }}</td></tr>
+          <tr><th>Father's Name</th><td>{{ student.FathersName || '-' }}</td></tr>
+          <tr><th>Mother's Name</th><td>{{ student.MothersName || '-' }}</td></tr>
+          <tr><th>Contact</th><td>{{ student.Contact || '-' }}</td></tr>
+          <tr><th>Caste</th><td>{{ student.Caste || '-' }}</td></tr>
+          <tr><th>Religion</th><td>{{ student.Religion || '-' }}</td></tr>
+          <tr><th>Blood Group</th><td>{{ student.BloodGroup || '-' }}</td></tr>
+          <tr><th>Address</th><td>{{ student.Address || '-' }}</td></tr>
         </thead>
       </table>
     </div>
 
     <!-- Academic Information -->
     <div class="box">
-      <h3 class="title is-5">Academic Information for {{ admission.YearName || '-' }}</h3>
+      <h3 class="title is-5">Current Academic Information</h3>
       <table class="sikul-table is-fullwidth">
         <thead>
          
-          <tr><th>Class:</th><td>{{ admission.ClassName || '-' }}</td></tr>
-          <tr><th>Section:</th><td>{{ admission.SectionName || '-' }}</td></tr>
-          <tr><th>Roll No:</th><td>{{ admission.RollNo || '-' }}</td></tr>
-          <tr><th>Admission Type:</th><td>{{ admission.AdmissionType || '-' }}</td></tr>
-          <tr><th>First Admission:</th><td>{{ formatDate(student.FirstAdmissionDate) }}</td></tr>
+          <tr><th>Class</th><td>{{ admission.ClassName || '-' }}</td></tr>
+          <tr><th>Section</th><td>{{ admission.SectionName || '-' }}</td></tr>
+          <tr><th>Roll No</th><td>{{ admission.RollNo || '-' }}</td></tr>
+          <tr><th>Admission Type</th><td>{{ admission.AdmissionType || '-' }}</td></tr>
+          <tr><th>First Admission</th><td>{{ formatDate(student.FirstAdmissionDate) }}</td></tr>
           <tr>
-            <th>Current Status:</th>
+            <th>Current Status</th>
             <td>
               <span class="tag" :class="statusTagClass(student.Status)">
                 {{ student.Status || '-' }}
@@ -45,12 +46,12 @@
 
     <!-- Identification -->
     <div class="box">
-      <h3 class="title is-5">Identification</h3>
+      <h3 class="title is-5">UNIQUE ID</h3>
       <table class="sikul-table is-fullwidth">
         <thead>
-          <tr><th>PEN:</th><td>{{ student.PEN || '-' }}</td></tr>
-          <tr><th>APAR:</th><td>{{ student.APAR || '-' }}</td></tr>
-          <tr><th>Aadhaar:</th><td>{{ student.Aadhaar || '-' }}</td></tr>
+          <tr><th>PEN</th><td>{{ student.PEN || '-' }}</td></tr>
+          <tr><th>APAAR</th><td>{{ student.APAR || '-' }}</td></tr>
+          <tr><th>Aadhaar</th><td>{{ student.Aadhaar || '-' }}</td></tr>
         </thead>
       </table>
     </div>
@@ -60,8 +61,8 @@
       <h3 class="title is-5">Physical Attributes</h3>
       <table class="sikul-table is-fullwidth">
         <thead>
-          <tr><th>Height:</th><td>{{ student.Height || '-' }} cm</td></tr>
-          <tr><th>Weight:</th><td>{{ student.Weight || '-' }} Kg</td></tr>
+          <tr><th>Height</th><td>{{ student.Height || '-' }} cm</td></tr>
+          <tr><th>Weight</th><td>{{ student.Weight || '-' }} Kg</td></tr>
         </thead>
       </table>
     </div>

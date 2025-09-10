@@ -251,8 +251,10 @@ async function searchStudents() {
 // ==================
 
 async function viewStudentDetails(studentId) {
+
   const res = await window.electronAPI.getStudentDetails(studentId, CurrentYearId.value);
   if (res.success) {
+    //console.log(res);
     selectedStudent.value = res.student;
     admission.value = res.admission;
     modalMode.value = 'view';
