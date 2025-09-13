@@ -257,15 +257,15 @@
                               <th colspan="2" class="summary-header">GENERAL REPORT</th>    
                             </tr>
                             <tr >
-                              <th class = "summary">No. Students</th>
+                              <th class = "summary">No. of Students</th>
                               <td>{{reportCardData.noOfStudents}}</td>
                             </tr>
                             <tr>
-                              <th class = "summary">No. Working Days</th>
+                              <th class = "summary">No. of Working Days</th>
                               <td>{{reportCardData.TotalWorkingDays}}</td>
                             </tr>
                             <tr>  
-                              <th class = "summary">No. Days Present</th>
+                              <th class = "summary">No. of Days Present</th>
                               <td>{{reportCardData.TotalPresentDays}}</td>
                             </tr>
                             <tr>

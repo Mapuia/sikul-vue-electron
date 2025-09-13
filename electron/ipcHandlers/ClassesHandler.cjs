@@ -73,7 +73,7 @@ ipcMain.handle('delete-class', async (event, classId) => {
 
 
 ipcMain.handle('fetch-upper-classes', async (event, className) => {
-  console.log("Fetching upper classes for:", className);
+  //console.log("Fetching upper classes for:", className);
   try {
     const stmt = db.prepare('SELECT * FROM Classes');
     const allClasses = stmt.all();

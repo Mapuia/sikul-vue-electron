@@ -163,11 +163,11 @@
               <h2></h2>
               <button class="delete" aria-label="close" @click="closeModal"></button>
             </header>
-            <div class="print-container pt-3 pb-3" >
+            <div class="print-container pt-1 pb-3" >
               <section class="modal-card-body  print-page watermark">
                 <div class="header-wrapper has-text-centered  mb-3" style="position: relative;">                  
                   <!-- Headings -->
-                  <h1 class="title print-title mt-3">CALVARY HIGHER SECONDARY SCHOOL</h1>
+                  <h1 class="title print-title mt-2">CALVARY HIGHER SECONDARY SCHOOL</h1>
                   <h2 class="subtitle print-subtitle  m-0"><i>(Tripura Presbyterian School)</i></h2>
                   <img src="/sikul_logo.png" alt="School Logo" style="display: block; margin: 3px auto; height: 60px;" />
 
@@ -183,9 +183,8 @@
                   <table class="student-table">
                     <tbody>
                       <tr>
-                        <th class="">Name:</th>
-                        <td class="">{{ studentData.Name }}</td>
-                    
+                        <th class="">Name: {{ studentData.Name }}</th>
+                        <td class=""></td>
                         <th class="">Class:</th>
                         <td class="">{{className}} &nbsp; {{sectionName ? 'Section '+ sectionName : ''}}</td>
                       
@@ -194,8 +193,8 @@
                         <td class="has-content-left" style="text-align: left !important;">{{ studentData.RollNo }}</td>
                       </tr>
                       <tr>
-                        <th class="" style="width:120px">Father's Name:</th>
-                        <td class="">{{ studentData.FathersName }}</td>
+                        <th class="" style="width:120px">Father's Name: {{ studentData.FathersName }}</th>
+                        <td class=""></td>
                         <th class="">PEN:</th>
                         <td class="">{{ studentData.PEN }}</td>
                         
@@ -276,15 +275,15 @@
                               <th colspan="2" class="summary-header">GENERAL REPORT</th>    
                             </tr>
                             <tr >
-                              <th class = "summary">No. Students</th>
+                              <th class = "summary">No. of Students</th>
                               <td>{{reportCardData.noOfStudents}}</td>
                             </tr>
                             <tr>
-                              <th class = "summary">No. Working Days</th>
+                              <th class = "summary">No. of Working Days</th>
                               <td>{{reportCardData.TotalWorkingDays}}</td>
                             </tr>
                             <tr>  
-                              <th class = "summary">No. Days Present</th>
+                              <th class = "summary">No. of Days Present</th>
                               <td>{{reportCardData.TotalPresentDays}}</td>
                             </tr>
                             <tr>
@@ -692,7 +691,7 @@ function closeModal() {
 }
 
 .print-page{
-  padding: 2.5rem;
+  padding: 1.5rem 2.5rem;
   background: white;
   color:black;
   margin:0;
@@ -715,7 +714,7 @@ function closeModal() {
   
 }
 .smaller-cell {
-  font-size: 12px;
+  font-size: 11px;
   text-align: center;
   color: black;
 }

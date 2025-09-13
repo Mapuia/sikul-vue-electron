@@ -42,7 +42,7 @@
         </div>
 
         <div class="field">
-          <label class="label">APAR</label>
+          <label class="label">APAAR</label>
           <div class="control">
             <input class="input" type="text" v-model="studentData.APAR" />
           </div>
@@ -75,6 +75,16 @@
         </div>
       </div>
 
+      <div class="column is-half">
+        <div class="field">
+          <label class="label">Address</label>
+          <div class="control">
+            <textarea class="input" v-model="studentData.Address"></textarea>
+          </div>
+        </div>
+      </div>
+      <div class="column is-half">  </div>
+
       <!-- Contact -->
       <div class="column is-half">
         <div class="field">
@@ -84,15 +94,15 @@
           </div>
         </div>
       </div>
-
-      <div class="column is-full">
+      <div class="column is-half">
         <div class="field">
-          <label class="label">Address</label>
+          <label class="label">PIN</label>
           <div class="control">
-            <textarea class="input" v-model="studentData.Address"></textarea>
+            <input class="input" type="tel" v-model="studentData.PIN" />
           </div>
         </div>
       </div>
+
 
       <!-- Additional -->
       <div class="column is-half">
@@ -111,7 +121,7 @@
         </div>
 
         <div class="field">
-          <label class="label">Caste ({{ studentData.Caste }})</label>
+          <label class="label">Caste</label>
           <div class="control">
             <div class="select is-fullwidth">
               <select v-model="studentData.Caste">
@@ -160,7 +170,7 @@
       <!-- Physical -->
       <div class="column is-half">
         <div class="field">
-          <label class="label">Height (cm)</label>
+          <label class="label">Height (Cm)</label>
           <div class="control">
             <input class="input" type="number" v-model.number="studentData.Height" min="0" max="250" />
           </div>
@@ -169,7 +179,7 @@
 
       <div class="column is-half">
         <div class="field">
-          <label class="label">Weight (kg)</label>
+          <label class="label">Weight (Kg)</label>
           <div class="control">
             <input class="input" type="number" v-model.number="studentData.Weight" min="0" max="200" step="0.1" />
           </div>
@@ -194,7 +204,7 @@
             </div>
         </div>
         <div class="field">
-        <label class="label">Section</label>
+          <label class="label">Section</label>
           <div class="control">
             <div class="select is-fullwidth">
               <select v-model="studentData.SectionId">
@@ -206,6 +216,12 @@
             </div>
           </div>
         </div>
+        <div class="field">
+          <label class="label">First Admission Date</label>
+          <div class="control">
+            <input class="input" type="date" v-model="studentData.FirstAdmissionDate" />
+          </div>
+        </div>
       </div>    
       <div class="column is-half">
         <div class="field">
@@ -215,7 +231,7 @@
           </div>
         </div>
         <div class="field">
-          <label class="label">Admission Type ({{ studentData.AdmissionType }})</label>
+          <label class="label">Admission Type </label>
             <div class="control">
               <div class="select is-fullwidth">
                 <select v-model="studentData.AdmissionType" required>
@@ -227,8 +243,17 @@
               </div>
             </div>
           </div>
+      
+        <div class="field">
+          <label class="label">Registration Number </label>
+          <div class="control">
+              <input class="input" type="text" v-model="studentData.RegistrationNumber" />
+            </div>
         </div>
-      </div>
+      
+        </div>    
+        
+    </div>
 
     <!-- Actions -->
     <div class="field is-grouped is-grouped-right">

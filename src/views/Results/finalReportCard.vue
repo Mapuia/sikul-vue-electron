@@ -347,13 +347,13 @@
                             <th >FINAL</th>
                           </tr>
                           <tr>
-                            <th class = "summary">No. Working Days</th>
+                            <th class = "summary">No. of Working Days</th>
                             <td>{{reportCardData?.TerminalWorkingDays}}</td>
                             <td>{{reportCardData?.AnnualWorkingDays}}</td>
                             <td>{{reportCardData?.TotalWorkingDays }}</td>
                           </tr>
                           <tr>  
-                            <th class = "summary">No. Days Present</th>
+                            <th class = "summary">No. of Days Present</th>
                             <td>{{reportCardData?.TerminalPresentDays}}</td>
                             <td>{{reportCardData?.AnnualPresentDays}}</td>
                             <td>{{reportCardData?.TotalPresentDays }}</td>
@@ -781,7 +781,7 @@ function closeModal() {
 }
 
 .print-page{
-  padding: 2.5rem;
+  padding: 1.5rem 2.5rem;
   background: white;
   color:black;
   margin:0;
@@ -805,7 +805,7 @@ function closeModal() {
   
 }
 .smaller-cell {
-  font-size: 12px;
+  font-size: 11px;
   text-align: center;
   color: black;
 }
@@ -868,7 +868,7 @@ function closeModal() {
 .marks-table td{ 
   border-collapse: collapse;
   border: .1px solid black;
-  padding: 0.1rem;
+  padding: 0.05rem;
   vertical-align: middle;
   font-size: 12px;
   text-align: center;

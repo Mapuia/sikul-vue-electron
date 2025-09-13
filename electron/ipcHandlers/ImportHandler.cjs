@@ -365,13 +365,13 @@ ipcMain.handle('import-student-data', async (event, { academicYearId, filePath }
     try {
       // Prepare upsert for Students
       const studentUpsertStmt = db.prepare(`
-        INSERT INTO Students (
+        INSERT OR REPLACE INTO Students (
           Id, Name, Gender, FathersName, MothersName, DOB, Aadhaar, APAR, PEN,
-          Contact, Email, Address, PIN, FirstAdmissionDate, Status, Caste,
+          Contact, Email, Address, PIN, FirstAdmissionDate, RegistrationNumber, Status, Caste,
           Religion, Height, Weight, BloodGroup, Creation_at, Last_Modified_at
         ) VALUES (
           @Id, @Name, @Gender, @FathersName, @MothersName, @DOB, @Aadhaar, @APAR, @PEN,
-          @Contact, @Email, @Address, @PIN, @FirstAdmissionDate, @Status, @Caste,
+          @Contact, @Email, @Address, @PIN, @FirstAdmissionDate, @RegistrationNumber, @Status, @Caste,
           @Religion, @Height, @Weight, @BloodGroup, @Creation_at, @Last_Modified_at
         )
         ON CONFLICT(Id) DO UPDATE SET
@@ -388,6 +388,7 @@ ipcMain.handle('import-student-data', async (event, { academicYearId, filePath }
           Address = excluded.Address,
           PIN = excluded.PIN,
           FirstAdmissionDate = excluded.FirstAdmissionDate,
+          RegistrationNumber = excluded.RegistrationNumber,
           Status = excluded.Status,
           Caste = excluded.Caste,
           Religion = excluded.Religion,
@@ -404,7 +405,7 @@ ipcMain.handle('import-student-data', async (event, { academicYearId, filePath }
 
       // Prepare upsert for Admissions
       const admissionUpsertStmt = db.prepare(`
-        INSERT INTO Admissions (
+        INSERT OR REPLACE INTO Admissions (
           StudentId, AcademicYearId, ClassId, SectionId, RollNo,
           AdmissionType, reAdmitted, Creation_at, Last_Modified_at
         ) VALUES (

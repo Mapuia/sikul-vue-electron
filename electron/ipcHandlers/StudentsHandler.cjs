@@ -156,7 +156,7 @@ ipcMain.handle('get-student-details', async (event, studentId, AcademicYearId) =
 // Update student information
 ipcMain.handle('update-student', async (event, studentData) => {
 
-  console.log("Students Data:", studentData)
+  //console.log("Students Data:", studentData)
   const transaction = db.transaction(() => {
     try {
       // Check for duplicate RollNo if relevant fields are being changed
@@ -209,6 +209,8 @@ ipcMain.handle('update-student', async (event, studentData) => {
           Height = ?,
           Weight = ?,
           BloodGroup = ?,
+          RegistrationNumber = ?,
+          FirstAdmissionDate = ?,
           Last_Modified_at = ?
         WHERE Id = ?
       `);
@@ -230,6 +232,8 @@ ipcMain.handle('update-student', async (event, studentData) => {
         studentData.Height,
         studentData.Weight,
         studentData.BloodGroup,
+        studentData.RegistrationNumber,
+        studentData.FirstAdmissionDate,
         currentTime,
         studentData.Id
       );
@@ -278,7 +282,7 @@ ipcMain.handle('update-student', async (event, studentData) => {
         success: false, 
         message: error.message.includes("UNIQUE") 
           ? "Duplicate Roll Number detected" 
-          : "Failed to update student record" 
+          : "DB Error - Failed to update student record" 
       };
     }
   });
