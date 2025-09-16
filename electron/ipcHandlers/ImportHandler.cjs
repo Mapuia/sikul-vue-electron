@@ -25,7 +25,7 @@ ipcMain.handle('import-master-data', async (event, filePath) => {
 
     try {
       // Disable FK checks so we can safely clear tables
-      db.exec('PRAGMA foreign_keys = OFF');
+      //db.exec('PRAGMA foreign_keys = OFF');
 
       const results = {
         classes: { imported: 0, skipped: 0 },
@@ -38,10 +38,10 @@ ipcMain.handle('import-master-data', async (event, filePath) => {
 
       // 3. Import Classes
       if (importData.data.classes?.length > 0) {
-        db.exec('DELETE FROM Classes');
+        //db.exec('DELETE FROM Classes');
 
         const stmt = db.prepare(`
-          INSERT INTO Classes (Id, ClassId, ClassName, Creation_at)
+          INSERT OR IGNORE INTO Classes (Id, ClassId, ClassName, Creation_at)
           VALUES (?, ?, ?, ?)
         `);
 
@@ -63,10 +63,10 @@ ipcMain.handle('import-master-data', async (event, filePath) => {
 
       // 4. Import Sections
       if (importData.data.sections?.length > 0) {
-        db.exec('DELETE FROM Sections');
+        //db.exec('DELETE FROM Sections');
 
         const stmt = db.prepare(`
-          INSERT INTO Sections (Id, SectionName, Creation_at)
+          INSERT OR IGNORE INTO Sections (Id, SectionName, Creation_at)
           VALUES (?, ?, ?)
         `);
 
@@ -87,10 +87,10 @@ ipcMain.handle('import-master-data', async (event, filePath) => {
 
       // 5. Import Subjects
       if (importData.data.subjects?.length > 0) {
-        db.exec('DELETE FROM Subjects');
+        //db.exec('DELETE FROM Subjects');
 
         const stmt = db.prepare(`
-          INSERT INTO Subjects (
+          INSERT OR IGNORE INTO Subjects (
             Id, SubjectCode, SubjectName, SubjectCategory, 
             FullMark, IsCore, DisplayOrder, Creation_at, Last_Modified_at
           ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -119,10 +119,10 @@ ipcMain.handle('import-master-data', async (event, filePath) => {
 
       // 6. Import Exams
       if (importData.data.exams?.length > 0) {
-        db.exec('DELETE FROM Exams');
+        //db.exec('DELETE FROM Exams');
 
         const stmt = db.prepare(`
-          INSERT INTO Exams (
+          INSERT OR IGNORE INTO Exams (
             Id, ExamName, ExamType, Description, Creation_at, Modified_at
           ) VALUES (?, ?, ?, ?, ?, ?)
         `);
@@ -147,10 +147,10 @@ ipcMain.handle('import-master-data', async (event, filePath) => {
 
       // 7. Import Class-Section Mappings
       if (importData.data.classSectionMappings?.length > 0) {
-        db.exec('DELETE FROM ClassSectionMapping');
+        //db.exec('DELETE FROM ClassSectionMapping');
 
         const stmt = db.prepare(`
-          INSERT INTO ClassSectionMapping (Id, ClassId, SectionId, Creation_at)
+          INSERT OR IGNORE INTO ClassSectionMapping (Id, ClassId, SectionId, Creation_at)
           VALUES (?, ?, ?, ?)
         `);
 
@@ -172,10 +172,10 @@ ipcMain.handle('import-master-data', async (event, filePath) => {
 
       // 8. Import Class-Subject Mappings
       if (importData.data.classSubjectMappings?.length > 0) {
-        db.exec('DELETE FROM ClassSubjectMapping');
+        //db.exec('DELETE FROM ClassSubjectMapping');
 
         const stmt = db.prepare(`
-          INSERT INTO ClassSubjectMapping (Id, ClassId, SubjectId, Creation_at)
+          INSERT OR IGNORE INTO ClassSubjectMapping (Id, ClassId, SubjectId, Creation_at)
           VALUES (?, ?, ?, ?)
         `);
 
@@ -197,7 +197,7 @@ ipcMain.handle('import-master-data', async (event, filePath) => {
 
       // Commit changes
       db.exec('COMMIT');
-      db.exec('PRAGMA foreign_keys = ON');
+      //db.exec('PRAGMA foreign_keys = ON');
 
       return { 
         success: true,

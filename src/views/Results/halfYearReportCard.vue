@@ -183,23 +183,23 @@
                   <table class="student-table">
                     <tbody>
                       <tr>
-                        <th class="">Name: {{ studentData.Name }}</th>
+                        <th class="" style="width:350px">Name: <b>{{ studentData.Name }}</b></th>
                         <td class=""></td>
-                        <th class="">Class:</th>
-                        <td class="">{{className}} &nbsp; {{sectionName ? 'Section '+ sectionName : ''}}</td>
-                      
-                     
-                        <th class="">Roll No:</th>
-                        <td class="has-content-left" style="text-align: left !important;">{{ studentData.RollNo }}</td>
+                        <th class="">Class: <b>{{className}}</b> &nbsp; <b>{{sectionName ? 'Section '+ sectionName : ''}}</b></th>
+                        <td class=""></td>
+
+
+                        <th class="">Roll No: <b>{{ studentData.RollNo }}</b></th>
+                        <td class="has-content-left" style="text-align: left !important;"></td>
                       </tr>
                       <tr>
-                        <th class="" style="width:120px">Father's Name: {{ studentData.FathersName }}</th>
+                        <th class="" style="width:120px">Father's Name: <b>{{ studentData.FathersName }}</b></th>
                         <td class=""></td>
-                        <th class="">PEN:</th>
-                        <td class="">{{ studentData.PEN }}</td>
-                        
-                        <th class="">APAR:</th>
-                        <td class="">{{ studentData.APAR }}</td>
+                        <th class="">PEN: <b>{{ studentData.PEN }}</b></th>
+                        <td class=""></td>
+
+                        <th class="">APAR: <b>{{ studentData.APAR }}</b></th>
+                        <td class=""></td>
 
                       </tr>
                     </tbody>
@@ -838,6 +838,7 @@ function closeModal() {
   font-weight: 450;
   padding: 0.1rem;
   text-align: left;
+  
 }
 .student-table td{ 
   padding: 0.1rem;

@@ -7,10 +7,10 @@
       </figure>
 
       <h1 class="subtitle is-4 mb-3">
-        Hello {{ currentUser }}                         
+        Welcome {{ currentUser }} !                         
       </h1>
       <h1 class="title is-4">
-        Welcome to Calvary Higher Secondary School
+        Calvary Higher Secondary School
       </h1>
       <h2 class="subtitle is-5 mt-5 mb-5 is-italic">"Light to Enlight"</h2>      
     </section>

@@ -2,6 +2,8 @@ const { app, BrowserWindow, ipcMain, dialog } = require('electron');
 const path = require('path');
 const db = require('./database.cjs');
 const authService = require('./ipcHandlers/auth.cjs');
+const { runMigrations } = require('./utils/databaseMigrations.cjs');
+runMigrations();
 
 let mainWindow;
 let splash;
@@ -201,6 +203,8 @@ app.on('before-quit', (event) => {
     });
   }
 });
+
+
 
 async function performCleanup() {
   try {

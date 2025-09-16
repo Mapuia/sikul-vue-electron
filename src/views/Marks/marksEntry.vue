@@ -92,7 +92,7 @@
         <div v-if="selected === 'Scholastic'" class="main-content box column p-5">
           <div v-if="studentloaded && selectedSubjectId">
             <div class="title tab-heading has-text-weight-bold is-primary is-flex is-justify-content-space-between ">
-              <div>
+              <div class="mb-3">
                 {{ selectedSubjectName }}
               </div>
               <div class="tags are-medium">
@@ -225,7 +225,7 @@
               </div>
             </div>            
           
-            <div v-else class="notification is-info is-dark is-fullwidth has-text-centered">
+            <div v-else class="notification is-info is-danger is-fullwidth has-text-centered mt-4">
                 No students found for this section.
             </div>            
           </div>
@@ -277,7 +277,7 @@
           <!-- Co-Scholastic Marks Entry -->
         <div v-else class="main-content box column p-5">         
             <div v-if="studentloaded && selectedSubjectId" class="is-flex is-flex-direction-column">
-              <div class="title tab-heading has-text-weight-bold">
+              <div class="title tab-heading has-text-weight-bold mb-2">
                 {{ selectedSubjectName }}
               </div>
 
@@ -345,7 +345,7 @@
                   </button>
                 </div>
               </div>
-              <p v-else class="has-text-grey has-text-centered mt-4">
+              <p v-else class="notification is-info is-danger is-fullwidth has-text-centered mt-4">
                 No students found for this section.
               </p>       
             </div>

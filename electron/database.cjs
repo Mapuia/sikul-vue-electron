@@ -71,6 +71,7 @@ function closeDatabase() {
 // Initialize database on load
 initializeDatabase();
 
+
 // Handle process exit to close DB
 process.on('exit', closeDatabase);
 process.on('SIGINT', () => process.exit());
