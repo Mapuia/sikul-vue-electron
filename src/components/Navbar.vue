@@ -19,7 +19,7 @@
                class="navbar-item has-dropdown"
                :class="{ 'is-active': openDropdown === 'student' }"
                @mouseleave="closeDropdown">
-            <a class="navbar-link is-arrowless" @mouseover="toggleDropdown('student')" @click="toggleDropdown('student')">
+            <a class="navbar-link is-arrowless" @click="toggleDropdown('student')">
               <span class="fas fa-solid fa-id-badge"></span>Students
             </a>
             <div class="navbar-dropdown">
@@ -34,7 +34,7 @@
                class="navbar-item has-dropdown"
                :class="{ 'is-active': openDropdown === 'exam' }"
                @mouseleave="closeDropdown">
-            <a class="navbar-link is-arrowless" @mouseover="toggleDropdown('exam')" @click="toggleDropdown('exam')">
+            <a class="navbar-link is-arrowless" @click="toggleDropdown('exam')">
               <span class="fas fa-solid fa-trophy"></span>Exam
             </a>
             <div class="navbar-dropdown">
@@ -45,8 +45,9 @@
                   <router-link class="navbar-item" to="/marks/marks-entry?type=terminal" @click="closeDropdown">Marks Entry</router-link>
                   <router-link class="navbar-item" to="/marks/view?type=terminal" @click="closeDropdown">View Marks</router-link>
                   <router-link v-if="canAccess(['admin','teacher'])" class="navbar-item" to="/result/create?type=terminal" @click="closeDropdown">Generate Result</router-link>
-                  <router-link class="navbar-item" to="/result/section?type=terminal" @click="closeDropdown">View Section Result</router-link>
-                  <router-link class="navbar-item" to="/result/summary?type=terminal" @click="closeDropdown">View Result Summary</router-link>
+                  <router-link class="navbar-item" to="/result/section?type=terminal" @click="closeDropdown">Section-wise Result</router-link>
+                  <router-link class="navbar-item" to="/result/sectionSummary?type=terminal" @click="closeDropdown">Section-wise Result Summary</router-link>
+                  <router-link class="navbar-item" to="/result/summary?type=terminal" @click="closeDropdown">Result Summary (Whole School)</router-link>
                 </div>
               </div>
               <!-- Annual Exam Submenu -->
@@ -56,8 +57,9 @@
                   <router-link class="navbar-item" to="/marks/marks-entry?type=annual" @click="closeDropdown">Marks Entry</router-link>
                   <router-link class="navbar-item" to="/marks/view?type=annual" @click="closeDropdown">View Marks</router-link>
                   <router-link v-if="canAccess(['admin','teacher'])" class="navbar-item" to="/result/create?type=annual" @click="closeDropdown">Generate Result</router-link>
-                  <router-link class="navbar-item" to="/result/section?type=annual" @click="closeDropdown">View Section Result</router-link>
-                  <router-link class="navbar-item" to="/result/summary?type=annual" @click="closeDropdown">View Result Summary</router-link>
+                  <router-link class="navbar-item" to="/result/section?type=annual" @click="closeDropdown">Section Result</router-link>
+                  <router-link class="navbar-item" to="/report/sectionSummary?type=annual" @click="closeDropdown">Section-wise Result Summary</router-link>
+                  <router-link class="navbar-item" to="/report/summary?type=annual" @click="closeDropdown">Result Summary (Whole School)</router-link>
                 </div>
               </div>
               <!-- Class X Selection Submenu -->
@@ -67,8 +69,9 @@
                   <router-link class="navbar-item" to="/marks/marks-entry?type=selection" @click="closeDropdown">Marks Entry</router-link>
                   <router-link class="navbar-item" to="/marks/view?type=selection" @click="closeDropdown">View Marks</router-link>
                   <router-link v-if="canAccess(['admin','teacher'])" class="navbar-item" to="/result/create?type=selection" @click="closeDropdown">Generate Result</router-link>
-                  <router-link class="navbar-item" to="/result/section?type=selection" @click="closeDropdown">View Selection Result</router-link>
-                  
+                  <router-link class="navbar-item" to="/result/section?type=selection" @click="closeDropdown">Selection Result</router-link>
+                  <router-link class="navbar-item" to="/result/sectionSummary?type=selection" @click="closeDropdown">Section-wise Result Summary</router-link>
+                                    
                 </div>
               </div>
             </div>
@@ -77,10 +80,10 @@
           <!-- Report Card Menu -->
           <div v-if="canAccess(['admin', 'teacher', 'deo'])"
                class="navbar-item has-dropdown"
-               :class="{ 'is-active': openDropdown === 'reportcard' }"
+               :class="{ 'is-active': openDropdown === 'report' }"
                @mouseleave="closeDropdown">
-            <a class="navbar-link is-arrowless" @mouseover="toggleDropdown('reportcard')" @click="toggleDropdown('reportcard')">
-              <span class="fa-solid fa-chart-pie"></span>Report Card
+            <a class="navbar-link is-arrowless" @click="toggleDropdown('report')">
+              <span class="fa-solid fa-chart-pie"></span>Report
             </a>
             <div class="navbar-dropdown">
               <router-link class="navbar-item" to="/result/report-card/halfyearly" @click="closeDropdown">Half Yearly Report Card</router-link>
@@ -94,7 +97,7 @@
                class="navbar-item has-dropdown"
                :class="{ 'is-active': openDropdown === 'manage' }"
                @mouseleave="closeDropdown">
-            <a class="navbar-link is-arrowless" @mouseover="toggleDropdown('manage')" @click="toggleDropdown('manage')">
+            <a class="navbar-link is-arrowless" @click="toggleDropdown('manage')">
               <span class="fas fa-solid fa-gear"></span>Settings
             </a>
             <div class="navbar-dropdown">
@@ -111,7 +114,7 @@
                class="navbar-item has-dropdown"
                :class="{ 'is-active': openDropdown === 'master'}"
                @mouseleave="closeDropdown">
-            <a class="navbar-link is-arrowless" @mouseover="toggleDropdown('master')" @click="toggleDropdown('master')">
+            <a class="navbar-link is-arrowless"@click="toggleDropdown('master')">
               <span class="fas fa-solid fa-database"></span>Master Data
             </a>
             <div class="navbar-dropdown">
@@ -129,7 +132,7 @@
           <div class="navbar-item has-dropdown"
                :class="{ 'is-active': openDropdown === 'user' }"
                @mouseleave="closeDropdown">
-            <a class="navbar-link is-arrowless" @mouseover="toggleDropdown('user')" @click="toggleDropdown('user')">
+            <a class="navbar-link is-arrowless"@click="toggleDropdown('user')">
               <span class="icon is-left">
                 <i class="fas fa-user"></i>
               </span>

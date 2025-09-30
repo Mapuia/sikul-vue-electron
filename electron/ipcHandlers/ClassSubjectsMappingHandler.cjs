@@ -56,6 +56,7 @@ ipcMain.handle('get-subjects-by-class', async (event, className) => {
     return { success: false, message: 'Failed to fetch subjects.' };
   }
 });
+
 ipcMain.handle('get-subjects-by-classId', async (event, ClassId, category) => {
   try {
    // Get the database connection

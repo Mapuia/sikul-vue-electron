@@ -398,8 +398,14 @@ ipcMain.handle('import-student-data', async (event, { academicYearId, filePath }
           Creation_at = excluded.Creation_at,
           Last_Modified_at = CURRENT_TIMESTAMP
       `);
+      
 
       for (const student of studentData.students) {
+      // Ensure RegistrationNumber is null if missing or empty
+        if (!('RegistrationNumber' in student) || student.RegistrationNumber === '' || student.RegistrationNumber === undefined) {
+          student.RegistrationNumber = null;
+        }
+
         studentUpsertStmt.run(student);
       }
 

@@ -1,7 +1,8 @@
 <template>
-  <div class="form-container box wide">
+  <div v-if="resultPublished" class="form-container box wide">
     <div class="has-text-centered mb-4">
       <h1 class="title is-4">Final Result, {{ CurrentYear }}</h1>
+      <h2 class="subtitle is-5" v-if="publishDate">Result Published on {{ DisplayDate(publishDate) }}</h2>
       <h2 class="subtitle is-5">Select Class and Section to generate Report Card</h2>      
     </div>
 
@@ -117,7 +118,11 @@
         </div>
       </div>
   </div>
-
+  <div v-else class="form-container wide pb-1" >
+    <div class="notification is-danger has-text-centered " >
+      <p>{{ resultName }} has not been published.</p>      
+    </div>    
+  </div>
       <!--Start of  Input Modal-->      
       <div class="modal" :class="{ 'is-active': inputModalVisible }">
         <div class="modal-background" @click="inputModalVisible = false"></div>
@@ -471,12 +476,6 @@ const currentDate = ref(new Date().toLocaleDateString('en-IN', {
   day: 'numeric'
 }))
 
-async function getExam() {
-  const result = await window.electronAPI.getExamByType(examType.value, CurrentYearId.value)
-  currentExamId.value = result.exam.Id
-  //currentExamName.value = result.exam.ExamName
-  //console.log("Current Exam:", currentExamId.value)
-}
 
 const className = computed(() => {
   const selectedClass = classes.value.find(cls => cls.Id === selectedClassId.value)
@@ -525,7 +524,6 @@ async function fetchHeadSignatory() {
 onMounted(async () => {
   await loadActiveExam()
   await fetchClasses()
-  await getExam()
   await getUser()
   await fetchHeadSignatory()
 })

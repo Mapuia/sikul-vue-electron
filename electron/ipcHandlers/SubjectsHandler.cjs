@@ -95,3 +95,23 @@ ipcMain.handle('get-coscholastic', async () => {
   }
 });
 
+
+///////////////////////////////////////////////////////////////////////////////////// GET SUBJECTS BY CLASS ID FOR SUMMARY
+ipcMain.handle('get-subjects-by-classId-for-summary', async (event, classId) => {
+  try {
+    const stmt = db.prepare(`
+      SELECT s.Id, SubjectCode as SubjectName
+      FROM ClassSubjectMapping csm
+      JOIN Subjects s ON csm.SubjectId = s.Id
+      WHERE csm.ClassId = ?
+      AND s.SubjectCategory != 'Co-Scholastic'
+      ORDER BY s.DisplayOrder
+    `);
+    const subjects = stmt.all(classId);
+    //console.log("Subjects for classId", classId, ":", subjects);
+    return { success: true, subjects };
+  } catch (err) {
+    console.error('Failed to get subjects by classId for summary:', err);
+    return { success: false, message: err.message };
+  }
+});

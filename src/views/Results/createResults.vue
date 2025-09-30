@@ -20,9 +20,9 @@
     <div v-if="!isGenerating" class=" has-text-centered mb-5">
       <div class = "box is-flex is-flex-direction-column is-align-items-center">
         
-        <div v-if="canPublish" class="is-flex is-align-items-center">
+        <div class="is-flex is-align-items-center">
           <!-- Label -->
-          <label class="label mb-0 mr-3">Publish Date:</label>          
+          <label class="label mb-0 mr-3">Confirm Result Publish Date on:</label>          
           <!-- Date Input -->
           <input
             type="date"
@@ -33,23 +33,19 @@
           />          
           <!-- Button -->
           <button
-            class="button is-primary"
-            :disabled="!canPublish || isLoading"
+            class="button is-primary"            
             @click="publishResult"
           >
             <span v-if="isLoading">Publishing...</span>
             <span v-else>
-              <i class="fas fa-paper-plane mr-2"></i>Publish Results
+              <i class="fas fa-paper-plane mr-2"></i>Confirm
             </span>
           </button>
+          <help class="ml-3">Tip: Publish Result only when all results are generated.</help>
         </div>
-        <div v-else class="is-flex is-fullwidth is-justify-content-center">
-          <p v-if="examType === 'selection'">Generate Class X Selection Test Results.</p>
-          <p v-else> Generate Results for all the Class-Sections one by one. Once the Results for all the Classes and Sections are generated. Publish Button will appear here</p>
-        </div>  
         
-      </div>  
-        
+      </div>
+
       <div class="is-flex">
         <!-- Marks Entry Status Table -->
         <section class="box column mr-5 ">
@@ -146,9 +142,9 @@
               <li class="mb-4">Complete mark entry for all subjects to enable result generation.</li>
               <li class="mb-4">Click "Generate Result" to create results Class and Section Wise.</li>
               <li class="mb-4">Results must be generated once per exam/ class/ section.</li>
-              <li class="mb-4">Publish Result button will appear. Select the Publish Date or Today's Date will be selected by default.</li>
-              <li class="mb-4">Click and Confirm to publish results.</li>
-              <li class="mb-4">Click "View Results" to see the generated results section-wise.</li>
+              <li class="mb-4">To confirm result is published, Select the Publish Date or Today's Date will be selected by default.</li>
+              <li class="mb-4">Click Confirm to lock the results.</li>
+              <li class="mb-4">Only Admin can unpublish the results. (Result should not be unpublished without the Approvals of the Principal.)</li>
             </ul>
           </div>
         </section>
@@ -173,7 +169,7 @@
                     <th>Name</th>
                     <th>Roll No</th>
                     <th>Full Mark</th>
-                    <th>Total Mark Obtained</th>
+                    <th>Mark Scored</th>
                     <th>Percentage</th>
                     <th>Division</th>                  
                     <th>Status</th>
@@ -181,7 +177,7 @@
                 </thead>
                 <tbody>
                   <tr v-for="(res, index) in modalResults" :key="index">
-                    <td>{{ res.ResultStatus === 'Pass'? res.Rank : 'N.A.' }}</td>
+                    <td>{{ res.Rank }}</td>
                     <td>{{ res.Name }}</td>
                     <td>{{ res.RollNo }}</td>
                     <td>{{ res.TotalMaxMark }}</td>
@@ -249,14 +245,16 @@ const userRole = ref('')
 watch(() => route.query.type, (newType) => {
   examType.value = newType
   getExam()
-  if (newType === 'terminal') {
-    resultName.value = 'Half Yearly Results'
-  }
-   if (newType === 'annual') {
-    resultName.value = 'Final Results'
-  }
-  if (newType === 'selection') {
-    resultName.value = 'Class X Selection Test Results'
+  switch (newType) {
+    case 'terminal':
+      resultName.value = 'Half Yearly Results'
+      break
+    case 'annual':
+      resultName.value = 'Final Results'
+      break
+    case 'selection':
+      resultName.value = 'Class X Selection Test Results'
+      break    
   }
 }, { immediate: true })
 
@@ -282,16 +280,8 @@ const canAccess = (requiredRoles) => {
 const filteredClassSectionStatus = computed(() => {
   return classSectionStatus.value.filter(item => item.finishedSubjects !== 0);
 })
-console.log("Filtered Class Section Status:", filteredClassSectionStatus.value)
-const canPublish = computed(() => {
-  if (examType.value === 'selection') {
-    return markEntryCount.value > 0 && resultStatusCount.value > 0
-  }
-  return markEntryCount.value > 0 && 
-         markEntryCount.value === resultStatusCount.value && 
-         resultStatusCount.value > 0
-    
-})
+//console.log("Filtered Class Section Status:", filteredClassSectionStatus.value)
+
 
 async function checkPublishStatus() {
   try {
@@ -346,7 +336,7 @@ async function publishResult() {
 }
 
 function unPublishResults(){
-  window.electronAPI.showConfirmationDialog("Are you sure you want to unpublish the results? This action cannot be undone.")
+  window.electronAPI.showConfirmationDialog("Are you sure you want to unpublish the results?")
     .then(async (confirmed) => {
       if (confirmed) {
         try {
@@ -355,8 +345,7 @@ function unPublishResults(){
             activeExamId: currentExamId.value
           })
           if (response.success) {
-            checkPublishStatus()
-            window.electronAPI.showInfoDialog("Results unpublished successfully.")
+           location.reload('/result/create?type=' + examType.value) //reload the page
             
           } else {
             window.electronAPI.showErrorDialog("Failed to unpublish results: " + (response.message || "Unknown error"))

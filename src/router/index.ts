@@ -78,6 +78,12 @@ const routes = [
   },
   
   {
+    path: '/result/sectionSummary',
+    component: () => import('@/views/Results/sectionSummary.vue'),
+    meta: { allowedRoles: [ROLES.ADMIN, ROLES.TEACHER, ROLES.DEO] }
+  },
+
+  {
     path: '/result/summary',
     component: () => import('@/views/Results/resultsSummary.vue'),
     meta: { allowedRoles: [ROLES.ADMIN, ROLES.TEACHER, ROLES.DEO] }

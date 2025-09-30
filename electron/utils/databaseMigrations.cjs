@@ -61,12 +61,12 @@ async function runMigrations() {
 
       console.log('RegistrationNumber column added after FirstAdmissionDate.');
     } else {
-    console.log(`Column RegistrationNumber already exists in "Students".`);
+    //console.log(`Column RegistrationNumber already exists in "Students".`);
   }
 
   } catch (error) {
     db.prepare('ROLLBACK').run();
-    console.error('Marks migration failed:', error);
+    console.error('Students migration failed:', error);
     throw error;
   }
 }

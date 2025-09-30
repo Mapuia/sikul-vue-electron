@@ -2,6 +2,7 @@
   <div class="form-container box wide">
     <div class="has-text-centered mb-4">
       <h1 class="title is-4">Selection Test Result, {{ CurrentYear }}</h1>
+      <h2 class="subtitle is-5" v-if="publishDate">Result Published on {{ DisplayDate(publishDate) }}</h2>
       <h2 class="subtitle is-5">Select Section to generate Report Card</h2>      
     </div>
 

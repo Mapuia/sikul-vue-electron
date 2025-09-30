@@ -168,6 +168,9 @@ contextBridge.exposeInMainWorld('electronAuth', {
   importSettings: (filepath) => ipcRenderer.invoke('import-settings', filepath),
   importMasterData: (filepath) => ipcRenderer.invoke('import-master-data', filepath),
   openDialog: (options) => ipcRenderer.invoke('open-dialog', options),
-    
+  
+  //results Summary
+  getSubjectsByClassIdforSummary:(ClassId) => ipcRenderer.invoke('get-subjects-by-classId-for-summary', ClassId),
+  getSectionResultsSummary:(data) => ipcRenderer.invoke('get-section-results-summary', data)
 });
 

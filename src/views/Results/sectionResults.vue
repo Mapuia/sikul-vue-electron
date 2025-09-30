@@ -80,7 +80,7 @@
                 </thead>
                 <tbody>
                   <tr v-for="result in results" :key="result.StudentId">
-                    <td style="font-weight: 700;">{{ result.ResultStatus === 'Pass' ? result.Rank : '' }}</td>
+                    <td style="font-weight: 700;">{{ result.Rank }}</td>
                     <td>{{ result.RollNo }}</td>
                     <td style="text-align: left; width: 250px;">{{ result.Name }}</td>
                     <td>{{ result.TotalMaxMark }}</td>
@@ -197,7 +197,7 @@
     </div>
   </div>
   <div v-else class="form-container wide pb-1" >
-    <div class="notification is-success has-text-centered " >
+    <div class="notification is-warning has-text-centered " >
       <p>{{ resultName }} has not been published.</p>      
     </div>    
   </div>
@@ -208,7 +208,7 @@ import { ref, watch, onMounted, computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { useAcademicYear } from '../../composables/useAcademicYear'
 import { useActiveExam } from '../../composables/useActiveExam'
-
+import html2pdf from 'html2pdf.js'
 
 const { CurrentYearId, CurrentYear } = useAcademicYear()
 const { 
@@ -233,6 +233,9 @@ const selectedSectionId = ref('')
 const noSections = ref(false)
 const results = ref([])
 
+const resultPublished = ref(false) // later, this must be changed
+const publishDate = ref('')
+
 const DisplayDate = stringReverse => {
   const date = new Date(stringReverse)
   return date.toLocaleDateString('en-IN', {
@@ -250,11 +253,12 @@ const currentDate = ref(new Date().toLocaleDateString('en-IN', {
 
 watch(() => route.query.type, (newType) => {
   examType.value = newType
-  resultName.value = newType === 'terminal'? 'Half Yearly Results' : newType === 'annual' ? 'Final Results' : 'Selection Test Results'
+  resultName.value = newType === 'terminal'? 'Half Yearly Exam Results' : newType === 'annual' ? 'Final Exam Results' : 'Selection Test Results'
   console.log("Exam Type:", examType.value)
   getExam()  
   selectedClassId.value = ''
-  selectedSectionId.value = ''  
+  selectedSectionId.value = ''
+  checkPublishStatus()
 }, { immediate: true })
 
 watch(examType, async (newType) => {
@@ -302,10 +306,10 @@ onMounted(async () => {
   checkPublishStatus()
   await getExam()  
   await loadActiveExam()
-  await fetchClasses()  
+  await fetchClasses()
+  resultPublished.value === true
 })
-const resultPublished = ref(false)
-const publishDate = ref('')
+
 async function checkPublishStatus() {
   try {  
     const status = await window.electronAPI.getPublishStatus({
@@ -320,7 +324,7 @@ async function checkPublishStatus() {
       resultPublished.value = true
     }
     else {
-      resultPublished.value = false
+      resultPublished.value = false //must be change. This is for the purpose of debugging
     }
   } catch (error) {
     console.error("Error checking publish status:", error)    
@@ -351,7 +355,7 @@ async function fetchClasses() {
       default:
         // Show all classes for terminal exams (or any other type)
         classes.value = result.classes;
-        console.log("Terminal a ni tur a ni", examType.value, classes.value);
+        //console.log("Terminal a ni tur a ni", examType.value, classes.value);
         break;
     }
   }
@@ -427,14 +431,16 @@ async function fetchResults() {
   }
 }
 
+
+
 function downloadPDF() {
   const element = document.querySelector('.print-page') // or any specific container you want
   const opt = {
-    margin:       0.2,
-    filename:     `Result_${ className.value }_${ sectionName.value }.pdf`,
-    image:        { type: 'jpeg', quality: 0.98 },
-    html2canvas:  { scale: 2 },
-    jsPDF:        { unit: 'in', format: 'a4', orientation: 'portrait' }
+    margin: 0.1,
+    filename: `Result-Class_${ className.value }_${ sectionName.value }.pdf`,
+    image: { type: 'jpeg', quality: 0.98 },
+    html2canvas: { scale: 2 },
+    jsPDF:{ unit: 'in', format: 'a4', orientation: 'portrait' }
   }
 
   html2pdf().set(opt).from(element).save()
@@ -507,6 +513,7 @@ function downloadPDF() {
   border: 2px solid black;
   width: 100%;
   border-collapse: collapse;
+  font-size: 11pt;
 }
 
 .result-table td{ 
@@ -522,16 +529,18 @@ function downloadPDF() {
   border: 1px solid black;
   padding-left: 0.2rem;
   padding-right: 0.2rem;
-  
+  border-bottom: 2px solid black;
   text-align: center;
   color: black;
   vertical-align: middle;
+  font-size: 16px;
 }
 
 .bl-table{
   border-collapse: true;
   border: 2px solid black;
   padding: 0.1rem;
+  font-size: 14px;
 }
 .bl-table th{
   

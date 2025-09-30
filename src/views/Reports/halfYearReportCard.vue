@@ -1,7 +1,8 @@
 <template>
-  <div class="form-container box wide">
+  <div v-if="resultPublished" class="form-container box wide">
     <div class="has-text-centered mb-4">
       <h1 class="title is-4">Half Yearly Examination Result, {{ CurrentYear }}</h1>
+      <h2 class="subtitle is-5" v-if="publishDate">Result Published on {{ DisplayDate(publishDate) }}</h2>
       <h2 class="subtitle is-5">Select Class and Section to generate Report Card</h2>      
     </div>
 
@@ -118,6 +119,11 @@
       </div>
   </div>
 
+  <div v-else class="form-container wide pb-1" >
+    <div class="notification is-danger has-text-centered " >
+      <p>{{ resultName }} has not been published. Result can not be generated</p>      
+    </div>    
+  </div>
       <!--Start of  Input Modal-->
       
       <div class="modal" :class="{ 'is-active': inputModalVisible }">
@@ -137,15 +143,31 @@
             </div>
             <div class="field">
               <label class="label">Teacher's Remark</label>
-              <textarea class="textarea" v-model="currentTeachersRemark"></textarea>
+              <div class="control">
+                <div class="select is-fullwidth">
+                  <select v-model="currentTeachersRemark">
+                    <option value="" disabled>Select Remark</option>
+                    <option>Congratulations! Keep it up</option>
+                    <option>Excellent !!</option>
+                    <option>Good!</option>
+                    <option>Try More Hard.</option>
+                    <option>Work Hard.</option>
+                    <option>Try Again.</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+            <div class="notification is-info is-light">
+              <p><strong>Note:</strong> Please ensure that the attendance and remark are accurate before generating the report card.</p>
             </div>
             <div class="field is-grouped is-grouped-right">
               <div class="control">
-                <button class="button is-light" @click="inputModalVisible = false">Cancel</button>
+                <button class="button is-light" @click="inputModalVisible = false"> 
+                  Cancel
+                </button>
               </div>
               <div class="control">
-                <button class="button is-primary" 
-                        @click="proceedToGenerateReportCard">
+                <button class="button is-primary" @click="proceedToGenerateReportCard">
                   Generate Report Card
                 </button>
               </div>
@@ -170,7 +192,7 @@
                   <h1 class="title print-title mt-2">CALVARY HIGHER SECONDARY SCHOOL</h1>
                   <h2 class="subtitle print-subtitle  m-0"><i>(Tripura Presbyterian School)</i></h2>
                   <img src="/sikul_logo.png" alt="School Logo" style="display: block; margin: 3px auto; height: 60px;" />
-
+                  
                   <h2 class="subtitle print-subtitle  m-0">Affiliated to TBSE, School Code: 2C018</h2>
                   <h2 class="subtitle print-subtitle  m-0">Mission Compound, Tuidu. Gomati District, Tripura – 799101 </h2>
                   <h2 class="subtitle print-subtitle  m-0">Phone No: (+91) 8787793883, email: calvaryhighschool2019@gmail.com</h2>
@@ -178,7 +200,7 @@
                   <h1 class="title print-title is-5 mt-2 mb-7">REPORT CARD (Half Yealy)</h1>
 
                 </div>
-
+                
                 <div class="table-container">
                   <table class="student-table">
                     <tbody>
@@ -296,7 +318,7 @@
                             </tr>
                             <tr>
                               <th class = "summary">Position</th>
-                              <td>{{resultData.Rank}}</td>
+                              <td>{{resultData.ResultStatus==="Pass" ? resultData.Rank : '-'}}</td>
                             </tr>
                             <tr>
                               <th class = "summary">Result</th>
@@ -310,19 +332,24 @@
                         <table class="report-table">
                           <tbody>
                             <tr>
-                              <th class="top" style>Class Teacher's Remark:</th>
-                              <td class="">
+                              <td class="top" style>Class Teacher's Remark:</td>
+                              <th class="top">
                                 <span>{{ reportCardData.TeachersRemark }}</span>                                
-                              </td>
+                              </th>
                             </tr>
                           
                             <tr>
-                              <th class="top">Name of Class Teacher:</th>
-                              <td class="">
+                              <td class="top">Name of Class Teacher:</td>
+                              <th class="top  ">
                                <span v-if="classTeacher.name">{{ classTeacher.name }}</span>
                                 <span v-else>Class Teacher's Name</span>
-                              </td>
+                              </th>
                             </tr> 
+                            <tr>
+                              <th class="bottom"></th>
+                              <th class="bottom"></th>
+                              <th class="bottom pt-5"></th>
+                            </tr>
                             <tr>
                               <th class="bottom"></th>
                               <th class="bottom"></th>
@@ -371,6 +398,9 @@ import html2pdf from 'html2pdf.js'
 const { PassingPercentage, loadActiveExam } = useActiveExam()
 const { CurrentYearId, CurrentYear } = useAcademicYear()
 
+const resultPublished = ref(false) 
+const publishDate = ref('')
+
 const route = useRoute()
 const userRole = ref('')
 const isLoading = ref(false)
@@ -387,6 +417,7 @@ const selectedClassId = ref('')
 const selectedSectionId = ref('')
 
 const results = ref([])
+const resultName = ref('')
 
 //input Modal
 const inputModalVisible = ref(false)
@@ -402,6 +433,7 @@ const studentData = ref([])
 const resultData = ref([])
 const reportCardData = ref([])
 
+
 const classTeacher = ref({ name: '', designation: '' })
 const head = ref({ name: '', designation: '' })
 
@@ -415,7 +447,7 @@ async function getExam() {
   const result = await window.electronAPI.getExamByType(examType.value, CurrentYearId.value)
   currentExamId.value = result.exam.Id
   currentExamName.value = result.exam.ExamName
-  //console.log("Current Exam:", currentExamName.value, currentExamId.value)
+  console.log("Current Exam:", currentExamName.value, currentExamId.value)
 }
 
 const className = computed(() => {
@@ -428,6 +460,27 @@ const sectionName = computed(() => {
   return selectedSection ? selectedSection.SectionName : ''
 })
 
+//Check Result Published or not
+async function checkPublishStatus() {
+  try {  
+    const status = await window.electronAPI.getPublishStatus({
+      academicYearId: CurrentYearId.value,
+      activeExamId: currentExamId.value      
+    })   
+    publishDate.value = status.publishDate || ''
+
+    //console.log("Publish Date:", publishDate.value)
+
+    if(publishDate.value !== '') {
+      resultPublished.value = true
+    }
+    else {
+      resultPublished.value = false 
+    }
+  } catch (error) {
+    console.error("Error checking publish status:", error)    
+  }
+}
 
 async function fetchClassTeacherInfo() {
   try {
@@ -458,7 +511,7 @@ async function fetchHeadInfo() {
         designation: response.data.Designation
       }
 
-      console.log("Head Signatory:", head.value)
+      //console.log("Head Signatory:", head.value)
     }
   } catch (error) {
     console.error('Error fetching head signatory:', error)
@@ -481,6 +534,9 @@ onMounted(async () => {
   await fetchClasses()
   await getExam()
   await fetchHeadInfo()
+  
+  resultName.value = 'Half Yearly Exam Results'
+  await checkPublishStatus()
 })
 
 async function fetchClasses() {
@@ -633,19 +689,32 @@ async function fetchReportCard(studentId, Name) {
 function downloadPDF() {
   const element = document.querySelector('.print-page') // or any specific container you want
   const opt = {
-    margin:       0.05,
-    filename:     `ReportCard_${ className.value }_${ sectionName.value }_${ selectedStudentName.value }.pdf`,
-    image:        { type: 'jpeg', quality: 0.98 },
-    html2canvas:  { scale: 2 },
-    jsPDF:        { unit: 'in', format: 'a4', orientation: 'portrait' }
+    margin: 0.05,
+    filename: `ReportCard_${className.value}_${sectionName.value}_${selectedStudentName.value.trim()}.pdf`,
+    image: { type: 'jpeg', quality: 0.98 },
+    html2canvas: { scale: 2 },
+    jsPDF:{ unit: 'in', format: 'a4', orientation: 'portrait' }
   }
 
   html2pdf().set(opt).from(element).save()
 }
+
 function closeModal() {
   modalVisible.value = false
-
 }
+
+function DisplayDate(dateString) {
+  if (!dateString) return ''; // handles null, undefined, empty
+
+  const d = new Date(dateString);
+  if (isNaN(d.getTime())) {
+    return ''; // invalid date string
+  }
+
+  const options = { year: 'numeric', month: 'long', day: 'numeric' };
+  return d.toLocaleDateString('en-IN', options);
+}
+
 </script>
 
 <style scoped>
@@ -846,8 +915,8 @@ function closeModal() {
   color: black;
   text-align: left;
   font-weight: 500;
+  vertical-align: bottom;
 }
-
 
 .report-table{
   color: black;
@@ -859,28 +928,31 @@ function closeModal() {
 .report-table td{ 
   border-collapse: collapse;
   padding:0.5rem;
-  font-size: 12px;
+  font-size: 14px;
   text-align: center;
   color: black;
   text-align: left;
+  width:250px;
+  padding-bottom: 0;
 }
 .report-table th{
   border-collapse: true;
   padding:0.5rem;
   padding-left: 0.2rem;
   padding-right: 0.2rem;
-  font-size: 13px;
+  font-size: 12px;
   color: black;
   max-width:100px;
 }
 .report-table th.top{ 
-  vertical-align: top; 
+  vertical-align: bottom;
+  font-size: 12pt;
 }
 .report-table th.bottom{
   min-height: 50px;
   vertical-align: bottom;
   text-align: center;
-
+  font-size: 12pt;
 }
 .total{
   color:black;
@@ -899,18 +971,40 @@ function closeModal() {
   position: relative;
 }
 
+/* Centered watermark in front of the tiled one */
 .watermark::before {
   content: "";
-  position: absolute; /* Covers entire viewport */
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 300px;          /* adjust size */
+  height: 300px;
+  background: url('/sikul_logo_watermark.png') no-repeat center;
+  background-size: contain;
+  opacity: 1;         /* lighter for watermark feel */
+  transform: translate(-50%, -50%);
+  z-index: 2;            /* above ::before, below content */
+  pointer-events: none;
+  width: 400px;          /* increase size here */
+  height: 400px; 
+}
+
+/* School Name tiled watermark */
+.watermark::after {
+  content: "";
+  position: absolute;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
   background-image: url('/Wm_Report.png');
-  background-repeat: repeat; /* This tiles the image */
-  opacity: 0.5; /* Adjust transparency as needed */
-  z-index: 9999; /* Ensure it stays on top but behind content */
-  pointer-events: none; /* Allows interaction with page elements */
+  background-repeat: repeat;
+  opacity: 0.5;
+  z-index: 1;            /* keep this lower */
+  pointer-events: none;
 }
+
+
+
 
 </style>

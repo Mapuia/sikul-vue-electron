@@ -1,8 +1,8 @@
 <template>
-  <div class="form-container box wide">
+  <div class="form-container box wide mt-6">
     <div v-if="canAccess(['deo','teacher'])">     
 
-      <div class="box mb-4 is-justify-content-center">
+      <div class="mb-4 is-justify-content-center">
         <div class="has-text-centered mb-4">
         <h1 class="title is-4">Import System Data for {{ CurrentYear }}</h1> 
         <p class="help is-warning">(Import MasterData before Exam Settings)</p>    
@@ -34,7 +34,7 @@
     <!-- Class and Section Selection -->
     
     
-    <div  class="box ">
+    <div  class=" ">
       <div class="has-text-centered mb-4">
         <h1 class="title is-4">Import Student Data for {{ CurrentYear }}</h1>      
       </div>

@@ -56,7 +56,7 @@ ipcMain.handle('add-academic-year', async (event, { yearName, startDate, endDate
 
       // Insert the new academic year with IsActive = 1
       const insertStmt = db.prepare(`
-        INSERT INTO AcademicYears (YearName, StartDate, EndDate, IsActive, Creation_at)
+        INSERT OR REPLACE INTO AcademicYears (YearName, StartDate, EndDate, IsActive, Creation_at)
         VALUES (?, ?, ?, ?, ?)
       `);
       const result = insertStmt.run(yearName, startDate, endDate, 1, currentTime);
@@ -66,7 +66,7 @@ ipcMain.handle('add-academic-year', async (event, { yearName, startDate, endDate
 
       // Step 5: Prepare the ActiveExams insertion statement
       const insertActiveExam = db.prepare(`
-        INSERT INTO ActiveExams (
+        INSERT OR REPLACE INTO ActiveExams (
           AcademicYearId,
           ExamId,
           MajorMaxMark,
