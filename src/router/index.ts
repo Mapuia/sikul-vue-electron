@@ -79,13 +79,13 @@ const routes = [
   
   {
     path: '/result/sectionSummary',
-    component: () => import('@/views/Results/sectionSummary.vue'),
+    component: () => import('@/views/Reports/sectionSummary.vue'),
     meta: { allowedRoles: [ROLES.ADMIN, ROLES.TEACHER, ROLES.DEO] }
   },
 
   {
     path: '/result/summary',
-    component: () => import('@/views/Results/resultsSummary.vue'),
+    component: () => import('@/views/Reports/resultsSummary.vue'),
     meta: { allowedRoles: [ROLES.ADMIN, ROLES.TEACHER, ROLES.DEO] }
   },
   {
@@ -95,17 +95,17 @@ const routes = [
   },
   {
     path: '/result/report-card/selection',
-    component: () => import('@/views/Results/selectionReportCard.vue'),
+    component: () => import('@/views/Reports/selectionReportCard.vue'),
     meta: { allowedRoles: [ROLES.ADMIN, ROLES.TEACHER, ROLES.DEO] }
   },
   {
     path: '/result/report-card/halfyearly',
-    component: () => import('@/views/Results/halfYearReportCard.vue'),
+    component: () => import('@/views/Reports/halfYearReportCard.vue'),
     meta: { allowedRoles: [ROLES.ADMIN, ROLES.TEACHER, ROLES.DEO] }
   },
   {
     path: '/result/report-card/final',
-    component: () => import('@/views/Results/finalReportCard.vue'),
+    component: () => import('@/views/Reports/finalReportCard.vue'),
     meta: { allowedRoles: [ROLES.ADMIN, ROLES.TEACHER, ROLES.DEO] }
   },
 

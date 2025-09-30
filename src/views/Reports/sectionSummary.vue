@@ -68,7 +68,7 @@
                 <thead>
                   <tr>
                     <th>Roll No</th>
-                    <th style="width: 300px;">Name</th>
+                    <th style="width: 200px;">Name</th>
                     <th style="width: 100px;">Exams</th>
                     <th v-for="subject in subjects" :key="subject.Id">
                       {{ subject.SubjectName }}
