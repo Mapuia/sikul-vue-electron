@@ -542,14 +542,14 @@ async function fetchClasses() {
   if (result.success) {
     if (examType.value === 'selection') {      
       classes.value = result.classes.filter(cls => cls.ClassName === 'X')
-      console.log("Classes for Selection Test:", classes.value)
+      //console.log("Classes for Selection Test:", classes.value)
       if (classes.value.length > 0) {
         selectedClassId.value = classes.value[0].Id
       }
     } 
     else if (examType.value === 'annual') {      
       classes.value = result.classes.filter(cls => cls.ClassName !== 'X')
-      console.log("Classes for Annual Exam:", classes.value)      
+      //console.log("Classes for Annual Exam:", classes.value)      
     }
     else {     
       classes.value = result.classes

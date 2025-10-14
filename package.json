@@ -7,7 +7,7 @@
   "author": "Capritech IT Solutions",
   "description": "Electron-Vue App for Student Admission and Report Card ",
   "scripts": {
-    "dev": "concurrently \"vite\" \"wait-on http://localhost:5173 && cross-env VITE_DEV_SERVER_URL=http://localhost:5173 electron .\"",
+    "dev": "concurrently \"vite\" \"wait-on http://localhost:5173 && cross-env VITE_DEV_SERVER_URL=http://localhost:5173 nodemon --watch electron --exec electron .\"",
     "build:renderer": "vite build",
     "build": "npm run build:renderer && electron-builder",
     "preview": "vite preview"
@@ -20,6 +20,8 @@
     "html2canvas": "^1.4.1",
     "html2pdf.js": "^0.10.3",
     "keytar": "^7.9.0",
+    "pdfkit": "^0.17.2",
+    "pdfkit-table": "^0.1.99",
     "pinia": "^3.0.2",
     "vue": "^3.5.13",
     "vue-router": "^4.5.0"
@@ -32,6 +34,7 @@
     "electron": "^35.6.0",
     "electron-builder": "^26.0.12",
     "electron-rebuild": "^3.2.9",
+    "nodemon": "^3.1.10",
     "sass": "^1.86.3",
     "typescript": "~5.7.2",
     "vite": "^6.2.0",
@@ -42,7 +45,7 @@
     "appId": "com.sikulapp.desktop",
     "productName": "SikulApp",
     "asar": true,
-    "asarUnpack": "electron/schema.sql",   
+    "asarUnpack": "electron/schema.sql",
     "directories": {
       "buildResources": "build",
       "output": "dist"
@@ -55,19 +58,20 @@
       "schema.sql"
     ],
     "extraFiles": [
-    {
-      "from": "schema.sql",
-      "to": "schema.sql"
-    }
-  ],
-    "extraResources": [      
       {
-      "from": "electron/schema.sql",
-      "to": "schema.sql",
-      "filter": ["**/*"]
-      }      
+        "from": "schema.sql",
+        "to": "schema.sql"
+      }
     ],
-      
+    "extraResources": [
+      {
+        "from": "electron/schema.sql",
+        "to": "schema.sql",
+        "filter": [
+          "**/*"
+        ]
+      }
+    ],
     "extraMetadata": {
       "main": "electron/main.cjs"
     },

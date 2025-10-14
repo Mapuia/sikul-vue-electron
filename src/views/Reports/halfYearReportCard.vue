@@ -1,8 +1,8 @@
 <template>
-  <div v-if="resultPublished" class="form-container box wide">
+  <div v-if="isPublished" class="form-container box wide">
     <div class="has-text-centered mb-4">
       <h1 class="title is-4">Half Yearly Examination Result, {{ CurrentYear }}</h1>
-      <h2 class="subtitle is-5" v-if="publishDate">Result Published on {{ DisplayDate(publishDate) }}</h2>
+      <h2 class="subtitle is-5" v-if="publishDate">Result Published on {{ publishDate }}</h2>
       <h2 class="subtitle is-5">Select Class and Section to generate Report Card</h2>      
     </div>
 
@@ -121,7 +121,7 @@
 
   <div v-else class="form-container wide pb-1" >
     <div class="notification is-danger has-text-centered " >
-      <p>{{ resultName }} has not been published. Result can not be generated</p>      
+      <p>Half Yearly Result has not been published. Report Card can not be generated</p>      
     </div>    
   </div>
       <!--Start of  Input Modal-->
@@ -197,8 +197,8 @@
                   <h2 class="subtitle print-subtitle  m-0">Mission Compound, Tuidu. Gomati District, Tripura – 799101 </h2>
                   <h2 class="subtitle print-subtitle  m-0">Phone No: (+91) 8787793883, email: calvaryhighschool2019@gmail.com</h2>
                   <h2 class="subtitle print-subtitle ">Academic Session : {{ CurrentYear }}</h2>
-                  <h1 class="title print-title is-5 mt-2 mb-7">REPORT CARD (Half Yealy)</h1>
-
+                  <h1 class="title print-title is-5 mt-2">REPORT CARD (Half Yearly)</h1>
+                  <h2 class="subtitle print-subtitle "> Result published on {{ publishDate }}</h2>
                 </div>
                 
                 <div class="table-container">
@@ -393,13 +393,13 @@ import { ref, watch, onMounted, computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { useAcademicYear } from '../../composables/useAcademicYear'
 import { useActiveExam } from '../../composables/useActiveExam'
+import { useResultStatus } from '../../composables/useResultStatus'
 import html2pdf from 'html2pdf.js'
 
 const { PassingPercentage, loadActiveExam } = useActiveExam()
 const { CurrentYearId, CurrentYear } = useAcademicYear()
+const { isPublished, publishDate, checkResultStatus } = useResultStatus()
 
-const resultPublished = ref(false) 
-const publishDate = ref('')
 
 const route = useRoute()
 const userRole = ref('')
@@ -417,7 +417,6 @@ const selectedClassId = ref('')
 const selectedSectionId = ref('')
 
 const results = ref([])
-const resultName = ref('')
 
 //input Modal
 const inputModalVisible = ref(false)
@@ -459,28 +458,6 @@ const sectionName = computed(() => {
   const selectedSection = sections.value.find(sec => sec.Id === selectedSectionId.value)
   return selectedSection ? selectedSection.SectionName : ''
 })
-
-//Check Result Published or not
-async function checkPublishStatus() {
-  try {  
-    const status = await window.electronAPI.getPublishStatus({
-      academicYearId: CurrentYearId.value,
-      activeExamId: currentExamId.value      
-    })   
-    publishDate.value = status.publishDate || ''
-
-    //console.log("Publish Date:", publishDate.value)
-
-    if(publishDate.value !== '') {
-      resultPublished.value = true
-    }
-    else {
-      resultPublished.value = false 
-    }
-  } catch (error) {
-    console.error("Error checking publish status:", error)    
-  }
-}
 
 async function fetchClassTeacherInfo() {
   try {
@@ -533,10 +510,8 @@ onMounted(async () => {
   await getUser()
   await fetchClasses()
   await getExam()
-  await fetchHeadInfo()
-  
-  resultName.value = 'Half Yearly Exam Results'
-  await checkPublishStatus()
+  await checkResultStatus(currentExamId.value, CurrentYearId.value)
+  await fetchHeadInfo()  
 })
 
 async function fetchClasses() {

@@ -1,9 +1,92 @@
-const { ipcMain } = require('electron');
+const { ipcMain, dialog } = require('electron');
 const { db } = require('../database.cjs');
-const currentTime = new Date(new Date().getTime() + 5.5 * 60 * 60 * 1000).toISOString();
+// const PDFDocument = require('pdfkit');
+// const fs = require('fs');
+// require('pdfkit-table')
 
+const currentTime = new Date(new Date().getTime() + 5.5 * 60 * 60 * 1000).toISOString();
+// const path = require('path');
 // IPC Handlers for Result
 //////////////////////////////////////////////////////////////////////////////
+//Export Result Summary as PDF
+
+
+// ipcMain.handle('export-section-results-summary', async (event, { classId, sectionId, examId, academicYearId }) => {
+//   try {
+//     // Step 1: Fetch result data
+//     const studentMarks = await getResultSummary(classId, sectionId, examId, academicYearId);
+
+//     if (!studentMarks || studentMarks.length === 0) {
+//       return { success: false, message: 'No data found for this section.' };
+//     }
+
+//     // Step 2: Choose save location
+//     const { filePath } = await dialog.showSaveDialog({
+//       title: 'Save Results Summary',
+//       defaultPath: `Section_Summary_${classId}_${sectionId}.pdf`,
+//       filters: [{ name: 'PDF Files', extensions: ['pdf'] }]
+//     });
+//     if (!filePath) return { success: false, message: 'Save cancelled' };
+
+//     // Step 3: Create PDF
+//     const doc = new PDFDocument({ margin: 25, size: 'A4', layout: 'landscape' });
+//     const stream = fs.createWriteStream(filePath);
+//     doc.pipe(stream);
+
+//     // Step 4: Title
+//     doc.font('Helvetica-Bold').fontSize(16).text('Section Results Summary', { align: 'center' });
+//     doc.moveDown(0.5);
+//     doc.font('Helvetica').fontSize(10).text(`Class ID: ${classId} | Section ID: ${sectionId} | Exam ID: ${examId} | Academic Year: ${academicYearId}`, { align: 'center' });
+//     doc.moveDown(1);
+
+//     // Step 5: Prepare Table Data
+//     const table = {
+//       headers: [
+//         { label: 'Roll No', property: 'RollNo', width: 50, headerColor: '#d3d3d3' },
+//         { label: 'Name', property: 'Name', width: 150 },
+//         { label: 'Total Marks', property: 'totalMarks', width: 80 },
+//         { label: 'Percentage', property: 'Percentage', width: 80 },
+//         { label: 'Division', property: 'Division', width: 70 },
+//         { label: 'Position', property: 'Position', width: 70 },
+//         { label: 'Result', property: 'Result', width: 70 }
+//       ],
+//       datas: studentMarks.map(s => ({
+//         RollNo: s.RollNo ?? '',
+//         Name: s.Name ?? '',
+//         totalMarks: s.totalMarks ?? '',
+//         Percentage: s.Percentage ? s.Percentage.toFixed(1) + '%' : '',
+//         Division: s.Division ?? '',
+//         Position: s.Position ?? '',
+//         Result: s.Result ?? ''
+//       }))
+//     };
+
+//     // Step 6: Draw Table
+//     await doc.table(table, {
+//       prepareHeader: () => doc.font('Helvetica-Bold').fontSize(9),
+//       prepareRow: (row, i) => doc.font('Helvetica').fontSize(8),
+//       columnSpacing: 5,
+//       padding: 3
+//     });
+
+//     // Step 7: Finalize PDF
+//     doc.end();
+
+//     await new Promise((resolve, reject) => {
+//       stream.on('finish', resolve);
+//       stream.on('error', reject);
+//     });
+
+//     return { success: true, filePath };
+
+//   } catch (err) {
+//     console.error('PDF Export Error:', err);
+//     return { success: false, message: err.message };
+//   }
+// });
+
+
+
 ipcMain.handle('get-mark-entry-status', async (event, examId, examType) => {
   try {
     //console.log('Fetching mark entry status for exam:', examId);
@@ -411,6 +494,7 @@ ipcMain.handle('generate-results', async (event, { academicYearId, resultType, e
   
   return transaction();
 });
+
 function getDivision(percentage, failCount) {
   if (failCount > 0) return 'N.A.'; 
   if (percentage >= 80) return 'Dist';
@@ -763,7 +847,6 @@ ipcMain.handle('get-section-results', async (event, { academicYearId, examId, cl
   }
 });
 
-// In your electron main process file (e.g., main.js)
 
 ipcMain.handle('get-publish-status', async (event, { academicYearId, activeExamId }) => {
     
@@ -790,11 +873,18 @@ ipcMain.handle('get-publish-status', async (event, { academicYearId, activeExamI
       WHERE Id = ? AND AcademicYearId = ?
     `);
     const publishDate = publishDateStmt.get(activeExamId, academicYearId)?.PublishDate;
-    //console.log("Publish Date ", publishDate)
+
+    const isPublished = db.prepare(`
+      SELECT Result_Published 
+      FROM ActiveExams
+      WHERE Id = ? AND AcademicYearId = ?
+      `).get(activeExamId, academicYearId)
+    
     return {
       success: true,
       markEntryCount,
       resultStatusCount,
+      isPublished,
       publishDate
     };
   } catch (error) {
@@ -885,30 +975,80 @@ ipcMain.handle('unpublish-results', async (event, { academicYearId, activeExamId
 
 //Section Result Summary
 // electron/ipcHandlers/getResultsSummary.js
+// const getSubjectsByClassId = (classId) => {
+//   return db.prepare(`
+//       SELECT s.Id, SubjectCode as SubjectName
+//       FROM ClassSubjectMapping csm
+//       JOIN Subjects s ON csm.SubjectId = s.Id
+//       WHERE csm.ClassId = ?
+//       AND s.SubjectCategory != 'Co-Scholastic'
+//       ORDER BY s.DisplayOrder
+//     `).all(classId);
+//   }
 
-
-ipcMain.handle('get-section-results-summary', async (event, { classId, sectionId, examId, academicYearId }) => {
-  try {
-   
-  // console.log("Subjects for class ", classId, subjects)
-      const students = db.prepare(`
+const getResultSummary = async (classId, sectionId, examId, academicYearId, examType) => {
+         
+  const students = db.prepare(`
         SELECT 
             stu.Id as StudentId,
             stu.Name, 
-            a.RollNo,
-            r.Percentage,
-            r.Division,
-            r.Rank as Position,
-            r.ResultStatus as Result
-        FROM Students stu
-        LEFT JOIN Admissions a ON stu.Id = a.StudentId
-        JOIN Results r ON stu.Id = r.StudentId
+            a.RollNo         
+        FROM Students stu        
+        JOIN Admissions a ON stu.Id = a.StudentId     
         WHERE a.ClassId = ? 
             AND a.SectionId = ? 
             AND a.AcademicYearId = ?
         ORDER BY a.RollNo;`).all(classId, sectionId, academicYearId);
 
-    const marks = db.prepare(`
+        
+
+        //  const students = db.prepare(`
+        // SELECT 
+        //     stu.Id as StudentId,
+        //     stu.Name, 
+        //     a.RollNo,
+        //     r.Percentage,
+        //     r.Division,
+        //     r.Rank as Position,
+        //     r.ResultStatus as Result
+        // FROM Students stu        
+        // JOIN Admissions a ON stu.Id = a.StudentId
+        // LEFT JOIN Results r ON stu.Id = r.StudentId
+        // WHERE a.ClassId = ? 
+        //     AND a.SectionId = ? 
+        //     AND a.AcademicYearId = ?
+
+        // ORDER BY a.RollNo;`).all(classId, sectionId, academicYearId);
+  //console.log("Students: ", students)
+  
+// Get Marks based on examType
+  let marks;
+  //console.log('Exam Type:', examType)
+  if(examType === 'final'){
+    marks = db.prepare(`
+        SELECT 
+            stu.Id AS StudentId,
+            a.RollNo,
+            s.SubjectCode AS SubjectName,
+            s.Id AS SubjectId,
+            s.displayOrder,
+            SUM(m.PeriodicMarksObtained) AS PeriodicMarksObtained,
+            SUM(m.TerminalMarksObtained) AS TerminalMarksObtained,
+            SUM(m.TotalMarksObtained) AS TotalMarksObtained
+        FROM Students stu
+        INNER JOIN Admissions a ON stu.Id = a.StudentId
+        INNER JOIN Marks m ON stu.Id = m.StudentId
+        INNER JOIN Subjects s ON m.SubjectId = s.Id
+        WHERE a.ClassId = ? 
+          AND a.SectionId = ? 
+          AND a.AcademicYearId = ?
+        GROUP BY stu.Id, s.Id
+        ORDER BY a.RollNo, s.displayOrder;`)
+      .all(classId, sectionId, academicYearId);
+      //console.log("Final Marks:", marks)
+  }
+  else{
+    marks = db.prepare(`
       SELECT 
           stu.Id as StudentId,
           a.RollNo,
@@ -925,14 +1065,10 @@ ipcMain.handle('get-section-results-summary', async (event, { classId, sectionId
       WHERE a.ClassId = ? 
           AND a.SectionId = ? 
           AND a.AcademicYearId = ?
+          AND m.ActiveExamId = ?
       ORDER BY a.RollNo, s.displayOrder;
-      `).all(classId, sectionId, academicYearId);
-
-      // const studentMarks = students.forEach((student) => {
-      //   const currentMarks = marks.forEach((mark) => {
-      //     return 
-      //   })
-      // })
+      `).all(classId, sectionId, academicYearId, examId);
+    }
 
     let studentMarks = [];
 
@@ -954,22 +1090,234 @@ ipcMain.handle('get-section-results-summary', async (event, { classId, sectionId
         totalMarks,
         marks: currentMarks
       })
-    })
+    });
 
+  return studentMarks;
+}
+
+ipcMain.handle('get-section-results-summary', async (event, { classId, sectionId, examId, academicYearId, examType }) => {
+  try {
+   const studentMarks = await getResultSummary(classId, sectionId, examId, academicYearId, examType);
+    //console.log("Student Marks: ", studentMarks)
     return { 
       success: true,
-      students, 
-      marks,
       studentMarks
     }
-   
-    
-
   } catch (error) {
     console.error("Error fetching results summary:", error);
     return { success: false, error: error.message };
   }
 });
+
+// electron/ipcHandlers/exportSectionResultsSummary.js
+
+// ipcMain.handle('export-section-results-summary', async (event, { classId, sectionId, examId, academicYearId }) => {
+//   try {
+//     const { filePath } = await dialog.showSaveDialog({
+//       title: 'Save Results Summary',
+//       defaultPath: `Section_Summary_${classId}_${sectionId}.pdf`,
+//       filters: [{ name: 'PDF Files', extensions: ['pdf'] }]
+//     });
+//     if (!filePath) return { success: false, message: 'Save cancelled' };
+
+//     const subjects = await getSubjectsByClassId(classId) || [];
+//     const studentMarks = await getResultSummary(classId, sectionId, examId, academicYearId) || [];
+
+//     const doc = new PDFDocument({ margin: 20, size: 'A4', layout: 'landscape' });
+//     const stream = fs.createWriteStream(filePath);
+//     doc.pipe(stream);
+
+//     doc.fontSize(16).text(`Results Summary - Class ${classId} Section ${sectionId}`, { align: 'center' });
+//     doc.moveDown(1);
+
+//     const headers = [
+//       'Roll No',
+//       'Name',
+//       'Exam',
+//       ...subjects.map(s => s.SubjectName),
+//       'Total',
+//       '%',
+//       'Div',
+//       'Pos',
+//       'Result'
+//     ];
+
+//     const examLabels = ['Periodic', 'Half Yearly', 'Total'];
+//     const examKeys = { Periodic: 'periodic', 'Half Yearly': 'terminal', Total: 'total' };
+
+//     const rows = [];
+//     studentMarks.forEach(student => {
+//       examLabels.forEach(exam => {
+//         const row = [
+//           student.RollNo,
+//           student.Name,
+//           exam,
+//         ];
+
+//         subjects.forEach(subj => {
+//           const marks = student.marks[subj.Id];
+//           row.push(marks ? marks[examKeys[exam]] : '-');
+//         });
+
+//         row.push(student.totalMarks || '-');
+//         row.push(student.Percentage || '-');
+//         row.push(student.Division || '-');
+//         row.push(student.Position || '-');
+//         row.push(student.Result || '-');
+
+//         rows.push(row);
+//       });
+//     });
+
+//     doc.table({ headers, rows }, {
+//       prepareHeader: () => doc.font('Helvetica-Bold').fontSize(8),
+//       prepareRow: (row, i) => doc.font('Helvetica').fontSize(7),
+//       columnSpacing: 3,
+//       padding: 3,
+//       width: doc.page.width - 40
+//     });
+
+//     doc.end();
+//     await new Promise((resolve, reject) => {
+//       stream.on('finish', resolve);
+//       stream.on('error', reject);
+//     });
+
+//     return { success: true, filePath };
+//   } catch (err) {
+//     console.error('PDF Export failed:', err);
+//     return { success: false, message: err.message };
+//   }
+// });
+
+// ipcMain.handle(
+//   'export-section-results-summary',
+//   async (event, { classId, sectionId, examId, academicYearId, subjects}) => {
+//     try {
+//       // Ask where to save
+//       const { filePath } = await dialog.showSaveDialog({
+//         title: 'Save Results Summary',
+//         defaultPath: `Section_Summary_${classId}_${sectionId}.pdf`,
+//         filters: [{ name: 'PDF Files', extensions: ['pdf'] }],
+//       });
+//       if (!filePath) return { success: false, message: 'Save cancelled' };
+
+//       // Fetch data
+//       //const subjects = await getSubjectsByClassId(classId);
+//       const studentMarks = await getResultSummary(
+//         classId,
+//         sectionId,
+//         examId,
+//         academicYearId
+//       );
+
+//       // Create PDF
+//       const doc = new PDFDocument({
+//         margin: 20,
+//         size: 'A4',
+//         layout: 'landscape',
+//       });
+//       const stream = fs.createWriteStream(filePath);
+//       doc.pipe(stream);
+
+//       // Title
+//       doc.fontSize(16).text(`Results Summary - Class ${classId} Section ${sectionId}`, {
+//         align: 'center',
+//       });
+//       doc.moveDown(1);
+
+//       // Build headers: Roll No | Name | Exams | subject1 | subject2 ... | Total | % | Div | Pos | Result
+//       const headers = [
+//         'Roll No',
+//         'Name',
+//         'Exam',
+//         ...subjects.map((s) => s.SubjectName),
+//         'Total',
+//         '%',
+//         'Div',
+//         'Pos',
+//         'Result',
+//       ];
+
+//       // Exams to display
+//       const examLabels = ['Periodic', 'Half Yearly', 'Total'];
+//       const examKeys = { Periodic: 'periodic', 'Half Yearly': 'terminal', Total: 'total' };
+
+//       // Build rows
+//       const rows = [];
+//       studentMarks.forEach((student) => {
+//         examLabels.forEach((exam, examIndex) => {
+//           const row = [];
+
+//           // RollNo & Name only in first exam row
+//           if (examIndex === 0) {
+//             row.push({ label: student.RollNo, options: { rowspan: 3 } });
+//             row.push({ label: student.Name, options: { rowspan: 3 } });
+//           } else {
+//             row.push('');
+//             row.push('');
+//           }
+
+//           // Exam Name
+//           row.push(exam);
+
+//           // Subject marks
+//           subjects.forEach((subj) => {
+//             const markObj = student.marks[subj.Id];
+//             const val = markObj ? markObj[examKeys[exam]] : '-';
+//             row.push(val);
+//           });
+
+//           // Totals etc only in first exam row
+//           if (examIndex === 0) {
+//             row.push({ label: student.totalMarks || '-', options: { rowspan: 3 } });
+//             row.push({ label: student.Percentage || '-', options: { rowspan: 3 } });
+//             row.push({ label: student.Division || '-', options: { rowspan: 3 } });
+//             row.push({ label: student.Position || '-', options: { rowspan: 3 } });
+//             row.push({ label: student.Result || '-', options: { rowspan: 3 } });
+//           } else {
+//             row.push('');
+//             row.push('');
+//             row.push('');
+//             row.push('');
+//             row.push('');
+//           }
+
+//           rows.push(row);
+//         });
+//       });
+
+//       // Draw table
+//       await doc.table(
+//         {
+//           headers,
+//           rows,
+//         },
+//         {
+//           prepareHeader: () => doc.font('Helvetica-Bold').fontSize(8),
+//           prepareRow: (row, i) => doc.font('Helvetica').fontSize(7),
+//           columnSpacing: 3,
+//           padding: 3,
+//           width: doc.page.width - 40,
+//         }
+//       );
+
+//       // Finish
+//       doc.end();
+//       await new Promise((resolve, reject) => {
+//         stream.on('finish', resolve);
+//         stream.on('error', reject);
+//       });
+
+//       return { success: true, filePath };
+//     } catch (err) {
+//       console.error('PDF Export failed:', err);
+//       return { success: false, message: err.message };
+//     }
+//   }
+// );
+
+
 
 /*
 const results = students.map(stu => {

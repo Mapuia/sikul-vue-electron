@@ -160,8 +160,7 @@ ipcMain.handle('get-current-exam', async (event, yearId) => {
     return {
       periodic: {
         MajorMaxMark: periodic.MajorMaxMark || null,
-        MinorMaxMark: periodic.MinorMaxMark || null,
-        Result_Published: periodic.Result_Published || false
+        MinorMaxMark: periodic.MinorMaxMark || null
       },
       terminal: {
         MajorMaxMark: terminal.MajorMaxMark || null,
@@ -174,7 +173,7 @@ ipcMain.handle('get-current-exam', async (event, yearId) => {
       }
     };
   } catch (err) {
-    console.error('Error getting current exam:', err);
+    console.error('Error getting current exam details', err);
     return { 
       success: false, 
       message: err.message,
@@ -218,16 +217,16 @@ ipcMain.handle('get-active-exam-by-type', async (event, examType, YearId) => {
 })
 
 
-ipcMain.handle('get-exam-by-type', async (event, examType, YearId) => {
+ipcMain.handle('get-exam-by-type', async (event, type, YearId) => {
   try {
     const exam = db.prepare(`
-      SELECT ae.Id, e.ExamName
+      SELECT ae.Id as Id, e.ExamName as ExamName
       FROM ActiveExams ae
       JOIN Exams e ON ae.ExamId = e.Id
       WHERE e.ExamType = ? AND ae.AcademicYearId = ?
-    `).get(examType, YearId)
+    `).get("terminal", YearId)
     
-    //console.log("Fetching exam ID from Active Exams", exam)
+    
     return { success: true, exam };
   } catch (error) {
     return { success: false, error: error.message }

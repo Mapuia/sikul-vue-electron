@@ -1,9 +1,9 @@
 <template>
-  <div v-if="resultPublished" class="form-container box wide">
+  <div v-if="isPublished" class="form-container box wide">
     <div class="has-text-centered mb-4">
       <h1 class="title is-4">Final Result, {{ CurrentYear }}</h1>
-      <h2 class="subtitle is-5" v-if="publishDate">Result Published on {{ DisplayDate(publishDate) }}</h2>
-      <h2 class="subtitle is-5">Select Class and Section to generate Report Card</h2>      
+      <h2 class="subtitle is-6" v-if="true">Result Published on {{ publishDate }}</h2>
+      <p>Select Class and Section to generate Report Card</p>
     </div>
 
     <!-- Class and Section Selection -->
@@ -118,10 +118,10 @@
         </div>
       </div>
   </div>
-  <div v-else class="form-container wide pb-1" >
-    <div class="notification is-danger has-text-centered " >
-      <p>{{ resultName }} has not been published.</p>      
-    </div>    
+  <div v-else class="is-flex is-justify-content-center is-align-items-center" style="height: 100vh;">
+    <div class="notification is-danger has-text-centered is-size-5">
+      <p>Final Result has not been published!</p>
+    </div>
   </div>
       <!--Start of  Input Modal-->      
       <div class="modal" :class="{ 'is-active': inputModalVisible }">
@@ -185,6 +185,7 @@
                   <h2 class="subtitle print-subtitle m-0">Phone No: (+91) 8787793883, email: calvaryhighschool2019@gmail.com</h2>
                   <h2 class="subtitle print-subtitle ">Academic Session : {{ CurrentYear }}</h2>
                   <h1 class="title print-title is-5 mt-2">REPORT CARD (Final)</h1>
+                  <h2 class="subtitle print-subtitle "> Result published on {{ publishDate }}</h2>
                 </div>
 
                 <div class="table-container">
@@ -387,7 +388,7 @@
                   </div>
                 </div>
                 <div class="columns is-flex is-justify-content-space-between is-align-items-center mx-1 mt-6">
-                  <div>Date: {{ currentDate }}</div>
+                  <div>Issue Date: {{ currentDate }}</div>
                   <div class="mr-6 is-size-7">Signature of {{ head.designation || "Principal" }}</div>
                 </div>                
                 <div class="help is-flex is-justify-content-center has-text-centered mt-7">
@@ -416,10 +417,13 @@ import { ref, watch, onMounted, computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { useAcademicYear } from '../../composables/useAcademicYear'
 import { useActiveExam } from '../../composables/useActiveExam'
+import { useResultStatus } from '../../composables/useResultStatus'
+const { isPublished, publishDate, checkResultStatus } = useResultStatus()
 import html2pdf from 'html2pdf.js'
 
 const { CurrentYearId, CurrentYear } = useAcademicYear()
-const { PassingPercentage, loadActiveExam } = useActiveExam()
+const { Final_Published, PassingPercentage, loadActiveExam } = useActiveExam()
+
 
 const route = useRoute()
 const userRole = ref('')
@@ -467,6 +471,7 @@ const resultData = ref({
 const reportCardData = ref([])
 const totalMarks = ref([])
 
+
 const classTeacher = ref({ name: '', designation: '' })
 const head = ref({ name: '', designation: '' })
 
@@ -476,6 +481,11 @@ const currentDate = ref(new Date().toLocaleDateString('en-IN', {
   day: 'numeric'
 }))
 
+async function getExam() {
+  const result = await window.electronAPI.getExamByType(examType.value, CurrentYearId.value)
+  currentExamId.value = result.exam.Id
+  //currentExamName.value = result.exam.ExamName
+}
 
 const className = computed(() => {
   const selectedClass = classes.value.find(cls => cls.Id === selectedClassId.value)
@@ -523,6 +533,8 @@ async function fetchHeadSignatory() {
 
 onMounted(async () => {
   await loadActiveExam()
+  await getExam()
+  await checkResultStatus(currentExamId.value, CurrentYearId.value)
   await fetchClasses()
   await getUser()
   await fetchHeadSignatory()
@@ -635,6 +647,7 @@ async function proceedToGenerateReportCard() {
     currentAttendance.value,
     currentTeachersRemark.value
   )
+  // Refresh results to reflect any changes
   fetchResults()
 }
 
@@ -656,6 +669,7 @@ async function generateReportCard(studentId, totalWorkingDays, attendance, remar
     
     if (results?.success) { 
       await window.electronAPI.showInfoDialog('Report card generated successfully!');
+      await fetchHeadSignatory()
       await fetchReportCard(studentId, selectedStudentName.value)
       
     } else {
@@ -728,8 +742,9 @@ function downloadPDF() {
 }
 function closeModal() {
   modalVisible.value = false
-
 }
+
+
 </script>
 
 <style scoped>
@@ -740,6 +755,7 @@ function closeModal() {
 
 .notification {
   margin-bottom: 0;
+  width: 70%;
 }
 
 .tag {

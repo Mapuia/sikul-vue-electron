@@ -7,7 +7,7 @@
       </figure>
 
       <h1 class="subtitle is-4 mb-3">
-        Welcome {{ currentUser }} !                         
+        Welcome {{ currentUser }}!                         
       </h1>
       <h1 class="title is-4">
         Calvary Higher Secondary School

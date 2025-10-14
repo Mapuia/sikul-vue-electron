@@ -171,6 +171,7 @@ contextBridge.exposeInMainWorld('electronAuth', {
   
   //results Summary
   getSubjectsByClassIdforSummary:(ClassId) => ipcRenderer.invoke('get-subjects-by-classId-for-summary', ClassId),
-  getSectionResultsSummary:(data) => ipcRenderer.invoke('get-section-results-summary', data)
+  getSectionResultsSummary:(params) => ipcRenderer.invoke('get-section-results-summary', params),
+  exportSectionResultsSummary:(data) => ipcRenderer.invoke('export-section-results-summary', data)
 });
 
