@@ -203,8 +203,11 @@ ipcMain.handle('activate-exam', async (EventTarget, Id) => {
 
 ipcMain.handle('get-active-exam-by-type', async (event, examType, YearId) => {
   try {
+      if (examType === 'final') {
+            examType = 'annual';
+      }
     const exam = db.prepare(`
-      SELECT ae.Id, e.ExamType
+      SELECT ae.Id, e.ExamType, e.ExamName
       FROM ActiveExams ae
       JOIN Exams e ON ae.ExamId = e.Id
       WHERE e.ExamType = ? AND ae.AcademicYearId = ?
@@ -224,8 +227,8 @@ ipcMain.handle('get-exam-by-type', async (event, type, YearId) => {
       FROM ActiveExams ae
       JOIN Exams e ON ae.ExamId = e.Id
       WHERE e.ExamType = ? AND ae.AcademicYearId = ?
-    `).get("terminal", YearId)
-    
+    `).get(type, YearId)
+    console.log("Exam fetched for type:", type, exam)
     
     return { success: true, exam };
   } catch (error) {

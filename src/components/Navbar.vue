@@ -122,10 +122,10 @@
               <div class="navbar-item has-subdropdown">
                 <span class="navbar-link">School Summary</span>
                 <div class="navbar-subdropdown">
-                  <router-link class="navbar-item" to="/report/section-summary?type=terminal" @click="closeDropdown">Half Yearly</router-link>
-                  <!-- <router-link class="navbar-item" to="/report/section-summary?type=annual" @click="closeDropdown">Annual</router-link> -->
-                  <router-link class="navbar-item" to="/report/section-summary?type=final" @click="closeDropdown">Final</router-link>
-                  <router-link class="navbar-item" to="/report/section-summary?type=selection" @click="closeDropdown">Selection</router-link>
+                  <router-link class="navbar-item" to="/report/summary?type=terminal" @click="closeDropdown">Half Yearly</router-link>
+                  <!-- <router-link class="navbar-item" to="/report/summary?type=annual" @click="closeDropdown">Annual</router-link> -->
+                  <router-link class="navbar-item" to="/report/summary?type=final" @click="closeDropdown">Final</router-link>
+                  <router-link class="navbar-item" to="/report/summary?type=selection" @click="closeDropdown">Selection</router-link>
                 </div>
               </div>
 

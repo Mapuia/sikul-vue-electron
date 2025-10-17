@@ -573,7 +573,7 @@ ipcMain.handle('get-result-summary', async (event, { academicYearId, examId, res
     if (!academicYearId || !examId) {
       throw new Error('Missing required parameters: academicYearId or examId');
     }
-
+    // console.log("Current ExamId for Summary:", examId)
     // Get all class-section mappings (synchronously)
     const classSections = db.prepare(`
       SELECT 
@@ -988,37 +988,37 @@ ipcMain.handle('unpublish-results', async (event, { academicYearId, activeExamId
 
 const getResultSummary = async (classId, sectionId, examId, academicYearId, examType) => {
          
-  const students = db.prepare(`
-        SELECT 
-            stu.Id as StudentId,
-            stu.Name, 
-            a.RollNo         
-        FROM Students stu        
-        JOIN Admissions a ON stu.Id = a.StudentId     
-        WHERE a.ClassId = ? 
-            AND a.SectionId = ? 
-            AND a.AcademicYearId = ?
-        ORDER BY a.RollNo;`).all(classId, sectionId, academicYearId);
+  // const students = db.prepare(`
+  //       SELECT 
+  //           stu.Id as StudentId,
+  //           stu.Name, 
+  //           a.RollNo         
+  //       FROM Students stu        
+  //       JOIN Admissions a ON stu.Id = a.StudentId     
+  //       WHERE a.ClassId = ? 
+  //           AND a.SectionId = ? 
+  //           AND a.AcademicYearId = ?
+  //       ORDER BY a.RollNo;`).all(classId, sectionId, academicYearId);
 
         
 
-        //  const students = db.prepare(`
-        // SELECT 
-        //     stu.Id as StudentId,
-        //     stu.Name, 
-        //     a.RollNo,
-        //     r.Percentage,
-        //     r.Division,
-        //     r.Rank as Position,
-        //     r.ResultStatus as Result
-        // FROM Students stu        
-        // JOIN Admissions a ON stu.Id = a.StudentId
-        // LEFT JOIN Results r ON stu.Id = r.StudentId
-        // WHERE a.ClassId = ? 
-        //     AND a.SectionId = ? 
-        //     AND a.AcademicYearId = ?
-
-        // ORDER BY a.RollNo;`).all(classId, sectionId, academicYearId);
+  const students = db.prepare(`
+    SELECT 
+        stu.Id as StudentId,
+        stu.Name, 
+        a.RollNo,
+        r.Percentage,
+        r.Division,
+        r.Rank as Position,
+        r.ResultStatus as Result
+    FROM Students stu        
+    JOIN Admissions a ON stu.Id = a.StudentId
+    LEFT JOIN Results r ON stu.Id = r.StudentId
+    WHERE a.ClassId = ? 
+        AND a.SectionId = ? 
+        AND a.AcademicYearId = ?
+        AND r.resultType = ?
+    ORDER BY a.RollNo;`).all(classId, sectionId, academicYearId, examType);
   //console.log("Students: ", students)
   
 // Get Marks based on examType

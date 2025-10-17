@@ -184,10 +184,10 @@ const selectedClassId = ref('')
 const selectedSectionId = ref('')
 
 const examType = ref(route.query.type)
-console.log('Exam Type:', examType.value)
-console.log('Current Exam ID:', currentExamId.value)
-console.log('Current Exam Name:', currentExamName.value)
-console.log('Academic Year ID:', CurrentYearId.value)
+// console.log('Exam Type:', examType.value)
+// console.log('Current Exam ID:', currentExamId.value)
+// console.log('Current Exam Name:', currentExamName.value)
+// console.log('Academic Year ID:', CurrentYearId.value)
 //const currentExamId = ref('')
 //const currentExamName = ref('')
 const resultName = ref('')
@@ -255,7 +255,9 @@ const paginatedStudents = computed(() => {
 async function fetchResultsSummary() {
   if (!selectedClassId.value) return
   isLoading.value = true
-  try {    
+  console.log("Exam type for Summary:", examType.value)
+  try {   
+    
     const params = {
       classId: selectedClassId.value,
       sectionId: selectedSectionId.value,

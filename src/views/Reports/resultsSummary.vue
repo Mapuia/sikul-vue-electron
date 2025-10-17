@@ -1,11 +1,12 @@
 <template>
   
-  <div v-if="resultPublished" class="form-container box wide">
+  <div v-if="isPublished" class="form-container box wide">
         
-      <!-- Centered heading -->
+      <!-- Centered heading
       <div class="has-text-centered">
         <h2 class="subtitle is-4">{{ examType === 'terminal' ? currentExamName : "Final"}} Result Summary ({{ CurrentYear }})</h2>
-      </div>   
+        
+      </div>    -->
 
     <div v-if="isLoading" class="has-text-centered mt-4">
       <progress class="progress is-medium is-primary" max="100"></progress>
@@ -20,8 +21,8 @@
               <img src="/sikul_logo.png" alt="School Logo" style="position: absolute; top: 0; left: 0; height: 60px;" />
 
               <!-- Headings -->
-              <h1 class="title print-title is-5">CALVARY HIGHER SECONDARY SCHOOL, TUIDU</h1>
-              <h2 class="subtitle print-subtitle is-5">{{ currentExamName }} : {{ CurrentYear }}</h2>
+              <h1 class="title print-title is-5">CALVARY HIGHER SECONDARY SCHOOL, TUIDU </h1>
+              <h2 class="subtitle print-subtitle is-5">{{ examType === 'terminal' ? currentExamName : "Final Result" }} : {{ CurrentYear }}</h2>
               <h3 class="title print-title is-6">RESULT SUMMARY</h3>
             </div>
           
@@ -163,7 +164,7 @@
             <!-- Left Side -->
             <div class="column has-text-left">
               <div class="signature">
-                <p class="publish-date">Publish Date: {{ DisplayDate(publishDate) }}</p>
+                <p class="publish-date">Publish Date: {{ displayDate(publishDate) }}</p>
               </div>
             </div>
             <div class="column"></div>
@@ -200,21 +201,25 @@ import { ref, watch, onMounted, computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { useAcademicYear } from '../../composables/useAcademicYear'
 import { useActiveExam } from '../../composables/useActiveExam'
+import { useCurrentExam } from '../../composables/useCurrentExam'
+const { currentExamId, currentExamName, getExamByType } = useCurrentExam()
+import { useResultStatus } from '../../composables/useResultStatus'
+const { isPublished, publishDate, checkResultStatus } = useResultStatus()
 import html2pdf from 'html2pdf.js'
 
 const { CurrentYearId, CurrentYear } = useAcademicYear()
-const { loadActiveExam } = useActiveExam()
+//const { loadActiveExam } = useActiveExam()
 
 const route = useRoute()
 
 const examType = ref('')
 const resultName = ref('')
-const currentExamId = ref('')
-const currentExamName = ref('')
+// const currentExamId = ref('')
+// const currentExamName = ref('')
 const resultSummary = ref([]) 
 const isLoading = ref(false)
 
-const DisplayDate = stringReverse => {
+const displayDate = stringReverse => {
   const date = new Date(stringReverse)
   return date.toLocaleDateString('en-IN', {
     year: 'numeric',
@@ -229,27 +234,42 @@ const currentDate = ref(new Date().toLocaleDateString('en-US', {
   day: 'numeric'
 }))
 
-watch(() => route.query.type, (newType) => {
-  examType.value = newType
-  getExam()
-  resultName.value = newType === 'terminal'? 'Half Yearly' : 'Final'  
-}, { immediate: true })
+watch(
+  () => route.query.type,
+  async (newType) => {
+    if (!newType) return
 
-watch(examType, async (newType) => {
-  if (newType) {
-    await getExam()
-    await checkPublishStatus()
-    await fetchResultSummary()
-  }
-}, { immediate: true })
+    examType.value = newType
+    resultName.value = newType === 'terminal' ? 'Half Yearly' : 'Final'
+    //console.log("Exam Type:", examType.value)
+    isLoading.value = true
+    try {
+      //  Get exam by type
+      await getExamByType(examType.value, CurrentYearId.value)
+      await checkResultStatus(currentExamId.value, CurrentYearId.value)
+      // 2Check publish status
+      // await checkPublishStatus()
+      //await checkResultStatus(currentExamId.value, CurrentYearId.value)
+      // 3 Fetch summary (after exam ID is ready)
+      await fetchResultSummary()
+    } catch (error) {
+      console.error('Error updating result summary:', error)
+    } finally {
+      isLoading.value = false
+    }
+  },
+  { immediate: true }
+)
 
-async function getExam() {
-  //console.log('Fetching exam for type:', examType.value, 'and year:', CurrentYearId.value)
-  const result = await window.electronAPI.getExamByType(examType.value, CurrentYearId.value)
-  currentExamId.value = result.exam.Id
-  currentExamName.value = result.exam.ExamName
-  //console.log('Fetched exam:', currentExamId.value, currentExamName.value)
-}
+
+// async function getExam() {
+//   //console.log('Fetching exam for type:', examType.value, 'and year:', CurrentYearId.value)
+//   const result = await window.electronAPI.getExamByType(examType.value, CurrentYearId.value)
+//   currentExamId.value = result.exam?.Id
+//   currentExamName.value = result.exam?.ExamName
+//   //console.log('Fetched exam:', currentExamId.value, currentExamName.value)
+// }
+
 // NEW: Principal signatory info
 const head = ref({ name: '', designation: '' })
 
@@ -257,10 +277,16 @@ const head = ref({ name: '', designation: '' })
 onMounted(async () => {
   isLoading.value = true
   try {    
-    await loadActiveExam()    
+    //await loadActiveExam()
+    await getExamByType(examType.value, CurrentYearId.value)
+    await checkResultStatus(currentExamId.value, CurrentYearId.value)
+    console.log("Current ExamId on Mount:", currentExamId.value)
     await fetchHeadSignatory()
     await fetchResultSummary()
    
+   //console.log("Exam Published:", isPublished.value)
+    // await checkPublishStatus()
+    // await checkResultStatus(currentExamId.value, CurrentYearId.value)
   } catch (error) {
     console.error('Error loading data:', error)
   } finally {
@@ -289,7 +315,7 @@ async function fetchResultSummary() {
     const response = await window.electronAPI.getResultSummary({
       academicYearId: CurrentYearId.value,
       examId: currentExamId.value,
-      resultType: examType.value === 'terminal' ? examType.value : 'final'
+      resultType: examType.value === 'terminal' ? (examType.value === 'selection' ? 'selection' : 'final') : 'final'
     })
 
     if (response.success) {
@@ -359,28 +385,28 @@ function downloadPDF() {
   html2pdf().set(opt).from(element).save()
 }
 
-const resultPublished = ref(false)
-const publishDate = ref('')
-async function checkPublishStatus() {
-  try {
-    // Get counts from both tables
-    //console.log("Checking publish status for exam:", currentExamId.value, "and academic year:", CurrentYearId.value)
-    const status = await window.electronAPI.getPublishStatus({
-      academicYearId: CurrentYearId.value,
-      activeExamId: currentExamId.value      
-    })   
-    publishDate.value = status.publishDate || ''
-    if(publishDate.value){
-      resultPublished.value = true
-    }
-    else {
-      resultPublished.value = false
-    }
+// const resultPublished = ref(false)
+// const publishDate = ref('')
+// async function checkPublishStatus() {
+//   try {
+//     // Get counts from both tables
+//     //console.log("Checking publish status for exam:", currentExamId.value, "and academic year:", CurrentYearId.value)
+//     const status = await window.electronAPI.getPublishStatus({
+//       academicYearId: CurrentYearId.value,
+//       activeExamId: currentExamId.value      
+//     })   
+//     publishDate.value = status.publishDate || ''
+//     if(publishDate.value){
+//       resultPublished.value = true
+//     }
+//     else {
+//       resultPublished.value = false
+//     }
 
-  } catch (error) {
-    console.error("Error checking publish status:", error)    
-  }
-}
+//   } catch (error) {
+//     console.error("Error checking publish status:", error)    
+//   }
+// }
 </script>
 
 <style scoped>

@@ -8,12 +8,12 @@ export const useResultStatus = () => {
     try {
       const response = await window.electronAPI.getPublishStatus({
         academicYearId,
-        activeExamId: examId
+        activeExamId: examId        
       })
 
       if (response.success) {
         isPublished.value = response?.isPublished
-
+        
         // Format publishDate if available
         if (response?.publishDate) {
           const date = new Date(response.publishDate)

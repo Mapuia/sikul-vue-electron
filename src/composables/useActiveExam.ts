@@ -10,6 +10,8 @@ const terminalMinorMaxMark = ref(0)
 const PassingPercentage = ref(40) // Default passing percentage
 const Terminal_Published = ref(false)
 const Final_Published = ref(false)
+// const examId = ref(null);
+// const examName = ref('No Active Exam');
 
 export const useActiveExam = () => {
   const loadActiveExam = async () => {
@@ -22,6 +24,9 @@ export const useActiveExam = () => {
       terminalMajorMaxMark.value = result?.terminal?.MajorMaxMark ?? 0;
       terminalMinorMaxMark.value = result?.terminal?.MinorMaxMark ?? 0;
       PassingPercentage.value = result?.terminal?.PassingPercentage ?? 40;
+
+      // examId.value = result?.exam?.Id ?? null;
+      // examName.value = result?.exam?.ExamName ?? 'No Active Exam';
       
       // Ensure boolean values for published status
       Terminal_Published.value = Boolean(result?.terminal?.Result_Published); 

@@ -84,7 +84,7 @@ const routes = [
   },
 
   {
-    path: '/result/summary',
+    path: '/report/summary',
     component: () => import('@/views/Reports/resultsSummary.vue'),
     meta: { allowedRoles: [ROLES.ADMIN, ROLES.TEACHER, ROLES.DEO] }
   },

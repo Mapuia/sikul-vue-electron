@@ -6,7 +6,7 @@ export const useCurrentExam = () => {
 
   async function getExamByType(type, academicYearId) {
     try {
-      const result = await window.electronAPI.getExamByType(type, academicYearId)
+      const result = await window.electronAPI.getActiveExamByType(type, academicYearId)
       currentExamId.value = result?.exam?.Id ?? null
       currentExamName.value = result?.exam?.ExamName ?? 'No Active Exam'
     } catch (error) {

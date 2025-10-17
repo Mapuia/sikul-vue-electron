@@ -135,7 +135,7 @@ contextBridge.exposeInMainWorld('electronAuth', {
   getmarkEntryStatus: (examId, examType) => ipcRenderer.invoke('get-mark-entry-status', examId, examType),
 
   getExamStatus: (data) => ipcRenderer.invoke('get-exam-status', data),
-  getPublishStatus: (yearId) =>ipcRenderer.invoke('get-publish-status', yearId),
+  // getPublishStatus: (yearId) =>ipcRenderer.invoke('get-publish-status', yearId),
       
   //getClassesForExam: (data) => ipcRenderer.invoke('get-classes-for-exam', data),
   calculateClassMarks: (data) => ipcRenderer.invoke('calculate-class-marks', data),
