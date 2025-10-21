@@ -1,5 +1,5 @@
 <template>
-  <div v-if="resultPublished" class="form-container wide">
+  <div v-if="isPublished" class="form-container wide">
     <div class="notification is-success has-text-centered">
       <p>{{ resultName }} are published for Academic Session {{ CurrentYear }}.</p>
       <p>Publish Date: {{ publishDate }}</p>
@@ -14,7 +14,7 @@
   </div>
   <div v-else class="form-container full"> 
     <div>
-      <h1 class="title is-4 has-text-centered mb-4">Create and Publish {{ resultName }} for Academic Session {{ CurrentYear }}</h1>      
+      <h1 class="title is-4 has-text-centered mb-4">Create and Publish {{ resultName }} ({{ CurrentYear }})</h1>      
     </div>
 
     <div v-if="!isGenerating" class=" has-text-centered mb-5">
@@ -90,7 +90,7 @@
                           : item.finishedSubjects === item.totalSubjects
                             ? 'Ready to generate results'
                             : 'Mark Entry not completed' }}
-                      </i>
+                      </i> 
                     </p>
                   </td>
                   <td v-if="!item.resultStatus.isPublished && item.resultStatus.isVerified" class="has-text-centered">
@@ -212,17 +212,25 @@ import { ref, watch, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useAcademicYear } from '../../composables/useAcademicYear'
 import { useActiveExam } from '../../composables/useActiveExam'
-
 const { CurrentYearId, CurrentYear } = useAcademicYear()
 const { PassingPercentage, loadActiveExam } = useActiveExam()
+
+import { useCurrentExam } from '../../composables/useCurrentExam'
+const { currentExamId, currentExamName, getExamByType } = useCurrentExam()
+import { useResultStatus } from '../../composables/useResultStatus'
+const { isPublished, publishDate, checkResultStatus } = useResultStatus()
+// import { useClassesSections } from '../../composables/useClassesSections'
+// const { classes, sections, loadClasses, loadSections } = useClassesSections()
+import { useResultNames } from '../../composables/useResultNames'
+const { resultName, resultType, setResultName } = useResultNames()
 
 const router = useRouter()
 const route = useRoute()
 
 const examType = ref('')
-const resultName = ref('')
-const currentExamId = ref('')
-const currentExamName = ref('')
+// const resultName = ref('')
+// const currentExamId = ref('')
+// const currentExamName = ref('')
 const classSectionStatus = ref([])
 //const isResult = ref('')
 const isLoading = ref(false)
@@ -234,38 +242,31 @@ const modalSectionName = ref('')
 const modalClassId = ref('')
 const modalSectionId = ref('')
 const modalPublished = ref(false)
-const markEntryCount = ref(0)
-const resultStatusCount = ref(0)
+// const markEntryCount = ref(0)
+// const resultStatusCount = ref(0)
 const currentDate = ref('')
 const resultPublished = ref(false)
-const publishDate = ref('')
+// const publishDate = ref('')
 
 const userRole = ref('')
 
+
+onMounted(async () => {
+     await loadActiveExam()
+     const today = new Date();
+      const formattedDate = today.toISOString().split('T')[0];
+      currentDate.value = formattedDate; 
+      fetchMarkEntryStatus()
+      getUser()
+})
+
 watch(() => route.query.type, (newType) => {
   examType.value = newType
-  getExam()
-  switch (newType) {
-    case 'terminal':
-      resultName.value = 'Half Yearly Results'
-      break
-    case 'annual':
-      resultName.value = 'Final Results'
-      break
-    case 'selection':
-      resultName.value = 'Class X Selection Test Results'
-      break    
-  }
-}, { immediate: true })
-
-async function getExam() {
-  const result = await window.electronAPI.getExamByType(examType.value, CurrentYearId.value)
-  currentExamId.value = result.exam.Id
-  currentExamName.value = result.exam.ExamName
-  //console.log("CurrentExam Id: in get examId", currentExamId.value)
+  getExamByType(newType, CurrentYearId.value)
+  setResultName(newType)
   fetchMarkEntryStatus()
-  
-}
+
+}, { immediate: true })
 
 async function getUser() {
   const user = await window.electronAuth.getCurrentUser()
@@ -283,34 +284,34 @@ const filteredClassSectionStatus = computed(() => {
 //console.log("Filtered Class Section Status:", filteredClassSectionStatus.value)
 
 
-async function checkPublishStatus() {
-  try {
-    // Get counts from both tables
-    const status = await window.electronAPI.getPublishStatus({
-      academicYearId: CurrentYearId.value,
-      activeExamId: currentExamId.value      
-    })
+// async function checkPublishStatus() {
+//   try {
+//     // Get counts from both tables
+//     const status = await window.electronAPI.getPublishStatus({
+//       academicYearId: CurrentYearId.value,
+//       activeExamId: currentExamId.value      
+//     })
+//     // markEntryCount.value = status.markEntryCount
+//     // resultStatusCount.value = status.resultStatusCount
+//     publishDate.value = status.publishDate || ''
+//     if(publishDate.value){
+//       resultPublished.value = true
+//     }
+//     else {
+//       resultPublished.value = false
+//     }
 
-    markEntryCount.value = status.markEntryCount
-    resultStatusCount.value = status.resultStatusCount
-    publishDate.value = status.publishDate || ''
-    if(publishDate.value){
-      resultPublished.value = true
-    }
-    else {
-      resultPublished.value = false
-    }
-
-  } catch (error) {
-    console.error("Error checking publish status:", error)    
-  }
-}
+//   } catch (error) {
+//     console.error("Error checking publish status:", error)    
+//   }
+// }
 
 async function publishResult() {
  // if (!canPublish.value) {
  //   window.electronAPI.showInfoDialog("Cannot publish results - not all results are generated")
  //   return
  // }
+ // As per the request by school admin, allow publishing even if not all results are generated
 
   isLoading.value = true
   try {
@@ -323,7 +324,8 @@ async function publishResult() {
     if (response.success) {
       window.electronAPI.showInfoDialog("Results published successfully.")
       // You might want to refresh the status after publishing
-      checkPublishStatus()
+      //checkPublishStatus()
+      checkResultStatus(currentExamId.value, CurrentYearId.value)
     } else {
       window.electronAPI.showErrorDialog("Failed to publish results: " + (response.message || "Unknown error"))
     }
@@ -345,7 +347,10 @@ function unPublishResults(){
             activeExamId: currentExamId.value
           })
           if (response.success) {
-           location.reload('/result/create?type=' + examType.value) //reload the page
+          //  location.reload('/result/create?type=' + examType.value) //reload the page
+            window.electronAPI.showInfoDialog("Results unpublished successfully.")
+            checkResultStatus(currentExamId.value, CurrentYearId.value)
+            fetchMarkEntryStatus()
             
           } else {
             window.electronAPI.showErrorDialog("Failed to unpublish results: " + (response.message || "Unknown error"))
@@ -366,14 +371,7 @@ function goToMarkEntry(examType) {
     }
   })  
 }
-onMounted(async () => {
-     await loadActiveExam()
-     const today = new Date();
-      const formattedDate = today.toISOString().split('T')[0];
-      currentDate.value = formattedDate; 
-      checkPublishStatus()
-      getUser()
-})
+
 
 async function fetchMarkEntryStatus() {
   try {
@@ -385,7 +383,7 @@ async function fetchMarkEntryStatus() {
           resultGenerating: false,
           resultStatus: await window.electronAPI.verifyResultStatus({
             academicYearId: CurrentYearId.value,
-            resultType: examType.value === 'terminal' ? examType.value : examType.value === 'annual' ? 'final' : 'selection', //if examType is not terminal, result will be final
+            resultType:  resultType.value,//if examType is not terminal, result will be final
             examId: currentExamId.value,
             classId: item.classId,
             sectionId: item.sectionId || 0
@@ -419,17 +417,17 @@ async function generateResult(classId, sectionId) {
     //console.log("Passing Percentage in API:", PassingPercentage.value)
     const response = await window.electronAPI.generateResults({
       academicYearId: CurrentYearId.value,
-      resultType: examType.value === 'terminal' ? 'terminal' :examType.value === 'annual' ? 'final' : 'selection',  //if examType is not terminal, result will be final
+      resultType: resultType.value,  //if examType is not terminal, result will be final
       examId: currentExamId.value,
       classId,
       sectionId,
       PassingPercentage: PassingPercentage.value
     })
-    const isPublished = false
+    
     if (response.success) {
       isGenerating.value = false
       classSectionStatus.value[index].resultGenerating = false
-      await loadModalResults(classId, sectionId, isPublished)
+      await loadModalResults(classId, sectionId, isPublished.value)
       modalVisible.value = true
       isGenerating.value = false
       fetchMarkEntryStatus()      
@@ -474,8 +472,6 @@ function closeModal() {
   modalVisible.value = false
   modalResults.value = []
 }
-
-
 
 function showSuccess(message) {
   window.electronAPI.showInfoDialog(`SUCCESS: ${message}`)

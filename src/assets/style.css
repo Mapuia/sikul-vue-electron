@@ -144,7 +144,7 @@ button:focus-visible {
   min-width: 40px;
   height: 24px;
 }
-/* Add this to your component's style section or global CSS */
+
 .fixed-width-table {
   table-layout: fixed;
   width: 100%;
@@ -211,11 +211,11 @@ button:focus-visible {
   width: 300px !important;
 }
 
-.print-page{
+/* .print-page{
   padding: 3rem;
   background: white;
   color:black;
-}
+} */
 .print-title{
   color: black;
 }

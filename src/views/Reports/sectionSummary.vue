@@ -55,81 +55,81 @@
                 <span>Download PDF</span>
               </button>
             </div> -->
+            <div class="print-container">
+              <div class="print-page">
+                <div class="has-text-centered is-flex is-flex-direction-column is-align-items-center">
+                  <h2 class="title is-4 mb-2">{{ resultName }} Summary</h2>
+                  <h2 class="title is-4 mb-1">
+                    Class {{ className }}
+                    <span v-if="sectionName">({{ sectionName }})</span>
+                  </h2>
+                  <p class="mb-1">(Page - {{ currentPage }})</p>
+                </div>
 
-            <div class="table-container print-page">
-              <div class="has-text-centered is-flex is-flex-direction-column is-align-items-center">
-                <h2 class="title is-4 mb-2">{{ resultName }} Summary</h2>
-                <h2 class="title is-4 mb-1">
-                  Class {{ className }}
-                  <span v-if="sectionName">({{ sectionName }})</span>
-                </h2>
-                <p>(Page - {{ currentPage }})</p>
-              </div>
-
-
-              <table class="table is-fullwidth is-bordered">
-                <thead>
-                  <tr>
-                    <th>Roll No</th>
-                    <th style="width: 200px;">Name</th>
-                    <th style="width: 100px;">Exams</th>
-                    <th v-for="subject in subjects" :key="subject.Id">{{ subject.SubjectName }}</th>
-                    <th>Total</th>
-                    <th>%</th>
-                    <th>Div</th>
-                    <th>Pos</th>
-                    <th>Result</th>
-                  </tr>
-                </thead>
-
-                <tbody>
-                  <template v-for="student in paginatedStudents" :key="student.StudentId || student.Id">
-                    <tr v-for="(exam, examIndex) in examOrder" :key="exam + '-' + (student.StudentId || student.Id) + '-' + examIndex">
-                      <td v-if="examIndex === 0" :rowspan="3">{{ student.RollNo }}</td>
-                      <td v-if="examIndex === 0" :rowspan="3">{{ student.Name }}</td>
-
-                      <td>{{ exam }}</td>
-
-                      <td v-for="subject in subjects" :key="subject.Id" class="smaller-cell">
-                        <span v-if="student.marks && student.marks[subject.Id]">
-                          {{ student.marks[subject.Id][examKey(exam)] ?? '-' }}
-                        </span>
-                        <span v-else>-</span>
-                      </td>
-
-                      <td v-if="examIndex === 0" :rowspan="3">{{ student.totalMarks ?? '-' }}</td>
-                      <td v-if="examIndex === 0" :rowspan="3">{{ student.Percentage ?? '-' }}</td>
-                      <td v-if="examIndex === 0" :rowspan="3">{{ student.Division ?? '-' }}</td>
-                      <td v-if="examIndex === 0" :rowspan="3">{{ student.Position ?? '-' }}</td>
-                      <td v-if="examIndex === 0" :rowspan="3">{{ student.Result ?? '-' }}</td>
+                <table class="table is-fullwidth is-bordered">
+                  <thead>
+                    <tr>
+                      <th>Roll No</th>
+                      <th style="width: 200px;">Name</th>
+                      <th style="width: 100px;">Exams</th>
+                      <th v-for="subject in subjects" :key="subject.Id">{{ subject.SubjectName }}</th>
+                      <th>Total</th>
+                      <th>%</th>
+                      <th>Div</th>
+                      <th>Pos</th>
+                      <th>Result</th>
                     </tr>
-                  </template>
+                  </thead>
 
-                  <tr v-if="!studentMarks || studentMarks.length === 0">
-                    <td :colspan="4 + subjects.length" class="has-text-centered">No students found.</td>
-                  </tr>
-                </tbody>
+                  <tbody>
+                    <template v-for="student in paginatedStudents" :key="student.StudentId || student.Id">
+                      <tr v-for="(exam, examIndex) in examOrder" :key="exam + '-' + (student.StudentId || student.Id) + '-' + examIndex">
+                        <td class="smaller-cell" v-if="examIndex === 0" :rowspan="3">{{ student.RollNo }}</td>
+                        <td v-if="examIndex === 0" :rowspan="3">{{ student.Name }}</td>
 
-              </table>
+                        <td>{{ exam }}</td>
+
+                        <td v-for="subject in subjects" :key="subject.Id" class="smaller-cell">
+                          <span v-if="student.marks && student.marks[subject.Id]">
+                            {{ student.marks[subject.Id][examKey(exam)] ?? '-' }}
+                          </span>
+                          <span v-else>-</span>
+                        </td>
+
+                        <td class="smaller-cell" v-if="examIndex === 0" :rowspan="3">{{ student.totalMarks ?? '-' }}</td>
+                        <td class="smaller-cell" v-if="examIndex === 0" :rowspan="3">{{ student.Percentage ?? '-' }}</td>
+                        <td class="smaller-cell" v-if="examIndex === 0" :rowspan="3">{{ student.Division ?? '-' }}</td>
+                        <td class="smaller-cell" v-if="examIndex === 0" :rowspan="3">{{ student.Position ?? '-' }}</td>
+                        <td class="smaller-cell" v-if="examIndex === 0" :rowspan="3">{{ student.Result ?? '-' }}</td>
+                      </tr>
+                    </template>
+
+                    <tr v-if="!studentMarks || studentMarks.length === 0">
+                      <td :colspan="9 + subjects.length" class="has-text-centered">No students found.</td>
+                    </tr>
+                  </tbody>
+
+                </table>
+              </div>     
+                          
             </div>
+            <!-- Pagination Controls -->
+             <nav class="pagination is-centered" role="navigation" aria-label="pagination">
+                <button class="pagination-previous" :disabled="currentPage === 1" @click="prevPage">Previous</button>
+                <button class="pagination-next" :disabled="currentPage === totalPages" @click="nextPage">Next</button>
 
-            <nav class="box pagination is-centered" role="navigation" aria-label="pagination">
-              <button class="pagination-previous" :disabled="currentPage === 1" @click="prevPage">Previous</button>
-              <button class="pagination-next" :disabled="currentPage === totalPages" @click="nextPage">Next</button>
-
-              <ul class="pagination-list">
-                <li><span class="pagination-link is-current">{{ currentPage }}</span></li>
-                <li><span>of {{ totalPages }}</span></li>
-              </ul>
-            </nav>
-
-
-            <div class="buttons is-centered mt-3">
-              <button class="button is-primary" @click="downloadPDF">
-                <span class="icon is-small"><i class="fas fa-file-pdf"></i></span>
-                <span>Download PDF</span>
-              </button>
-            </div>
+                <ul class="pagination-list">
+                  <li><span class="pagination-link is-current">{{ currentPage }}</span></li>
+                  <li><span>of {{ totalPages }}</span></li>
+                </ul>
+              </nav>
+              <div class="buttons is-centered mt-3">
+                <button class="button is-primary" @click="downloadPDF">
+                  <span class="icon is-small"><i class="fas fa-file-pdf"></i></span>
+                  <span>Download PDF</span>
+                </button>
+              </div>
+            
           </div>
         </div>
       
@@ -138,7 +138,7 @@
 
    <div v-else class="is-flex is-justify-content-center is-align-items-center" style="height: 600px;">
       <div class="notification is-danger is-5 has-text-centered px-6 py-5">
-        <h2 class="subtitle is-5 mb-0"><strong>Result not Published: </strong> Result Summary is not available.</h2>
+        <strong>Result not Published: </strong> Result Summary is not available.
       </div>
     </div>
     <!-- <div v-else class="notification is-danger">
@@ -160,8 +160,8 @@ import { useResultStatus } from '../../composables/useResultStatus'
 const { isPublished, publishDate, checkResultStatus } = useResultStatus()
 import { useClassesSections } from '../../composables/useClassesSections'
 const { classes, sections, loadClasses, loadSections } = useClassesSections()
-// import { useResultNames } from '../../composables/useResultNames'
-// const { resultName, setResultName } = useResultNames()
+import { useResultNames } from '../../composables/useResultNames'
+const { resultName, setResultName } = useResultNames()
 // import { useSubjectsForClass } from '../../composables/useSubjectsForClass'
 // const { subjects, loadSubjectsForClass } = useSubjectsForClass()
 import html2pdf from 'html2pdf.js'
@@ -190,7 +190,7 @@ const examType = ref(route.query.type)
 // console.log('Academic Year ID:', CurrentYearId.value)
 //const currentExamId = ref('')
 //const currentExamName = ref('')
-const resultName = ref('')
+// const resultName = ref('')
 
 const examOrder = ['Periodic', 'Half Yearly', 'Total']
 const examKeyMap = { Periodic: 'periodic', 'Half Yearly': 'terminal', Total: 'total' }
@@ -213,6 +213,8 @@ function DisplayDate(dateString) {
 function showError(message) {
   window.electronAPI.showErrorDialog(`Error: ${message}`)
 }
+
+// console.log('IS Published:', isPublished.value)
 
 // --- API calls ---
 // async function fetchClasses() {
@@ -255,7 +257,7 @@ const paginatedStudents = computed(() => {
 async function fetchResultsSummary() {
   if (!selectedClassId.value) return
   isLoading.value = true
-  console.log("Exam type for Summary:", examType.value)
+  // console.log("Exam type for Summary:", examType.value)
   try {   
     
     const params = {
@@ -291,7 +293,8 @@ function prevPage() {
 
 // --- user & lifecycle ---
 onMounted(async () => {
-  loadClasses()
+  // loadClasses()
+  await initializeClasses()
   await getExamByType(examType.value, CurrentYearId.value)
   await checkResultStatus(currentExamId.value, CurrentYearId.value)
   // await setResultName(examType.value)
@@ -300,7 +303,16 @@ onMounted(async () => {
   //await checkPublishStatus()
   //await statusMessage()
   setResultName(examType.value)
+  
 })
+
+async function initializeClasses() {
+  await loadClasses()
+  if(examType.value === 'selection'){
+      classes.value = classes.value.filter(c => c.ClassName === 'X')
+      selectedClassId.value = classes.value[0]?.Id || ''
+    }
+  }    
 
 // async function statusMessage(){
 //   if(!resultPublished.value){
@@ -327,17 +339,17 @@ watch(() => selectedSectionId.value, async (newSection) => {
   await fetchResultsSummary()
 })
 
-async function setResultName(type) {
-  if(type === 'terminal'){
-    resultName.value = 'Half Yearly Exam'
-  }
-  if(type === 'annual'){
-    resultName.value = 'Annual Exam'
-  }
-  if(type === 'final'){
-    resultName.value = 'Final Result'
-  }
-}
+// async function setResultName(type) {
+//   if(type === 'terminal'){
+//     resultName.value = 'Half Yearly Exam'
+//   }
+//   if(type === 'annual'){
+//     resultName.value = 'Annual Exam'
+//   }
+//   if(type === 'final'){
+//     resultName.value = 'Final Result'
+//   }
+// }
 
 watch(
   () => route.query.type,          // Watch only the 'type' query param
@@ -346,16 +358,8 @@ watch(
 
     examType.value = newType
     await setResultName(examType.value)
-    if(examType.value === 'terminal'){
-      resultName.value = 'Half Yearly Exam'
-    }
-    if(examType.value === 'annual'){
-      resultName.value = 'Annual Exam'
-    }
-    if(examType.value === 'final'){
-      resultName.value = 'Final Result'
-    }
-    console.log('Result Name changed to:', resultName.value)
+    
+    // console.log('Result Name changed to:', resultName.value)
     // Re-fetch current exam info for this new type
     await getExamByType(examType.value, CurrentYearId.value)
 
@@ -366,6 +370,9 @@ watch(
     if (selectedClassId.value && selectedSectionId.value !== '' && selectedSectionId.value !== null) {
       await fetchResultsSummary()
     }
+
+    //Examtype is 'selection', classes should have Class X only
+    
   }
 )
 
@@ -382,7 +389,7 @@ watch(
 function downloadPDF() {  
   const element = document.querySelector('.print-page') // or any specific container you want
   const opt = {
-    margin:       0.05,
+    margin:       0.5,
     filename:     `Section-wise_Summary_for_Class-${ className.value }_${ sectionName.value }_Page_${ currentPage.value }.pdf`,
     image:        { type: 'jpeg', quality: 1.0 },
     html2canvas:  { scale: 2 },
@@ -391,30 +398,6 @@ function downloadPDF() {
 
   html2pdf().set(opt).from(element).save()
 }
-
-// --- actions ---
-// async function downloadPDF() {
-//   if (!selectedClassId.value) return showError('Please select a class first.')
-
-//   const params = {
-//     classId: selectedClassId.value,
-//     sectionId: selectedSectionId.value,
-//     examId: currentExamId.value,
-//     academicYearId: CurrentYearId.value
-//   }
-
-//   try {
-//     const result = await window.electronAPI.exportSectionResultsSummary(params)
-//     if (result.success) {
-//       window.electronAPI.showInfoDialog?.(`PDF saved at ${result.filePath}`)
-//     } else {
-//       showError(result.message )
-//     }
-//   } catch (err) {
-//     console.error('downloadPDF', err)
-//     showError('Failed to export PDF')
-//   }
-// }
 
 ///--------------------------------------------------USED NO MORE--------------------------------------------------
 // async function fetchResultsSummary() {
@@ -478,25 +461,17 @@ function closeNotification() {
 </script>
 
 
-
-
 <style scoped>
 
-.box {
-  margin-bottom: 1.5rem;
-}
-
-.print-page{
-  padding: 1.5rem 2.5rem;
-  background: white;
-  color:black;
-  margin:0;
-  
-}
 .avoid-break {
   page-break-inside: avoid;
   break-inside: avoid;
 }
+
+.print-container{
+  padding: 1rem 0;
+}
+
 .print-title{
   font-size: 14pt;
   font-family: 'Oswald';
@@ -508,28 +483,12 @@ function closeNotification() {
   font-weight: 500;
 }
 
-.smaller-header {
-  font-size: 11px;
-  text-align: center;
-  color: black;
-  
-}
 .smaller-cell {
   font-size: 11px;
   text-align: center;
   color: black;
 }
-.columns {
-  color:black;
-}
-.print-container{
-  background: white;
-}
-.table-container {
-  margin: 0 auto;
- color:black;
 
-}
 table{
   font-size: 9pt;
   border: 1px solid black;
@@ -550,8 +509,6 @@ table{
 .center{
   text-align: center;
 }
-
-
 
 @media print {
   .no-print {

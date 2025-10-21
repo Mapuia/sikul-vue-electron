@@ -874,11 +874,17 @@ ipcMain.handle('get-publish-status', async (event, { academicYearId, activeExamI
     `);
     const publishDate = publishDateStmt.get(activeExamId, academicYearId)?.PublishDate;
 
-    const isPublished = db.prepare(`
+    const resultPublished = db.prepare(`
       SELECT Result_Published 
       FROM ActiveExams
       WHERE Id = ? AND AcademicYearId = ?
       `).get(activeExamId, academicYearId)
+      
+      let isPublished = false
+
+      if (resultPublished && resultPublished.Result_Published === 1){
+        isPublished = true
+      }
     
     return {
       success: true,
@@ -988,25 +994,21 @@ ipcMain.handle('unpublish-results', async (event, { academicYearId, activeExamId
 
 const getResultSummary = async (classId, sectionId, examId, academicYearId, examType) => {
          
-  // const students = db.prepare(`
-  //       SELECT 
-  //           stu.Id as StudentId,
-  //           stu.Name, 
-  //           a.RollNo         
-  //       FROM Students stu        
-  //       JOIN Admissions a ON stu.Id = a.StudentId     
-  //       WHERE a.ClassId = ? 
-  //           AND a.SectionId = ? 
-  //           AND a.AcademicYearId = ?
-  //       ORDER BY a.RollNo;`).all(classId, sectionId, academicYearId);
-
-        
-
   const students = db.prepare(`
     SELECT 
         stu.Id as StudentId,
         stu.Name, 
-        a.RollNo,
+        a.RollNo         
+    FROM Students stu        
+    JOIN Admissions a ON stu.Id = a.StudentId     
+    WHERE a.ClassId = ? 
+        AND a.SectionId = ? 
+        AND a.AcademicYearId = ?
+    ORDER BY a.RollNo;`).all(classId, sectionId, academicYearId);        
+
+  const results = db.prepare(`
+    SELECT 
+        stu.Id as StudentId,        
         r.Percentage,
         r.Division,
         r.Rank as Position,
@@ -1019,6 +1021,18 @@ const getResultSummary = async (classId, sectionId, examId, academicYearId, exam
         AND a.AcademicYearId = ?
         AND r.resultType = ?
     ORDER BY a.RollNo;`).all(classId, sectionId, academicYearId, examType);
+
+    const resultMap = new Map(results.map(r => [r.StudentId, r]));
+
+// Push result fields directly into the students array
+    for (const stu of students) {
+      const res = resultMap.get(stu.StudentId);
+      stu.Percentage = res?.Percentage || null;
+      stu.Division = res?.Division || null;
+      stu.Position = res?.Position || null;
+      stu.Result = res?.Result || null;
+    }
+
   //console.log("Students: ", students)
   
 // Get Marks based on examType

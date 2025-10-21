@@ -25,7 +25,7 @@ export const useResultStatus = () => {
           publishDate.value = null
         }
 
-        console.log('checkResultStatus', isPublished.value, publishDate.value)
+        // console.log('checkResultStatus', isPublished.value, publishDate.value)
       } else {
         isPublished.value = false
         publishDate.value = null
