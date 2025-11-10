@@ -3,7 +3,7 @@
     <h1 class="title has-text-centered is-4">Marks Entry for {{ currentExamName }}</h1>
     <h2 class="subtitle has-text-centered">{{ examType ? "" : 'There is something wrong. Logout and login again'}}</h2>
 
-    <div v-if="isPublished">
+    <div v-if="isMarkEntryDisabled">
       <div class="box single">
         <h2 class="subtitle has-text-centered">Mark Entry Disabled!</h2>
         <div class="notification is-danger">
@@ -18,30 +18,19 @@
         <div class="column">
           <div
             class="tab-button has-text-centered is-clickable p-3"
-            :class="selected === 'scholastic' ? 'has-background-success has-text-black' : ''"
-            @click="selected = 'scholastic'"
+            :class="selected === 'Scholastic' ? 'has-background-success has-text-black' : ''"
+            @click="selected = 'Scholastic'"
           >
             Scholastic Subjects
           </div>
         </div>
-        
         <div class="column">
           <div
             class="tab-button has-text-centered is-clickable p-3"
-            :class="selected === 'coScholastic' ? 'has-background-primary has-text-black' : ''"
-            @click="selected = 'coScholastic'"
+            :class="selected === 'Co-Scholastic' ? 'has-background-primary has-text-black' : ''"
+            @click="selected = 'Co-Scholastic'"
           >
             Co-Scholastic Activities
-          </div>
-        </div>
-
-        <div class="column">
-          <div
-            class="tab-button has-text-centered is-clickable p-3"
-            :class="selected === 'attendance' ? 'has-background-success has-text-black' : ''"
-            @click="selected = 'attendance'"
-          >
-            Attendance
           </div>
         </div>
       </div>
@@ -86,8 +75,8 @@
           </div>
 
           <!-- Subject Dropdown -->
-          <div v-if="selected != 'attendance'" class="field">
-            <label class="label">{{ selected === "scholastic" ? "Subject" : "Co-Scholastic Activities" }}</label>
+          <div class="field">
+            <label class="label">{{ selected === "Scholastic" ? "Subject" : "Co-Scholastic Activities" }}</label>
             <div class="select is-fullwidth is-small">
               <select v-model="selectedSubjectId" :disabled="!selectedClassId || !selectedSectionId && sections.length > 0">
                 <option disabled value="">-- Select --</option>
@@ -100,7 +89,7 @@
         </aside>
       
           <!-- Scholastic Marks Entry -->
-        <div v-if="selected === 'scholastic'" class="main-content box column p-5">
+        <div v-if="selected === 'Scholastic'" class="main-content box column p-5">
           <div v-if="studentloaded && selectedSubjectId">
             <div class="title tab-heading has-text-weight-bold is-primary is-flex is-justify-content-space-between ">
               <div class="mb-3">
@@ -149,7 +138,7 @@
                     <!-- First Periodic Test Input -->
                     <td>
                       <input
-                        :disabled="isPublished || !appeared[student.StudentId]"
+                        :disabled="isMarkEntryDisabled || !appeared[student.StudentId]"
                           type="number"
                           :class="{
                             'is-danger': markInvalid(student.StudentId, 'periodic'),
@@ -170,7 +159,7 @@
                     <!-- Marks Input -->
                     <td>
                       <input
-                        :disabled="isPublished || !appeared[student.StudentId]"
+                        :disabled="isMarkEntryDisabled || !appeared[student.StudentId]"
                           type="number"
                           :class="{
                             'is-danger': markInvalid(student.StudentId, 'terminal'),
@@ -200,7 +189,7 @@
                     <td class="has-text-centered has-text-centered">
                       <input
                         :checked="appeared[student.StudentId]"
-                        :disabled="isPublished"
+                        :disabled="isMarkEntryDisabled"
                         type="checkbox"
                         v-model="appeared[student.StudentId]"
                         :true-value="1"
@@ -286,9 +275,9 @@
         </div>
      
           <!-- Co-Scholastic Marks Entry -->
-        <div v-if="selected === 'coScholastic'" class="main-content box column p-5">         
+        <div v-else class="main-content box column p-5">         
             <div v-if="studentloaded && selectedSubjectId" class="is-flex is-flex-direction-column">
-              <div class="title tab-heading has-text-weight-bold mb-4">
+              <div class="title tab-heading has-text-weight-bold mb-2">
                 {{ selectedSubjectName }}
               </div>
 
@@ -306,7 +295,7 @@
                           type="checkbox" 
                           v-model="selectAllAppeared"
                           @change="toggleAllAppeared"
-                          :disabled="isPublished"
+                          :disabled="isMarkEntryDisabled"
                         >
                       </label>
                       </th>                   
@@ -320,7 +309,7 @@
                       <td>
                         <div class="select is-small is-fullwidth">
                           <select :disabled="!appeared[student.StudentId]"
-                            v-model="grades[student.StudentId]"                         
+                            v-model="Grades[student.StudentId]"                         
                           >
                             <option disabled value="">-- Select Grade --</option>
                             <option value="A">A</option>
@@ -333,7 +322,7 @@
                       <td class="has-text-centered">
                       <input
                         :checked="appeared[student.StudentId]"
-                        :disabled="isPublished"
+                        :disabled="isMarkEntryDisabled"
                         type="checkbox"
                         v-model="appeared[student.StudentId]"
                         :true-value="1"
@@ -364,169 +353,21 @@
               Select Class, Section and Co-Scholastic Activity to enter Grades
             </div>         
         </div>
-
-        <!-- Attendance -->
-        <div v-if="selected === 'attendance'" class="main-content box column p-5">
-                 
-            <div v-if="studentloaded & selected === 'attendance'" class="is-flex is-flex-direction-column">
-              <div class="title tab-heading has-text-weight-bold is-primary is-flex is-justify-content-space-between ">
-              <div class="mb-3">
-                Attendance
-              </div>
-              <div class="tags are-medium">
-                <span class="tag ml-2">Total Working Days: {{ existingWorkingDays }}</span>
-              </div>
-            </div>      
-
-              <div v-if="students.length > 0 || students.length === 1" class="is-flex is-flex-direction-column">
-                <table class="table is-bordered is-striped is-fullwidth">
-                  <thead>
-                    <tr>
-                      <th style="width: 80px">Roll No.</th>
-                      <th >Student Name</th>
-                      <th class="has-text-centered">Attendance</th>           
-                      <th class="has-text-centered">Appeared
-                        <p class="control is-small">Select All</p>
-                      <label class="checkbox"> 
-                        <input 
-                          type="checkbox" 
-                          v-model="selectAllAppeared"
-                          @change="toggleAllAppeared"
-                          :disabled="isPublished"
-                        >
-                      </label>
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr v-for="student in students" :key="student.StudentId">
-                      <td>{{ student.RollNo }}</td>
-                      <td>{{ student.Name }}</td>                      
-                      <td>
-                        <input
-                          :disabled="isPublished || !appeared[student.StudentId]"
-                            type="number"
-                            :class="{
-                              'is-danger': attendanceInvalid(student.StudentId),
-                              'is-light': !appeared[student.StudentId]
-                            }"
-                          :min="0"
-                          :max="existingWorkingDays"
-                          class="input is-small"
-                          
-                          v-model.number="attendance[student.StudentId]"
-                          @keydown.enter="handleEnterKey1($event, student.StudentId)"                           
-                          data-type="terminal" 
-                          :data-student-id="student.StudentId"
-                        />
-
-                          <!-- <input class="input is-small has-text-centered" 
-                          type="number" 
-                          v-model="attendance[student.StudentId]" 
-                          :disabled="!appeared[student.StudentId]" /> -->
-                      </td>
-                      <td class="has-text-centered">
-                      <input
-                        :checked="appeared[student.StudentId]"
-                        :disabled="isPublished"
-                        type="checkbox"
-                        v-model="appeared[student.StudentId]"
-                        :true-value="1"
-                        :false-value="0"
-                        />
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-                <div class="is-flex is-justify-content-center mt-3">
-                  <button 
-                    class="button is-primary" 
-                    @click="submitAttendance"
-                    :disabled="isSaving"
-                  >
-                    <span v-if="isSaving" class="icon is-small">
-                      <i class="fas fa-spinner fa-spin"></i>
-                    </span>
-                    <span>{{ isSaving ? 'Saving...' : 'Submit Attendance' }}</span>
-                  </button>
-                </div>
-              </div>
-              <p v-else class="notification is-info is-danger is-fullwidth has-text-centered mt-4">
-                No students found for this section.
-              </p>       
-            </div>
-            <!-- <div 
-              v-else-if="workingDays === null || workingDays === ''" 
-              class="working-days-container"
-            >
-              <label class="label">Enter the Number of Working Days</label>
-              <input 
-                class="input" 
-                type="number"
-                v-model="noOfWorkingDays"
-              />
-              <button class="button is-primary mt-3" @click="submitWorkingDays()">Submit</button>
-            </div> -->
-
-            <div v-else class="button is-info has-text-centered is-flex is-align-items-center is-flex-direction-column p-5">
-             <b> No. of Working Days: {{ existingWorkingDays }} days. </b> <br /> Select Class and Section to enter the attendance.
-            </div>
-
-            <!-- Modal -->
-            <div 
-              class="modal" 
-              :class="{ 'is-active': existingWorkingDays === null || existingWorkingDays === '' }"
-            >
-              <div class="modal-background"></div>
-              <div class="modal-card working-days-modal">
-                <header class="modal-card-head">
-                  <p class="modal-card-title">Working Days - {{ currentExamName }}</p>
-                 
-                </header>
-                
-                <section class="modal-card-body">                 
-                  <label class="label">Enter the Number of total Working Days </label>                  
-                  <input 
-                    class="input"
-                    type="number"
-                    v-model="noOfWorkingDays"
-                    @keydown.enter.prevent="submitWorkingDays"
-                  />                
-                </section>
-
-                <footer class="modal-card-foot is-justify-content-center">
-                  <button class="button is-primary mr-1" @click="submitWorkingDays()">Submit</button>
-                  <button class="button" @click="closeAndReturn">Cancel</button>
-                </footer>
-                
-              </div>
-            </div>      
-        </div>
         <!--End of Marks Entry-->
       </div>     
     </div> 
-  </div> 
-
-  
-
-
+  </div>   
 </template>
 
 <script setup>
 import { ref, watch, watchEffect, computed, onMounted, reactive } from 'vue'
 import { useAcademicYear } from '../../composables/useAcademicYear'
 import { useActiveExam } from '../../composables/useActiveExam'
-import { useRoute } from 'vue-router'
-import { useResultStatus } from '../../composables/useResultStatus'
-const { isPublished, publishDate, checkResultStatus } = useResultStatus()
-import { useCurrentExam } from '../../composables/useCurrentExam'
-const { currentExamId, currentExamName, getExamByType } = useCurrentExam()
-import { useClassesSections } from '../../composables/useClassesSections'
-const { classes, sections, loadClasses, loadSections } = useClassesSections()
+import { useRoute, useRouter } from 'vue-router'
 
 // ============== ROUTER & COMPOSABLES ==============
 const route = useRoute()
-// const router = useRouter()
+const router = useRouter()
 
 const { CurrentYearId, CurrentYear, loadAcademicYear } = useAcademicYear()
 const { 
@@ -534,6 +375,8 @@ const {
   periodicMinorMaxMark,
   terminalMajorMaxMark,
   terminalMinorMaxMark,
+  Terminal_Published,
+  Final_Published,
   PassingPercentage,      
   loadActiveExam 
 } = useActiveExam()
@@ -541,12 +384,12 @@ const {
 // ============== REACTIVE STATE ==============
 // Exam related
 const examType = ref('')
-// const currentExamId = ref('')
-// const currentExamName = ref('')
-// const Result_Published = ref(false)
+const currentExamId = ref('')
+const currentExamName = ref('')
+const Result_Published = ref(false)
 
 // UI state
-const selected = ref('scholastic') // Default to Scholastic Subjects
+const selected = ref('Scholastic') // Default to Scholastic Subjects
 const successMessage = ref('')
 const errorMessage = ref('')
 const isSaving = ref(false)
@@ -554,8 +397,8 @@ const studentloaded = ref(false)
 const selectAllAppeared = ref(false)
 
 // Data lists
-// const classes = ref([])
-// const sections = ref([])
+const classes = ref([])
+const sections = ref([])
 const subjects = ref([])
 const students = ref([])
 
@@ -570,10 +413,7 @@ const periodicMarks = ref({})
 const termMarks = ref({})
 const statuses = ref({})
 const appeared = ref({})
-const grades = ref({})
-const attendance = ref({})
-const existingWorkingDays = ref(null)
-const noOfWorkingDays = ref('')
+const Grades = ref({})
 
 // ============== COMPUTED PROPERTIES ==============
 const resultName = computed(() => examType.value === 'terminal' ? 'Half Yearly Result' : examType.value === 'annual' ? 'Final Result': 'Selection Test')
@@ -590,47 +430,35 @@ const selectedSubjectCategory = computed(() =>
   selectedSubject.value?.SubjectCategory || null
 )
 
-// const isMarkEntryDisabled = computed(() => {
-//   if (examType.value === 'annual') return Final_Published.value
-//   if (examType.value === 'terminal') return Terminal_Published.value
-//   if (examType.value === 'selection') return false // or some other condition
-//   return false
-// })
-
-//WORKING DAYS 
-async function fetchWorkingDays(){ 
-  try{
-    if(selected.value==='attendance'){
-      const res = await window.electronAPI.checkWorkingDays(currentExamId.value,CurrentYearId.value)
-      if(res.success)
-        existingWorkingDays.value = res.workingDays          
-    } else return
-      
-  }catch(err){
-    console.log("Something went Wrong", err.message)
-  }
-}
+const isMarkEntryDisabled = computed(() => {
+  if (examType.value === 'annual') return Final_Published.value
+  if (examType.value === 'terminal') return Terminal_Published.value
+  if (examType.value === 'selection') return false // or some other condition
+  return false
+})
 
 // ============== WATCHERS ==============
 // Watch route changes
 watch(() => route.query.type, (newType) => {
-  examType.value = newType  
+  examType.value = newType
   getExam()
   fetchClasses() 
   resetSelections()
-  //fetchWorkingDays()
-  selected.value = 'scholastic'
-  
 }, { immediate: true })
 
+watch(() => route.query, (newQuery) => {
+  if(newQuery.examType) {
+    examType.value = newQuery.examType
+    fetchClasses() 
+    getExam()
+  }
+}, { immediate: true })
 
 // Watch tab changes
-watch(selected, async (newTab) => {
-  await resetSelections()
-  await fetchClasses()
-  await fetchWorkingDays()   
-
-  // console.log("Selected is activated", selected.value)
+watch(selected, (newTab) => {
+  // console.log("Subjects", subjects.value)
+  resetSelections()
+  fetchClasses()
 })
 
 // Watch class changes
@@ -639,12 +467,12 @@ watch(selectedClassId, async (classId) => {
   if (!classId) {
     resetSectionData()    
     return
-  } 
-  
+  }  
   selectedSectionId.value = ''
   marksEntered.value = false
   await fetchSections(classId)
   await fetchSubjects(classId)
+  console.log("Subjects after class change:", subjects.value)
   studentloaded.value = false 
 })
 
@@ -654,23 +482,18 @@ watch(selectedSectionId, async (sectionId) => {
     resetStudentData()
     return
   }
-  // await verifyResultStatus()
+  await verifyResultStatus()
   await loadStudentsBySectionId()
-  if(selected.value !== 'attendance') {
-    studentloaded.value = false
-  }else {
-    studentloaded.value = true
-  }
-  
+  studentloaded.value = false
 })
 
 // Watch subject changes
 watch(selectedSubjectId, async (subjectId) => {
   if (!subjectId) return
   
-  if (selected.value === "scholastic") {
+  if (selected.value === "Scholastic") {
     await loadExistingMarks()
-  } else if (selected.value === "coScholastic") {
+  } else if (selected.value === "Co-Scholastic") {
     await loadExistingGrades()
   }
   
@@ -679,7 +502,7 @@ watch(selectedSubjectId, async (subjectId) => {
   
   if (marksEntered.value) {
     const confirmed = await window.electronAPI.showConfirmationDialog(
-      `There are existing ${selected.value === "scholastic" ? "Marks" : "Grades"} entered for the selected Subject. 
+      `There are existing ${selected.value === "Scholastic" ? "Marks" : "Grades"} entered for the selected Subject. 
       If you change the existing entries, the existing entries will be replaced. 
       You can continue adding more entries, existing entries will not be lost.`
     )
@@ -704,8 +527,7 @@ watch(appeared, (newVal) => {
 onMounted(async () => {
   await Promise.all([
     loadAcademicYear(),
-    loadActiveExam(),
-    //await fetchWorkingDays()    
+    loadActiveExam()       
   ])  
 })
 
@@ -748,12 +570,12 @@ async function fetchSections(classId) {
   }
 }
 
-async function fetchSubjects(classId) {  
+async function fetchSubjects(classId) {
   const result = await window.electronAPI.getSubjectsByClassId(classId, selected.value);
   if (result.success) {
     if (examType.value === 'selection' && classes.value.some(cls => cls.ClassName === 'X')) {
       // Filter out EVS subject for selection exam type and Class X
-      subjects.value = result.subjects.filter(subject => subject.SubjectName !== 'EVS');
+      a.value = result.subjects.filter(subject => subject.SubjectName !== 'EVS');
     } else {
       subjects.value = result.subjects;
     }
@@ -816,10 +638,10 @@ async function loadExistingGrades() {
       sectionId: selectedSectionId.value || 0
     })
     
-    grades.value = {}    
+    Grades.value = {}    
     if (result.success) {
       result.grades.forEach(grade => {
-        grades.value[grade.StudentId] = grade.Grade
+        Grades.value[grade.StudentId] = grade.Grade
       })
       marksEntered.value = result.length > 0
     }   
@@ -829,16 +651,13 @@ async function loadExistingGrades() {
 }
 
 // ============== RESET FUNCTIONS ==============
-async function resetSelections() {
+function resetSelections() {
   selectedClassId.value = ''
   selectedSectionId.value = ''
   selectedSubjectId.value = ''
   resetStudentData()
   resetMarkData()
   resetGrades()
-  studentloaded.value = false
-  selectAllAppeared.value = false
-  appeared.value = {}
 }
 
 function resetSectionData() {
@@ -861,7 +680,7 @@ function resetMarkData() {
 }
 
 function resetGrades() {
-  grades.value = {}
+  Grades.value = {}
 }
 
 // ============== MARK ENTRY FUNCTIONS ==============
@@ -897,19 +716,6 @@ function markInvalid(studentId, type) {
   return val < 0 || val > maxMark
 }
 
-function attendanceInvalid(studentId) {
-  const val = attendance.value[studentId]
-  
-  if (!appeared.value[studentId]) return false
-  
-  if (val === null || val === undefined) return true
-  
-    
-  return val < 0 || val > existingWorkingDays.value
-}
-
-
-
 function updateStatus(studentId) {
   const total = calculateTotal(studentId)
   const maxTotal = (selectedSubjectCategory.value === 'Major' 
@@ -940,91 +746,7 @@ function handleEnterKey(event, studentId, type) {
   }
 }
 
-function handleEnterKey1(event, studentId) {
-  if (event.key === 'Enter') {
-    event.preventDefault()
-    const currentIndex = students.value.findIndex(s => s.StudentId === studentId)   
-    if (currentIndex < students.value.length - 1) {
-      const nextStudentId = students.value[currentIndex + 1].StudentId
-      const nextInput = document.querySelector(
-        `input[data-student-id="${nextStudentId}"]`
-      )
-      if (nextInput) nextInput.focus()
-    }
-  }
-}
-
 // ============== DATA SAVING FUNCTIONS ==============
-async function submitWorkingDays(){
-  //console.log("button clicked")
-  try{
-    const workingDaysData = {
-      yearId: CurrentYearId.value,
-      examId: currentExamId.value,
-      noOfWorkingDays: noOfWorkingDays.value
-    }
-    const res = await window.electronAPI.submitWorkingDays(workingDaysData)
-    if(res.success)
-    window.electronAPI.showInfoDialog(`No. of Working Days entered successfully.`)
-    await fetchWorkingDays()
-
-  }catch(error){
-    window.electronAPI.showErrorDialog(`Error: ${error.message}`)
-    console.error("Error submitting attendance:", error)
-  }
-
-}
-
-async function submitAttendance() {
-  if (!selectedClassId.value || selectedSectionId.value === '') {
-    window.electronAPI.showInfoDialog('Please select class and section')
-    return
-  }
-
-  const invalidStudents = students.value.filter(student => 
-    attendanceInvalid(student.StudentId)
-  )
-
-  if (invalidStudents.length > 0) {
-    errorMessage.value = 'Please enter valid Attendance for all appeared students'
-    setTimeout(() => errorMessage.value = '', 5000)
-    return
-  }  
-  
-  isSaving.value = true
-  try {
-    const attendanceData = students.value
-      .filter(student => appeared.value[student.StudentId])
-      .map(student => ({
-        StudentId: student.StudentId,             
-        Attendance: attendance.value[student.StudentId] || 0
-       
-      }))
-
-    const examData = {
-      AcademicYearId: CurrentYearId.value,
-      ActiveExamId: currentExamId.value,
-      TotalWorkingDays: existingWorkingDays.value,
-      ExamType: examType.value
-    }
-
-    const result = await window.electronAPI.saveAttendance(attendanceData, examData)
-
-    if (result.success) {
-      successMessage.value = 'Attendance submitted successfully!'
-      setTimeout(() => successMessage.value = '', 3000)
-      await loadStudentsBySectionId()
-    } else {
-      throw new Error(result.error || 'Failed to save attendance')
-    }
-  } catch (error) {
-    window.electronAPI.showErrorDialog(`Error: ${error.message}`)
-    console.error("Error submitting attendance:", error)
-  } finally {
-    isSaving.value = false
-  }
-}
-
 async function submitGrades() {
   if (!selectedClassId.value || selectedSectionId.value === '' || !selectedSubjectId.value) {
     window.electronAPI.showInfoDialog('Please select class, section, and co-scholastic activity')
@@ -1039,7 +761,7 @@ async function submitGrades() {
         StudentId: student.StudentId,
         SubjectId: selectedSubjectId.value,
         ActiveExamId: currentExamId.value,
-        Grade: grades.value[student.StudentId]
+        Grade: Grades.value[student.StudentId]
       }))
     
     const result = await window.electronAPI.saveCoScholasticMarks(gradesData)
@@ -1062,6 +784,7 @@ async function submitGrades() {
 
 async function saveMarks(isDraft = false) {
   const invalidStudents = students.value.filter(student => 
+    markInvalid(student.StudentId, 'periodic') || 
     markInvalid(student.StudentId, examType.value === 'terminal' ? 'terminal' : examType.value === 'annual' ? 'annual' : 'selection')
   )
 
@@ -1137,32 +860,21 @@ async function saveMarks(isDraft = false) {
 
 
 // ============== UTILITY FUNCTIONS ==============
-// function closeModal() {
-//   if(noOfWorkingDays.value === null || noOfWorkingDays.value === ''){
-//     window.electronAPI.showConfirmationDialog("Please enter the number of working days to proceed.")
-//     return
-//   }  
-// }
-
-function closeAndReturn(){
-  selected.value = 'scholastic'
-}
-
-// async function verifyResultStatus() { 
-//   const result = await window.electronAPI.verifyResultStatus({
-//     academicYearId: CurrentYearId.value,
-//     resultType: examType.value === 'terminal' ? examType.value : 
-//                examType.value === 'selection' ? 'selection' : 'final',
-//     examId: currentExamId.value,
-//     classId: selectedClassId.value,
-//     sectionId: selectedSectionId.value
-//   })       
+async function verifyResultStatus() { 
+  const result = await window.electronAPI.verifyResultStatus({
+    academicYearId: CurrentYearId.value,
+    resultType: examType.value === 'terminal' ? examType.value : 
+               examType.value === 'selection' ? 'selection' : 'final',
+    examId: currentExamId.value,
+    classId: selectedClassId.value,
+    sectionId: selectedSectionId.value
+  })       
   
-//   if (result.success) {
-//     Result_Published.value = result.isPublished
-//     return    
-//   }
-// }
+  if (result.success) {
+    Result_Published.value = result.isPublished
+    return    
+  }
+}
 </script>
 
 <style scoped>
@@ -1211,8 +923,4 @@ function closeAndReturn(){
   transform: translateY(-2px);
   box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
-
-
-
-
 </style>

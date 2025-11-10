@@ -7,9 +7,7 @@ const currentTime = new Date(new Date().getTime() + 5.5 * 60 * 60 * 1000).toISOS
 ipcMain.handle('generate-report-card', async (event, {
   academicYearId,
   examId,
-  studentId, 
-  totalWorkingDays, 
-  attendance,
+  studentId,   
   teachersRemark,
   resultType 
    }) => {
@@ -23,26 +21,19 @@ ipcMain.handle('generate-report-card', async (event, {
         INSERT INTO ReportCards (
           StudentId,
           AcademicYearId,
-          ActiveExamId,
-          TotalWorkingDays,
-          TotalPresentDays,
+          ActiveExamId,          
           ReportCardType,
           TeachersRemark,
           Creation_at,
           Last_Modified_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-         ON CONFLICT (StudentId, AcademicYearId, ActiveExamId, ReportCardType) DO UPDATE SET
-         TotalWorkingDays = EXCLUDED.TotalWorkingDays,
-         TotalPresentDays = EXCLUDED.TotalPresentDays,
-         TeachersRemark = EXCLUDED.TeachersRemark,
-         Creation_at = EXCLUDED.Creation_at,
+        ) VALUES (?, ?, ?, ?, ?, ?, ?)
+         ON CONFLICT (StudentId, AcademicYearId, ActiveExamId, ReportCardType) DO UPDATE SET         
+         TeachersRemark = EXCLUDED.TeachersRemark,         
          Last_Modified_at = EXCLUDED.Last_Modified_at
       `).run(
         studentId,
         academicYearId,
-        examId,
-        totalWorkingDays,
-        attendance,
+        examId,        
         resultType,
         teachersRemark,
         currentTime,
@@ -408,7 +399,58 @@ ipcMain.handle('get-final-report-card', (event, { studentId, classId, sectionId,
   }
 });
 
+ipcMain.handle('save-attendance', async (event, attendanceData, examData ) => {
+
+  let reportCardType = '';
+  if (examData.ExamType === 'annual') {
+    reportCardType = 'final';
+  } else reportCardType = examData.ExamType;
+
+  const upsertAttendance = db.prepare(`
+      INSERT INTO ReportCards (
+      StudentId, 
+      AcademicYearId, 
+      ActiveExamId, 
+      TotalWorkingDays, 
+      TotalPresentDays, 
+      ReportCardType,
+      Creation_at,
+      Last_Modified_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      ON CONFLICT (StudentId, AcademicYearId, ActiveExamId, ReportCardType) 
+      DO UPDATE SET
+      TotalWorkingDays = EXCLUDED.TotalWorkingDays,
+      TotalPresentDays = EXCLUDED.TotalPresentDays,
+      Last_Modified_at = EXCLUDED.Last_Modified_at
+    `)
+  
+      // Begin transaction
+    db.prepare('BEGIN').run();  
+
+  try {
+
+    for(student of attendanceData) {
+      // console.log("Saving attendance for StudentId:", student.StudentId, "Attendance:", student.Attendance);
+      upsertAttendance.run(
+        student.StudentId, 
+        examData.AcademicYearId, 
+        examData.ActiveExamId, 
+        examData.TotalWorkingDays, 
+        student.Attendance,
+        reportCardType, 
+        currentTime, 
+        currentTime
+      );
+    }
+    // Commit transaction
+    db.prepare('COMMIT').run();
+    return { success: true  };
+  } catch (error) {
+    console.error('Error saving attendance:', error);
+    db.prepare('ROLLBACK').run();
+    return { success: false, error: error.message };
+  }
 
 
-
+});
 

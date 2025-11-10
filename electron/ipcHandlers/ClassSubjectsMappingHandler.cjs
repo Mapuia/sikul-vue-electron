@@ -71,13 +71,13 @@ ipcMain.handle('get-subjects-by-classId', async (event, ClassId, category) => {
     let subjects = [];
     // If category is 'coscholastic', fetch coscholastic subjects
 
-    if (category === 'Co-Scholastic') {
+    if (category === 'coScholastic') {
       const coscholasticStmt = db.prepare(`
         SELECT Id, SubjectName
         FROM Subjects
         WHERE SubjectCategory = ?
       `);
-      subjects = coscholasticStmt.all(category);      
+      subjects = coscholasticStmt.all("Co-Scholastic");      
      
     }else{
       subjects = stmt.all(ClassId);

@@ -219,6 +219,25 @@ ipcMain.handle('get-active-exam-by-type', async (event, examType, YearId) => {
   }
 })
 
+ipcMain.handle('check-working-days', async (event, examId, yearId) => {
+  try {
+
+    // console.log("Cheking Working days for:", examId, yearId)
+    const workingDays = db.prepare(`
+      SELECT noOfWorkingDays
+      FROM ActiveExams
+      WHERE Id = ?
+      AND AcademicYearId = ?
+      `).get(examId, yearId).noOfWorkingDays   
+   
+  //  console.log("working Days", workingDays)
+    return { success: true, workingDays }
+  } catch (error) {
+    console.log("Error")
+    return { success: false, error: error.message }
+  }
+})
+
 
 ipcMain.handle('get-exam-by-type', async (event, type, YearId) => {
   try {
@@ -228,13 +247,32 @@ ipcMain.handle('get-exam-by-type', async (event, type, YearId) => {
       JOIN Exams e ON ae.ExamId = e.Id
       WHERE e.ExamType = ? AND ae.AcademicYearId = ?
     `).get(type, YearId)
-    console.log("Exam fetched for type:", type, exam)
+    //console.log("Exam fetched for type:", type, exam)
     
     return { success: true, exam };
   } catch (error) {
     return { success: false, error: error.message }
   }
 })
+
+
+ipcMain.handle('submit-working-days', async (event, data) => {
+  //console.log("Workingdays Data", data)
+  try {
+    db.prepare(`
+      UPDATE ActiveExams 
+      SET noOfWorkingDays = ?
+      WHERE Id = ? AND AcademicYearId = ?
+    `).run(data.noOfWorkingDays, data.examId, data.yearId)
+
+    //console.log("Update result:", result)
+    return { success: true }
+  } catch (error) {
+    //console.error("Error updating:", error.message)
+    return { success: false, error: error.message }
+  }
+})
+
 
 
 

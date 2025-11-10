@@ -153,7 +153,9 @@
 import { ref, computed, watch, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { useAcademicYear } from '../../composables/useAcademicYear'
+const { CurrentYearId, CurrentYear } = useAcademicYear()
 import { useActiveExam } from '../../composables/useActiveExam'
+const { loadActiveExam } = useActiveExam()
 import { useCurrentExam } from '../../composables/useCurrentExam'
 const { currentExamId, currentExamName, getExamByType } = useCurrentExam()
 import { useResultStatus } from '../../composables/useResultStatus'
@@ -168,8 +170,8 @@ import html2pdf from 'html2pdf.js'
 
 // --- state ---
 const route = useRoute()
-const { CurrentYearId, CurrentYear } = useAcademicYear()
-const { loadActiveExam } = useActiveExam()
+
+
 
 // const resultPublished = ref(false)
 // const publishDate = ref('')

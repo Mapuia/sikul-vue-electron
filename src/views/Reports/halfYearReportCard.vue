@@ -130,17 +130,7 @@
         <div class="modal-background" @click="inputModalVisible = false"></div>
         <div class="modal-content">
           <div class="box">
-            <h2 class="title is-5">Enter Details for {{ selectedStudentName }}</h2>            
-            <div class="field">
-              <label class="label">Total Working Days</label>
-              <input class="input" type="number" v-model.number="totalWorkingDays">
-            </div>
-            <div class="field">
-              <label class="label">Days Present</label>
-              <input class="input" type="number" 
-                    v-model.number="currentAttendance"
-                    :max="totalWorkingDays">
-            </div>
+            <h2 class="title is-5">Remarks for {{ selectedStudentName }}</h2>
             <div class="field">
               <label class="label">Teacher's Remark</label>
               <div class="control">
@@ -157,9 +147,7 @@
                 </div>
               </div>
             </div>
-            <div class="notification is-info is-light">
-              <p><strong>Note:</strong> Please ensure that the attendance and remark are accurate before generating the report card.</p>
-            </div>
+            
             <div class="field is-grouped is-grouped-right">
               <div class="control">
                 <button class="button is-light" @click="inputModalVisible = false"> 
@@ -603,15 +591,13 @@ async function proceedToGenerateReportCard() {
   
   // Generate report card with the entered data
   await generateReportCard(
-    currentStudentId.value, 
-    totalWorkingDays.value, 
-    currentAttendance.value,
+    currentStudentId.value,     
     currentTeachersRemark.value
   )
   fetchResults()
 }
 
-async function generateReportCard(studentId, totalWorkingDays, attendance, remark) {
+async function generateReportCard(studentId, remark) {
   if (!studentId || !currentExamId.value) {
     window.electronAPI.showErrorDialog('Please select a valid student and ensure exam is properly loaded.')
     return
@@ -621,9 +607,7 @@ async function generateReportCard(studentId, totalWorkingDays, attendance, remar
     const results = await window.electronAPI.generateReportCard({
       examId: currentExamId.value,
       academicYearId: CurrentYearId.value,
-      studentId,
-      totalWorkingDays, 
-      attendance,      
+      studentId,          
       teachersRemark: remark,
       resultType: examType.value
     })

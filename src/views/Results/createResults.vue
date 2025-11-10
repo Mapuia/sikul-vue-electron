@@ -15,6 +15,7 @@
   <div v-else class="form-container full"> 
     <div>
       <h1 class="title is-4 has-text-centered mb-4">Create and Publish {{ resultName }} ({{ CurrentYear }})</h1>      
+    
     </div>
 
     <div v-if="!isGenerating" class=" has-text-centered mb-5">
@@ -86,11 +87,10 @@
                     <p class="help is-size-8 mt-1" :class="item.resultStatus.isVerified? 'is-info' : item.finishedSubjects === item.totalSubjects ? 'is-warning':'is-danger'">
                       <i>
                         {{ item.resultStatus.isVerified
-                          ? 'Result generated'
-                          : item.finishedSubjects === item.totalSubjects
+                          ? 'Result generated on ' + new Date(item.resultStatus.lastModifiedAt).toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata' })                                               : item.finishedSubjects === item.totalSubjects
                             ? 'Ready to generate results'
                             : 'Mark Entry not completed' }}
-                      </i> 
+                      </i>  
                     </p>
                   </td>
                   <td v-if="!item.resultStatus.isPublished && item.resultStatus.isVerified" class="has-text-centered">

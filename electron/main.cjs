@@ -89,6 +89,7 @@ app.whenReady().then(async () => {
     await authService.initialize();
     await loadHandlers();
     createSplashWindow();
+    runMigrations();
     createMainWindow();
   } catch (err) {
     console.error("Initialization failed:", err);
@@ -172,7 +173,7 @@ ipcMain.handle('show-info-dialog', async (_, message) => {
     type: 'info',
     buttons: ['OK'],
     defaultId: 0,
-    title: 'Sikul App says',
+    title: 'Info',
     message,
   });
 });
@@ -182,7 +183,7 @@ ipcMain.handle('show-error-dialog', async (_, message) => {
     type: 'error',
     buttons: ['OK'],
     defaultId: 0,
-    title: 'Sikul App says',
+    title: 'Error Info',
     message,
   });
 });

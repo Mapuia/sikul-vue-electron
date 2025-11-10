@@ -5,9 +5,57 @@ const { db } = require('../database.cjs');
 async function runMigrations() {
   try {
     // Check if the column already exists
-    const columnExists = db.prepare(`PRAGMA table_info(Students)`).all().some(col => col.name === 'RegistrationNumber');
+    const RegistrationNumberExists = db.prepare(`PRAGMA table_info(Students)`).all().some(col => col.name === 'RegistrationNumber');
+    const noOfWorkingDaysExists = db.prepare(`PRAGMA table_info(ActiveExams)`).all().some(col => col.name === 'noOfWorkingDays');
 
-    if (!columnExists) {
+    if(!noOfWorkingDaysExists){
+      db.prepare('BEGIN TRANSACTION').run()
+      db.prepare(`
+        CREATE TABLE ActiveExams_new (
+          Id INTEGER PRIMARY KEY AUTOINCREMENT,
+          AcademicYearId INTEGER NOT NULL,
+          ExamId INTEGER NOT NULL,
+          MajorMaxMark DECIMAL (5, 2) NOT NULL,
+          MinorMaxMark DECIMAL (5, 2) NOT NULL,
+          PassingPercentage DECIMAL (5, 2) DEFAULT 40.0 CHECK (PassingPercentage BETWEEN 0 AND 100),
+          IsActive BOOLEAN DEFAULT 0,
+          Result_Published BOOLEAN DEFAULT 0,
+          PublishDate DATETIME,
+          noOfWorkingDays INTEGER,
+          Creation_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          Modified_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (ExamId) REFERENCES Exams (Id) ON DELETE CASCADE,
+          FOREIGN KEY (AcademicYearId) REFERENCES AcademicYears (Id) ON DELETE CASCADE,
+          UNIQUE (AcademicYearId, ExamId)
+        )          
+        `).run();
+
+        db.prepare(`
+          INSERT INTO ActiveExams_new (
+            Id, AcademicYearId, ExamId,
+            MajorMaxMark, MinorMaxMark, PassingPercentage, IsActive,
+            Result_Published, PublishDate, 
+            Creation_at,
+            Modified_at            
+          )
+          SELECT
+            Id, AcademicYearId, ExamId,
+            MajorMaxMark, MinorMaxMark, PassingPercentage, IsActive,
+            Result_Published, PublishDate, 
+            Creation_at,
+            Modified_at
+          FROM
+            ActiveExams
+          `).run();
+        db.prepare(`DROP TABLE ActiveExams;`).run();
+        db.prepare(`ALTER TABLE ActiveExams_new RENAME TO ActiveExams;`).run();
+
+        db.prepare('COMMIT').run();
+
+        console.log('noOfWorkingDays column added after PublishDate.');  
+    }else{}
+
+    if (!RegistrationNumberExists) {
       // Start transaction
       db.prepare('BEGIN TRANSACTION').run();
 

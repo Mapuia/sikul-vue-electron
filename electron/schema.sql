@@ -94,6 +94,7 @@ CREATE TABLE ActiveExams (
     IsActive BOOLEAN DEFAULT 0,
     Result_Published BOOLEAN DEFAULT 0,
     PublishDate DATETIME,
+    noOfWorkingDays INTEGER,
     Creation_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     Modified_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (ExamId) REFERENCES Exams (Id) ON DELETE CASCADE,
@@ -171,6 +172,22 @@ CREATE TABLE IF NOT EXISTS Marks (
     FOREIGN KEY (ActiveExamId) REFERENCES ActiveExams(Id) ON DELETE CASCADE,
     UNIQUE(StudentId, SubjectId, ActiveExamId)
 );
+
+CREATE TABLE IF NOT EXISTS Marks (
+    Id INTEGER PRIMARY KEY AUTOINCREMENT,
+    ActiveExamId INTEGER NOT NULL,
+    StudentId TEXT NOT NULL,
+    attendance INTEGER,
+    Creation_at DATETIME DEFAULT CURRENT_TIMESTMP,
+    Last_Modified_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    CreatedBy INTEGER REFERENCES Users(Id),
+    ModifiedBy INTEGER REFERENCES Users(Id),
+    FOREIGN KEY (StudentId) REFERENCES Students(Id) ON DELETE CASCADE,
+    FOREIGN KEY (SubjectId) REFERENCES Subjects(Id) ON DELETE CASCADE,
+    FOREIGN KEY (ActiveExamId) REFERENCES ActiveExams(Id) ON DELETE CASCADE,
+    UNIQUE(StudentId, SubjectId, ActiveExamId)
+);
+
 
 -- Mark Entry Status
 CREATE TABLE IF NOT EXISTS MarkEntryStatus (

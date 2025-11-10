@@ -21,7 +21,7 @@ export const useResultNames = () => {
         break
   
     }
-    resultType.value = examType.value === 'terminal' ? examType.value : examType.value === 'annual' ? 'final' : 'selection'
+    resultType.value = examType === 'terminal' ? examType : examType === 'annual' ? 'final' : 'selection'
 
   }
   

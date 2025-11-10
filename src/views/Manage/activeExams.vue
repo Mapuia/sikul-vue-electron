@@ -33,7 +33,7 @@
         <table class="table is-fullwidth is-striped">
           <thead>
             <tr>
-              <th>Active Exam ID</th>
+              <th>Exam ID</th>
               <th>Exam Name</th>
               <th>Type</th>
               <th>Major Marks</th>
@@ -41,6 +41,7 @@
               <th>Passing %</th>
               <th>Published?</th>
               <th>Publish Date</th>
+              <th>#working Days</th>
               <th>Actions</th>
             </tr>
           </thead>
@@ -77,6 +78,9 @@
               </td>
               <td>               
                   {{ exam.PublishDate  }}               
+              </td>
+              <td>               
+                  {{ exam.noOfWorkingDays  }}               
               </td>
               
               <!-- Actions -->

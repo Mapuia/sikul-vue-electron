@@ -59,6 +59,8 @@ contextBridge.exposeInMainWorld('electronAuth', {
   updateActiveExam: (examData) => ipcRenderer.invoke('update-active-exam', examData),
   deleteActiveExam: (examId) => ipcRenderer.invoke('delete-active-exam', examId),
   deactivateAllActiveExams: (academicYearId) => ipcRenderer.invoke('deactivate-all-active-exams', academicYearId),
+  checkWorkingDays: (examId, yearId) => ipcRenderer.invoke('check-working-days', examId, yearId),
+  submitWorkingDays: (data) => ipcRenderer.invoke('submit-working-days', data),
 
   getCurrentExam: (academicYearId) => ipcRenderer.invoke('get-current-exam', academicYearId),
   activateExam: (Id) => ipcRenderer.invoke('activate-exam',Id),
@@ -103,6 +105,9 @@ contextBridge.exposeInMainWorld('electronAuth', {
   
   saveMarks: ({marksData, subjectData}) => ipcRenderer.invoke('save-marks', {marksData, subjectData}),
   saveCoScholasticMarks: (data) => ipcRenderer.invoke('save-coscholastic-marks', data),
+  //ReportCardHandler.cjs
+  saveAttendance: (attendanceData, examData) => ipcRenderer.invoke('save-attendance', attendanceData, examData),
+
   //getCoScholastics: () => ipcRenderer.invoke('get-coscholastic'),
   getMarksByClassSection: (payload) => ipcRenderer.invoke('get-marks-by-class-section', payload),
   getCoScholasticMarks: (params) => ipcRenderer.invoke('get-coscholastic-marks', params), 
