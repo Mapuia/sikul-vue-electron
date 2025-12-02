@@ -290,72 +290,38 @@ ipcMain.handle('generate-results', async (event, { academicYearId, resultType, e
 
         // Initialize status
         let resultStatus = "Pass";
-        let division = "N.A.";
+        let division = "";
 
-        if (failCount > 2) {
+        // if failed in more than 2 subjects, Fail
+        if (failCount > 2){
           resultStatus = 'Fail';
-        } else {
-          switch (true) {
-            // Case: Classes 1 - 10
-            case (Class > 0 && Class <= 10): {
-              if (failCount !== 0 && failCount <= 2) {
-                const failedSubjects = db.prepare(`
-                  SELECT * 
-                  FROM Marks m 
-                  JOIN Subjects sub ON sub.Id = m.SubjectId 
-                  WHERE m.StudentId = ? AND m.ActiveExamId = ?                  
-                  AND m.TotalMarksObtained < m.TotalMaxMarks * 0.20
-                `).all(studentId, examId);
-                
-                if (failedSubjects.length > 0) {
-                  resultStatus = 'Fail';
-                } else if (Percentage > PassingPercentage) {
-                  resultStatus = 'Simple Pass';
-                }
-              }
-              division = getDivision(Percentage, failCount);
-              break;
-            }
-            
-            // Case: Classes11+
-            case (Class >= 11): {
-              if (failCount === 1) {
-                const anysubject = db.prepare(`
-                  SELECT * 
-                  FROM Marks m 
-                  JOIN Subjects sub ON sub.Id = m.SubjectId 
-                  WHERE m.StudentId = ? AND m.ActiveExamId = ? 
-                  AND m.TotalMarksObtained < m.TotalMaxMarks * 0.20
-                `).all(studentId, examId);
-                
-                if (anysubject.length > 0) {
-                  resultStatus = 'Fail';
-                } else {
-                  resultStatus = 'Simple Pass';
-                }
-              } else if (failCount > 1) {
-                resultStatus = 'Fail';
-              }
-              division = getDivision(Percentage, failCount);
-              break;
-            }
-            
-            // Case: KG-I, KG-II, Class 11
-            case (classInfo.ClassName === 'KG-I' || classInfo.ClassName === 'KG-II' || Class === 11): {
-              if (failCount > 0) {
-                resultStatus = 'Fail';
-              } else {
-                division = getDivision(Percentage, failCount);
-              }
-              break;
-            }
-            
-            // Default
-            default: {
-              division = getDivision(Percentage, failCount);
-              break;
-            }
+        }
+
+        else {
+
+          if (classInfo.ClassName === 'KG-I' || classInfo.ClassName === 'KG-II'){
+            if (failCount > 0) {
+              resultStatus = 'Fail';
+            } else resultStatus = 'Simple Pass';
+          } 
+          // If scored less than 20% in any subject, Fail
+          const lowScoredSubjects = db.prepare(`
+            SELECT * 
+            FROM Marks m 
+            JOIN Subjects sub ON sub.Id = m.SubjectId 
+            WHERE m.StudentId = ? AND m.ActiveExamId = ?             
+            AND m.TotalMarksObtained < m.TotalMaxMarks * 0.2
+          `).all(studentId, examId);
+          
+          if (lowScoredSubjects.length > 0) {
+            resultStatus = 'Fail';
+          } else if (Percentage > PassingPercentage) {
+            resultStatus = 'Simple Pass';
           }
+           
+          // Determine Division for all classes if passed
+          division = getDivision(Percentage, failCount);
+
         }
 
         // Add student to appropriate array with their status and division
@@ -372,6 +338,7 @@ ipcMain.handle('generate-results', async (event, { academicYearId, resultType, e
         } else {
           failStudents.push(studentWithStatus);
         }
+        
       }
 
       // 5. Rank calculation for all students with continuing ranks

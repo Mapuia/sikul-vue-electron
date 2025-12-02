@@ -5,29 +5,27 @@
       <div class="box">
         <h1 class="subtitle">About Result Criteria <span class="icon has-text-info"><i class="fas fa-info-circle"></i></span></h1>
    <hr>   
-        <p>Pass Mark in each subject is 40%. </p>
-
-  <p>Simple  Pass  is  awarded  to  Class  I  –  VIII  students  whose 
-    marks are above the aggregate mark pass marks even if they 
-    fail in two subjects.  However,  the  student who  scores  less 
-    than 25% in Science or Mathematics will be declared failed. </p>
-<hr>
-    <p>In  Class  IX  and  X,  Simple  pass  is  awarded  to  Student 
-    whose  marks  are  above  the  aggregate  pass  mark  even 
-    if  they  fail  in  one  subject.  However,  the  student  who 
-    score less than 25% in all subjects will be declared failed. 
-    </p>
+       
+    <ol class="pl-4">
+      <li>Pass Mark in each subject is 40%</li>
+      <li>Division and Rank is given to those who pass in all subjects</li>
+      <li>Simple Pass is granted to Class I-X students, who secure above the aggregate pass marks; even if they fail in 1 or 2 subjects. However, it is compulsory to secure at least 20% in those failed subjects to get Simple Pass.</li>
+      Student failed in 1 subject is declared 'Fail' if he secure less than 20% in that failed subject.
+      <li>Simple Pass is granted to Class XI students if they failed in 1 subject only. (There is no minimum marks)</li>
+      <li>There is no provision for Simple Pass for KG-I and KG-II. It is compulsory to pass in all subjects.</li>
+    </ol>
 <hr>
       <p>Criteria for Divisions: <br />
       Distinction  	- 80% <br />
       First Division 	- 60%  <br />
-      Second Division – 50%<br />
+      Second Division – 45%<br />
       Third Division  	- 40%</p>
 <hr>
-<p>
+
+<p>Criteria for Grade: <br />
 35 and above  - A <br />
 25 and above - B <br />
-25 below - C</p>
+Below 25 - C</p>
 
   
 <!-- Example input 

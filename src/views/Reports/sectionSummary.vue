@@ -194,8 +194,57 @@ const examType = ref(route.query.type)
 //const currentExamName = ref('')
 // const resultName = ref('')
 
-const examOrder = ['Periodic', 'Half Yearly', 'Total']
-const examKeyMap = { Periodic: 'periodic', 'Half Yearly': 'terminal', Total: 'total' }
+let examOrder = []
+let examKeyMap = {}
+
+function initializeExamConfig() {
+  switch(examType.value) {
+    case 'terminal':
+        examOrder = ['Periodic', 'Half Yearly', 'Total']
+        examKeyMap = { Periodic: 'periodic', 'Half Yearly': 'terminal', Total: 'total' }
+      break
+    case 'annual':
+      examOrder = ['Periodic', 'Annual', 'Total']
+      examKeyMap = { Periodic: 'periodic', 'Annual': 'terminal', Total: 'total' }
+      break
+    case 'final':
+      examOrder = ['Periodic', 'Term', 'Total']
+      examKeyMap = { Periodic: 'periodic', 'Term': 'terminal', Total: 'total' }
+      break  
+    case 'selection':
+      examOrder = ['Internal', 'Selection Test', 'Total']
+      examKeyMap = { Internal: 'periodic', 'Selection Test': 'terminal', Total: 'total' }
+      break
+    default:
+      
+      break
+  }
+}
+
+switch(examType.value) {
+  case 'terminal':
+      examOrder = ['Periodic', 'Half Yearly', 'Total']
+      examKeyMap = { Periodic: 'periodic', 'Half Yearly': 'terminal', Total: 'total' }
+    break
+  case 'annual':
+    examOrder = ['Periodic', 'Annual', 'Total']
+    examKeyMap = { Periodic: 'periodic', 'Annual': 'terminal', Total: 'total' }
+    break
+  case 'final':
+    examOrder = ['Periodic', 'Term', 'Total']
+    examKeyMap = { Periodic: 'periodic', 'Term': 'terminal', Total: 'total' }
+    break  
+  case 'selection':
+    examOrder = ['Internal', 'Selection Test', 'Total']
+    examKeyMap = { Internal: 'periodic', 'Selection Test': 'terminal', Total: 'total' }
+    break
+  default:
+    
+    break
+}
+
+//  examOrder = ['Periodic', 'Half Yearly', 'Total']
+//  examKeyMap = { Periodic: 'periodic', 'Half Yearly': 'terminal', Total: 'total' }
 
 // --- computed ---
 const hasSelection = computed(() => !!selectedClassId.value && (selectedSectionId.value !== '' && selectedSectionId.value !== null))
@@ -305,7 +354,7 @@ onMounted(async () => {
   //await checkPublishStatus()
   //await statusMessage()
   setResultName(examType.value)
-  
+  initializeExamConfig()
 })
 
 async function initializeClasses() {
@@ -313,6 +362,9 @@ async function initializeClasses() {
   if(examType.value === 'selection'){
       classes.value = classes.value.filter(c => c.ClassName === 'X')
       selectedClassId.value = classes.value[0]?.Id || ''
+    }
+  if(examType.value === 'annual' || examType.value === 'final'){
+      classes.value = classes.value.filter(c => c.ClassName !== 'X')
     }
   }    
 
@@ -327,7 +379,7 @@ watch(() => selectedClassId.value, async (newClass) => {
     sections.value = []
     subjects.value = []
     studentMarks.value = []
-    selectedSectionId.value = ''
+    selectedSectionId.value = '' 
     return
   }
   await loadSections(newClass)
@@ -372,7 +424,8 @@ watch(
     if (selectedClassId.value && selectedSectionId.value !== '' && selectedSectionId.value !== null) {
       await fetchResultsSummary()
     }
-
+    initializeClasses()
+    initializeExamConfig()
     //Examtype is 'selection', classes should have Class X only
     
   }
