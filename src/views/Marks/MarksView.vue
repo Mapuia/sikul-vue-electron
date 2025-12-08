@@ -577,8 +577,8 @@ async function loadExistingMarks() {
     termMarks.value = {}
     
     result.forEach(mark => {
-      periodicMarks.value[mark.StudentId] = mark.PeriodicMarksObtained || 'No Entry'
-      termMarks.value[mark.StudentId] = mark.TerminalMarksObtained || 'No Entry'
+      periodicMarks.value[mark.StudentId] = mark.PeriodicMarksObtained 
+      termMarks.value[mark.StudentId] = mark.TerminalMarksObtained
       statuses.value[mark.StudentId] = mark.SubjectResult || "N.A."
       appeared.value[mark.StudentId] = mark.SubjectResult === 'N.A.' ? 0 : 1
     }) 

@@ -143,9 +143,9 @@ ipcMain.handle('get-mark-entry-status', async (event, examId, examType) => {
     // Prepare final result
     const result = classSections.map(cs => {
       let total = totalSubjectsMap.get(cs.classId) || 0
-      if(examType === 'selection'){
-        total-= 1; // Exclude English for selection test
-      }
+      // if(examType === 'selection'){
+      //   total-= 1; // Exclude English for selection test
+      // }
       const finished = finishedSubjectsMap.get(`${cs.classId}-${cs.sectionId || 0}`) || 0
       
       return {

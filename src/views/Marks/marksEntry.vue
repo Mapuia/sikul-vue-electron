@@ -104,34 +104,43 @@
           <div v-if="studentloaded && selectedSubjectId">
             <div class="title tab-heading has-text-weight-bold is-primary is-flex is-justify-content-space-between ">
               <div class="mb-3">
-                {{ selectedSubjectName }}
+                {{ selectedSubjectName }} 
+                
               </div>
               <div class="tags are-medium">
-                <span class="tag ml-2">Pass Mark ({{ PassingPercentage }}%)</span>
+                <span class="tag ml-2">Pass Mark ({{ examType === 'selection' ? 35: PassingPercentage }}%)</span>
               </div>
             </div>            
-          
+                <label class="checkbox"> 
+                  <input 
+                    type="checkbox" 
+                    v-model="withoutInternalMarks"
+                    @change="toggleWithoutInternalMarks"
+                    :checked="withoutInternalMarks"                                       
+                  > Check to proceed without Internal Marks
+                </label>
             <div v-if="students.length > 0 || students.length === 1" class="is-flex is-flex-direction-column">
               <table class="table is-bordered is-striped is-fullwidth">
                 <thead>
                   <tr>
                     <th rowspan="2" style="width: 100px; vertical-align: middle">Roll No.</th>
                     <th rowspan="2" style="min-width: 250px; vertical-align: middle">Student Name</th>
-                    <th colspan="3" class="has-text-centered">Marks Scored</th>
+                    <th v-if="withoutInternalMarks" colspan="2" class="has-text-centered">Marks Scored</th>
+                    <th v-else colspan="3" class="has-text-centered">Marks Scored</th>
                     <th rowspan="2" class="has-text-centered " style="vertical-align: middle">Appeared
                       <p class="control is-small">Select All</p>
                       <label class="checkbox"> 
                         <input 
                           type="checkbox" 
                           v-model="selectAllAppeared"
-                          @change="toggleAllAppeared"                         
+                          @change="toggleAllAppeared"                        
                         >
                       </label>
                     </th>
                     <th rowspan="2" style="vertical-align: middle">Status</th>
                   </tr>
                   <tr>
-                    <th class="has-text-centered" style="min-width: 100px;">
+                    <th v-if="!withoutInternalMarks" class="has-text-centered" style="min-width: 100px;">
                       {{examType === "terminal" ? 'First Periodic Test' : examType === "annual" ? 'Second Periodic Test' : 'Internal'}}<br />
                       (FM: {{ selectedSubjectCategory === 'Major' ? periodicMajorMaxMark : periodicMinorMaxMark }})
                     </th>
@@ -147,9 +156,9 @@
                     <td style="text-align: center;">{{ student.RollNo }}</td>
                     <td>{{ student.Name }}</td>
                     <!-- First Periodic Test Input -->
-                    <td>
+                    <td v-if="!withoutInternalMarks">
                       <input
-                        :disabled="isPublished || !appeared[student.StudentId]"
+                        :disabled="isPublished || !appeared[student.StudentId] || withoutInternalMarks"
                           type="number"
                           :class="{
                             'is-danger': markInvalid(student.StudentId, 'periodic'),
@@ -546,6 +555,7 @@ const examType = ref('')
 // const Result_Published = ref(false)
 
 // UI state
+const withoutInternalMarks = ref(true)
 const selected = ref('scholastic') // Default to Scholastic Subjects
 const successMessage = ref('')
 const errorMessage = ref('')
@@ -597,6 +607,16 @@ const selectedSubjectCategory = computed(() =>
 //   return false
 // })
 
+function toggleWithoutInternalMarks() {
+  // Clear periodic marks if toggled to without internal marks
+  if (withoutInternalMarks.value) {
+    for (const studentId in periodicMarks.value) {
+      periodicMarks.value[studentId] = 0
+    }
+    console.log("Without Internal Marks toggled ON", withoutInternalMarks.value)
+  }
+  
+}
 //WORKING DAYS 
 async function fetchWorkingDays(){ 
   try{
@@ -620,7 +640,7 @@ watch(() => route.query.type, (newType) => {
   resetSelections()
   //fetchWorkingDays()
   selected.value = 'scholastic'
-  
+    
 }, { immediate: true })
 
 
@@ -839,6 +859,7 @@ async function resetSelections() {
   studentloaded.value = false
   selectAllAppeared.value = false
   appeared.value = {}
+  withoutInternalMarks.value = false
 }
 
 function resetSectionData() {
@@ -896,6 +917,34 @@ function markInvalid(studentId, type) {
   
   return val < 0 || val > maxMark
 }
+function studentInvalid(studentId, examType) {
+  if (!appeared.value[studentId]) return false
+  if(examType === 'selection') {
+    if ((periodicMarks.value[studentId] === null || periodicMarks.value[studentId] === undefined || periodicMarks.value[studentId] === '')) {
+      return false 
+    }
+    if(termMarks.value[studentId] === null || termMarks.value[studentId] === undefined || termMarks.value[studentId] === '') {
+      return true 
+    }
+  }
+  else {
+    if ((periodicMarks.value[studentId] === null || periodicMarks.value[studentId] === undefined || periodicMarks.value[studentId] === '') ||
+      (termMarks.value[studentId] === null || termMarks.value[studentId] === undefined || termMarks.value[studentId] === '')) {
+    return true 
+  }}
+  
+  const pmarks = periodicMarks.value[studentId]
+  const tmarks = termMarks.value[studentId]
+  
+  const periodicMax = selectedSubjectCategory.value === 'Major' 
+    ? periodicMajorMaxMark.value 
+    : periodicMinorMaxMark.value
+  const terminalMax = selectedSubjectCategory.value === 'Major' 
+    ? terminalMajorMaxMark.value 
+    : terminalMinorMaxMark.value
+  
+  return pmarks < 0 || pmarks > periodicMax || tmarks < 0 || tmarks > terminalMax
+}
 
 function attendanceInvalid(studentId) {
   const val = attendance.value[studentId]
@@ -903,20 +952,27 @@ function attendanceInvalid(studentId) {
   if (!appeared.value[studentId]) return false
   
   if (val === null || val === undefined) return true
-  
-    
+      
   return val < 0 || val > existingWorkingDays.value
 }
 
-
-
 function updateStatus(studentId) {
   const total = calculateTotal(studentId)
+  
+  if(examType.value=== 'selection'){
+    PassingPercentage.value = 35
+    if(withoutInternalMarks.value) {
+      periodicMajorMaxMark.value = 0
+      periodicMinorMaxMark.value = 0   
+    }
+    
+  }
+  
   const maxTotal = (selectedSubjectCategory.value === 'Major' 
     ? (periodicMajorMaxMark.value + terminalMajorMaxMark.value)
-    : (periodicMinorMaxMark.value + terminalMinorMaxMark.value))
-  
+    : (periodicMinorMaxMark.value + terminalMinorMaxMark.value))  
   const passMark = Math.ceil(maxTotal * (PassingPercentage.value / 100))
+  
   statuses.value[studentId] = total >= passMark ? 'Pass' : 'Fail'
 }
 
@@ -1062,7 +1118,7 @@ async function submitGrades() {
 
 async function saveMarks(isDraft = false) {
   const invalidStudents = students.value.filter(student => 
-    markInvalid(student.StudentId, examType.value === 'terminal' ? 'terminal' : examType.value === 'annual' ? 'annual' : 'selection')
+    studentInvalid(student.StudentId, examType.value === 'terminal' ? 'terminal' : examType.value === 'annual' ? 'annual' : 'selection')
   )
 
   if (!isDraft && invalidStudents.length > 0) {
@@ -1075,15 +1131,19 @@ async function saveMarks(isDraft = false) {
   errorMessage.value = ''
 
   try {
-    const periodicMax = selectedSubjectCategory.value === 'Major' 
+    let periodicMax = selectedSubjectCategory.value === 'Major' 
       ? periodicMajorMaxMark.value 
       : periodicMinorMaxMark.value
     
-    const terminalMax = selectedSubjectCategory.value === 'Major' 
+    let terminalMax = selectedSubjectCategory.value === 'Major' 
       ? terminalMajorMaxMark.value 
       : terminalMinorMaxMark.value
     
-    const totalMax = periodicMax + terminalMax
+    let totalMax = periodicMax + terminalMax
+    if (withoutInternalMarks.value) {
+      totalMax = terminalMax
+      periodicMax = 0
+    }
 
     const marksData = students.value
       .filter(student => !!appeared.value[student.StudentId])
@@ -1111,7 +1171,7 @@ async function saveMarks(isDraft = false) {
       SectionId: selectedSectionId.value === '' ? 0 : selectedSectionId.value,
       SubjectId: selectedSubjectId.value      
     }
-
+    // console.log("Marks Data to be saved:", marksData)
     const result = await window.electronAPI.saveMarks({marksData, subjectData})
     if (result.success) {
       if (isDraft) {

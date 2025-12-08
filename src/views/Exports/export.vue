@@ -78,7 +78,8 @@
             </td>
           </tr>
           <tr>
-            <td class="has-text-weight-semibold">Export Annual Examination Marks</td>
+            <td v-if="className === 'X'" class="has-text-weight-semibold">Export Selection Examination Marks</td>
+            <td v-else class="has-text-weight-semibold">Export Annual Examination Marks</td>
             <td class="has-text-right">
               <button class="button is-primary is-small" @click="exportAnnual(className, sectionName)"><i class="fas fa-file-export mr-2"></i>Export</button>
             </td>
@@ -152,6 +153,14 @@ onMounted(async () => {
   await getUser()
   await fetchClasses()
 })
+// const selectedClassName = ref('')
+// async function fetchSelectedClass() {
+//   if (selectedClassId.value) {
+//     selectedClass = classes.value.find(cls => cls.Id === selectedClassId.value)
+//     return selectedClass ? selectedClass.ClassName : ''
+//   }
+//   return ''
+// }
 
 async function fetchClasses() {
   try {
@@ -273,12 +282,17 @@ async function exportHalfYearly(className, sectionName) {
 //examtype.value = 'annual' use getExam() to get ExamId
 //fetch marks and all cummulative marks and finalCumulative marks for selectedClassId and SelectedSectionId and ExamId for CurrentYearId 
 async function exportAnnual(className, sectionName) {
-  examType.value = 'annual'
+  if (className !== 'X') {
+    examType.value = 'annual'
+  } else {
+    examType.value = 'selection'
+  }
+  
   await getExam()
 
   const response = await window.electronAPI.exportMarksData({
     examId: currentExamId.value,
-    examType: 'annual',
+    examType: examType.value,
     classId: selectedClassId.value,
     sectionId: selectedSectionId.value,
     academicYearId: CurrentYearId.value,
@@ -287,7 +301,7 @@ async function exportAnnual(className, sectionName) {
   })
 
   if (response.success) {
-    window.electronAPI.showInfoDialog('Annual exam data exported.')
+    window.electronAPI.showInfoDialog('Exam data (Marks) exported.')
   } else {
     window.electronAPI.showErrorDialog('Export failed.')
   }

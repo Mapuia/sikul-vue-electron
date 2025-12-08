@@ -63,7 +63,7 @@
                 <div class="navbar-subdropdown">
                   <router-link class="navbar-item" to="/marks/marks-entry?type=selection" @click="closeDropdown">Marks Entry</router-link>
                   <router-link class="navbar-item" to="/marks/view?type=selection" @click="closeDropdown">View Marks</router-link>
-                  <router-link v-if="canAccess(['admin','teacher'])" class="navbar-item" to="/result/create?type=selection" @click="closeDropdown">Generate Result</router-link>
+                  <router-link v-if="canAccess(['admin','teacher'])" class="navbar-item" to="/result/create/selectiontest?type=selection" @click="closeDropdown">Generate Result</router-link>
                   <router-link class="navbar-item" to="/result/section?type=selection" @click="closeDropdown">Selection Result</router-link>
                                     
                 </div>
