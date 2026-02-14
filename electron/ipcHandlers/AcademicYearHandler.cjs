@@ -87,7 +87,7 @@ ipcMain.handle('add-academic-year', async (event, { yearName, startDate, endDate
           minorMaxMark = 10;
         } else {
           majorMaxMark = 80;
-          minorMaxMark = 40;
+          minorMaxMark = 20;
         }
 
         insertActiveExam.run(

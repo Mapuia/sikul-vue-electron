@@ -53,13 +53,15 @@ ipcMain.handle('save-marks', async (event, { marksData, subjectData }) => {
   }
   let totalMarks = 0;
   totalMarks = db.prepare(`
-    SELECT SUM(s.FullMark) AS TotalFullMark
-    FROM ClassSubjectMapping csm
-    LEFT JOIN Subjects s ON csm.SubjectId = s.Id
-    WHERE csm.ClassId = ?
-    `).get(subjectData.ClassId).TotalFullMark;
+     SELECT SUM(s.FullMark) AS TotalFullMark
+      FROM Subjects s
+      JOIN ClassSubjectMapping m ON s.Id = m.SubjectId
+      WHERE m.ClassId = ?
+      `).get(subjectData.ClassId).TotalFullMark;
 
- 
+  if(subjectData.WithoutInternalMarks) {
+    totalMarks = 0.8 * totalMarks; // Assuming internal marks are 80% of total
+  }
   //console.log('Check Total Marks:', totalMarks);
   // Prepare all statements outside transaction first
   let upsertMarkStmt, upsertEntryStatusStmt, upsertTotalMarksStmt, studentTotalsStmt, finalTotalsStmt, finalCumulativeStmt;
@@ -212,7 +214,7 @@ ipcMain.handle('save-marks', async (event, { marksData, subjectData }) => {
         studentTotals.push(studentTotalsStmt.get(
           totalMarks,  // First ? (totalMax)
           totalMarks,  // Second ? (in CASE)
-          totalMarks,  // Third ? (in division)
+          totalMarks,  // Third ? (in percentage)
           subjectData.ExamId,
           mark.StudentId
         ));

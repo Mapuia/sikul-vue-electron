@@ -14,7 +14,7 @@
   </div> -->
   <div class="form-container full"> 
     <div>
-      <h1 class="title is-4 has-text-centered mb-4">Create Class X Selection Test Results. ({{ CurrentYear }})</h1>      
+      <h1 class="title is-4 has-text-centered mb-4">Class X Selection Test Results. ({{ CurrentYear }})</h1>      
     
     </div>
 
@@ -227,6 +227,7 @@ watch(() => route.query.type, (newType) => {
   getExamByType(newType, CurrentYearId.value)
   setResultName(newType)
   fetchMarkEntryStatus()
+  
 
 }, { immediate: true })
 
@@ -239,6 +240,8 @@ async function getUser() {
 const canAccess = (requiredRoles) => {
   return requiredRoles.includes(userRole.value)
 }
+
+
 
 const filteredClassSectionStatus = computed(() => {
   return classSectionStatus.value.filter(item => item.finishedSubjects !== 0);
@@ -366,6 +369,7 @@ async function fetchMarkEntryStatus() {
 
 //className and sectionName is for Displaying in Modal
 async function generateResult(classId, sectionId) {  
+  console.log("ExamId:", currentExamId.value, "ClassId:", classId, "SectionId:", sectionId)
   sectionId = sectionId === '' ? 0 : sectionId
   try {
     //console.log('Generating results for:', className, sectionName)

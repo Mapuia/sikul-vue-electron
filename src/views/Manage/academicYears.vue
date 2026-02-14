@@ -4,7 +4,7 @@
     <h2 class="subtitle has-text-centered">Current Academic Year {{ CurrentYear }}</h2>
 
     <!-- Academic Year Form -->
-    <form v-if="concluded" @submit.prevent="submitForm" class="box">
+    <form v-if="showForm" @submit.prevent="submitForm" class="box">
       <h2 class="subtitle has-text-centered">Create New Academic Year</h2>
       <div class="field">
         <label class="label">Enter Year</label>
@@ -61,26 +61,26 @@
           <button class="button is-success is-outlined is-fullwidth" @click="resetForm">Reset</button>
         </div>
       </div>
-
-          </form>
-
-    <!-- Not Concluded Message -->
-    <div v-else class="notification is-info is-warning">
-      <p>Check all the {{ CurrentYear }} has been concluded and all results have been published. 
-        Create New Session only after concluding the previous Year. </p>
-      <button class="button is-dark mt-5 is-fullwidth" @click="concludeYear" >
-        Click to create New Session
-      </button>
-    </div>
-  </div>
+    <div><button class="button is-danger" @click="cancelForm">Cancel</button></div>
+    </form>
+  </div>      
   
-  <div v-if="message.text" class="notification fixed-notification" :class="message.type" @click="message.text = ''">
+  <div v-if="message.text" class="notification" :class="message.type" @click="message.text = ''">
         {{ message.text }}
   </div>
 
   <!-- Academic Years Table -->
-  <div class="box form-container wide">
-    <h2 class="subtitle">All Academic Years</h2>
+  <div v-if="!showForm" class="box form-container wide">
+    <div class="columns is-vcentered mb-3">
+      <div class="column is-6">
+        <p class="subtitle has-text-left">All Academic Years</p>
+      </div>
+      <div class="column is-6">
+        <p class="has-text-right">
+          <button class="button is-primary is-small" @click="showNewYearForm">New</button>
+        </p>
+      </div>
+    </div>
     <div v-if="loading" class="notification is-info is-light has-text-centered">
       Loading academic years...
     </div>
@@ -134,8 +134,7 @@ const { CurrentYear, loadAcademicYear } = useAcademicYear()
 const { Annual_Published } = useActiveExam()
 
 // State
-const concluded = ref(false)
-const resultout = ref(true)
+const showForm = ref(false)
 const baseYear = ref('')
 const academicYear = ref('')
 const startDate = ref('')
@@ -147,8 +146,13 @@ const activatingId = ref(null)
 const deletingId = ref(null)
 
 // Handlers
-function concludeYear() {
-  concluded.value = true
+function showNewYearForm() {
+  showForm.value = true
+}
+
+function cancelForm() {
+  showForm.value = false
+  resetForm()
 }
 
 function formatYear() {

@@ -120,7 +120,7 @@ ipcMain.handle('get-report-card', (event, { studentId, classId, sectionId, examI
       WHERE 
         ActiveExamId = ? AND StudentId = ? AND ResultType = ? AND ReportCard = ?
       `).get(examId, studentId, resultType, 1)
-      
+       
     const activities = db.prepare(`
       SELECT s.SubjectName as ActivityName, 
       cm.Grade

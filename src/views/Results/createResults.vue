@@ -215,12 +215,9 @@ import { useActiveExam } from '../../composables/useActiveExam'
 const { CurrentYearId, CurrentYear } = useAcademicYear()
 const { PassingPercentage, loadActiveExam } = useActiveExam()
 
-import { useCurrentExam } from '../../composables/useCurrentExam'
-const { currentExamId, currentExamName, getExamByType } = useCurrentExam()
 import { useResultStatus } from '../../composables/useResultStatus'
 const { isPublished, publishDate, checkResultStatus } = useResultStatus()
-// import { useClassesSections } from '../../composables/useClassesSections'
-// const { classes, sections, loadClasses, loadSections } = useClassesSections()
+
 import { useResultNames } from '../../composables/useResultNames'
 const { resultName, resultType, setResultName } = useResultNames()
 
@@ -228,11 +225,9 @@ const router = useRouter()
 const route = useRoute()
 
 const examType = ref('')
-// const resultName = ref('')
-// const currentExamId = ref('')
-// const currentExamName = ref('')
+const currentExamId = ref('')
+const currentExamName = ref('')
 const classSectionStatus = ref([])
-//const isResult = ref('')
 const isLoading = ref(false)
 const isGenerating = ref(false)
 const modalVisible = ref(false)
@@ -242,31 +237,34 @@ const modalSectionName = ref('')
 const modalClassId = ref('')
 const modalSectionId = ref('')
 const modalPublished = ref(false)
-// const markEntryCount = ref(0)
-// const resultStatusCount = ref(0)
 const currentDate = ref('')
-const resultPublished = ref(false)
-// const publishDate = ref('')
-
 const userRole = ref('')
 
-
 onMounted(async () => {
-     await loadActiveExam()
-     const today = new Date();
-      const formattedDate = today.toISOString().split('T')[0];
-      currentDate.value = formattedDate; 
-      fetchMarkEntryStatus()
-      getUser()
+  await loadActiveExam()
+  const today = new Date();
+  const formattedDate = today.toISOString().split('T')[0];
+  currentDate.value = formattedDate; 
+  checkResultStatus(currentExamId.value, CurrentYearId.value)
+  fetchMarkEntryStatus()
+  getUser()      
 })
 
-watch(() => route.query.type, (newType) => {
+watch(() => route.query.type, async(newType) => {
   examType.value = newType
-  getExamByType(newType, CurrentYearId.value)
+  await getExam()  
   setResultName(newType)
   fetchMarkEntryStatus()
 
 }, { immediate: true })
+
+
+async function getExam() {
+  const result = await window.electronAPI.getExamByType(examType.value, CurrentYearId.value)
+  currentExamId.value = result.exam.Id
+  currentExamName.value = result.exam.ExamName
+  checkResultStatus(currentExamId.value, CurrentYearId.value) 
+}
 
 async function getUser() {
   const user = await window.electronAuth.getCurrentUser()
@@ -274,6 +272,7 @@ async function getUser() {
     userRole.value = user.role
   }
 }
+
 const canAccess = (requiredRoles) => {
   return requiredRoles.includes(userRole.value)
 }
@@ -390,6 +389,7 @@ async function fetchMarkEntryStatus() {
           })
         }))
       )
+      console.log("isPublished:", isPublished.value)
       if( examType.value === 'selection'){
         classSectionStatus.value = verifiedStatus.filter(item => item.className === 'X')
       }   else {

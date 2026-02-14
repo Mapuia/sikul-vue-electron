@@ -352,7 +352,7 @@ import { useAcademicYear } from '../../composables/useAcademicYear'
 import { useActiveExam } from '../../composables/useActiveExam'
 import html2pdf from 'html2pdf.js'
 
-const { PassingPercentage, loadActiveExam } = useActiveExam()
+//const { PassingPercentage, loadActiveExam } = useActiveExam()
 const { CurrentYearId, CurrentYear } = useAcademicYear()
 
 const route = useRoute()
@@ -371,7 +371,7 @@ const selectedClassId = ref('')
 const selectedSectionId = ref('')
 
 const results = ref([])
-
+const PassingPercentage = 35
 //input Modal
 const inputModalVisible = ref(false)
 const currentStudentId = ref(null)

@@ -40,10 +40,16 @@ const routes = [
 
   // Management Routes
   {
-    path: '/manage/student',
-    component: () => import('@/views/Manage/studentsManagement.vue'),
-    meta: { allowedRoles: [ROLES.ADMIN, ROLES.TEACHER, ROLES.DEO] }
+    path: '/manage/student/academic',
+    component: () => import('@/views/Manage/manageStudentsAcademic.vue'),
+    meta: { allowedRoles: [ROLES.ADMIN, ROLES.TEACHER] }
   },
+  {
+    path: '/manage/student/personal',
+    component: () => import('@/views/Manage/manageStudentsPersonal.vue'),
+    meta: { allowedRoles: [ROLES.ADMIN, ROLES.TEACHER] }
+  },
+  
   {
     path: '/academic-year/create',
     component: () => import('@/views/Manage/academicYears.vue'),
@@ -125,6 +131,11 @@ const routes = [
   {
     path: '/marks/marks-entry',
     component: () => import('@/views/Marks/marksEntry.vue'),
+    meta: { allowedRoles: [ROLES.ADMIN, ROLES.TEACHER, ROLES.DEO] }
+  },
+  {
+    path: '/marks/selection-marks-entry',
+    component: () => import('@/views/Marks/SelectionMarksEntry.vue'),
     meta: { allowedRoles: [ROLES.ADMIN, ROLES.TEACHER, ROLES.DEO] }
   },
 

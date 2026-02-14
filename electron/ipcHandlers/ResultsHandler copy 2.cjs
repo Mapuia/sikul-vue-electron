@@ -289,28 +289,14 @@ ipcMain.handle('generate-results', async (event, { academicYearId, resultType, e
           AND sub.SubjectCategory != 'Co-Scholastic' 
           AND Marks.SubjectResult = 'Fail'
         `).get(studentId, examId).fails;
-       
-      //check for less than 20% scored in any subject. If yes, then fail irrespective of overall percentage and fail count.
-        const lowScoreCount = db.prepare(`
-          SELECT COUNT(*) AS lowScores
-          FROM Marks
-          WHERE StudentId = ? AND ActiveExamId = ?
-          AND TotalMarksObtained < TotalMaxMarks * 0.20
-        `).get(studentId, examId).lowScores;
 
         // Initialize status
         let resultStatus = "Pass";
         let division = "N.A.";
 
-        
-
-        if (failCount > 2 || lowScoreCount > 0 || Percentage < PassingPercentage) {
+        if (failCount > 2) {
           resultStatus = 'Fail';
-        }
-        // if (failCount !== 0 && failCount <= 2) {  
-        //   resultStatus = 'Simple Pass';
-        // } 
-        else {
+        } else {
           switch (true) {
             // Case: Classes 1 - 10
             case (Class > 0 && Class <= 10): {
@@ -325,10 +311,8 @@ ipcMain.handle('generate-results', async (event, { academicYearId, resultType, e
                 
                 if (failedSubjects.length > 2) {
                   resultStatus = 'Fail';
-                } else if (Percentage > PassingPercentage) {                
+                } else if (Percentage > PassingPercentage) {
                   resultStatus = 'Simple Pass';
-                } else if(Percentage < PassingPercentage) {
-                  resultStatus = 'Fail';
                 }
               }
               division = getDivision(Percentage, failCount);
@@ -392,7 +376,6 @@ ipcMain.handle('generate-results', async (event, { academicYearId, resultType, e
         }
       }
 
-
       // 5. Rank calculation for all students with continuing ranks
       let rank = 0;
       let lastScore = null;
@@ -429,8 +412,6 @@ ipcMain.handle('generate-results', async (event, { academicYearId, resultType, e
         );
       }
 
-      
-
       // Process Simple Pass students with continuing ranks
       for (const student of simplePassStudents) {
         const { studentId, TotalMarksObtained, TotalMaxMarks, Percentage, resultStatus, division } = student;
@@ -456,7 +437,7 @@ ipcMain.handle('generate-results', async (event, { academicYearId, resultType, e
           TotalMarksObtained,
           Percentage,
           division,
-          "", // Continuing rank for Simple Pass
+          rank, // Continuing rank for Simple Pass
           resultStatus,
           resultType
         );
@@ -487,25 +468,12 @@ ipcMain.handle('generate-results', async (event, { academicYearId, resultType, e
           TotalMarksObtained,
           Percentage,
           division,
-          "", // Continuing rank for Fail
+          rank, // Continuing rank for Fail
           resultStatus,
           resultType
         );
       }
-      //sort by marks desc and then by name asc for simple pass and fail students to assign continuing ranks
-      // simplePassStudents.sort((a, b) => {
-      //   if (b.TotalMarksObtained !== a.TotalMarksObtained) {
-      //     return b.TotalMarksObtained - a.TotalMarksObtained;
-      //   }
-      //   return a.Name.localeCompare(b.Name);
-      // });
 
-      // failStudents.sort((a, b) => {
-      //   if (b.TotalMarksObtained !== a.TotalMarksObtained) {
-      //     return b.TotalMarksObtained - a.TotalMarksObtained;
-      //   }
-      //   return a.Name.localeCompare(b.Name);
-      // });
       // 6. Update ResultStatus
       db.prepare(`
         INSERT OR REPLACE INTO ResultStatus (
@@ -778,7 +746,7 @@ ipcMain.handle('get-section-results', async (event, { academicYearId, examId, cl
     `).get(sectionId);
 
     // Get all students with their results for this exam r.TotalMaxMarks telh tur
-    const unSortedResults = db.prepare(`
+    const results = db.prepare(`
       SELECT 
         s.Id AS StudentId,
         s.Name,
@@ -800,38 +768,20 @@ ipcMain.handle('get-section-results', async (event, { academicYearId, examId, cl
       WHERE a.AcademicYearId = ?
         AND a.ClassId = ?
         AND a.SectionId = ?
-      
+      ORDER BY 
+        -- Push NULL ranks to the bottom
+        CASE WHEN r.Rank IS NULL THEN 1 ELSE 0 END,
+        r.Rank ASC,
+        CASE 
+          WHEN r.ResultStatus = 'Pass' THEN 1
+          WHEN r.ResultStatus = 'Simple Pass' THEN 2
+          WHEN r.ResultStatus = 'Fail' THEN 3
+          ELSE 4
+        END ASC,
+        s.Name ASC
     `).all(examId, academicYearId, academicYearId, classId, sectionId);
-     
-    const passedStudents = unSortedResults
-      .filter(r => r.ResultStatus === 'Pass')
-      .sort((a, b) => {
-        if (b.Percentage !== a.Percentage)
-          return b.Percentage - a.Percentage;
 
-        return a.Name.localeCompare(b.Name);
-      });
-    const simplePassStudents = unSortedResults
-      .filter(r => r.ResultStatus === 'Simple Pass')
-      .sort((a, b) => {
-        if (b.Percentage !== a.Percentage)
-          return b.Percentage - a.Percentage;
 
-        return a.Name.localeCompare(b.Name);
-      });
-    const failedStudents = unSortedResults
-      .filter(r => r.ResultStatus === 'Fail')
-      .sort((a, b) => {
-        if (b.Percentage !== a.Percentage)
-          return b.Percentage - a.Percentage;
-
-        return a.Name.localeCompare(b.Name);
-      });
-
-    const results = [...passedStudents, ...simplePassStudents, ...failedStudents];
-
-    //sort by marks desc and then by name asc for simple pass and fail students to assign continuing ranks
-    
     //console.log("Results fetched: ", results)
     // Calculate summary statistics from the results we already fetched
     const noOfStudents = db.prepare(`

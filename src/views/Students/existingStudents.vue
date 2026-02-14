@@ -1,9 +1,9 @@
 <template>
   <div class="form-container wide">
     <h1 class="title has-text-centered is-4">Re-Admission / Enrollment</h1>
-    <h1 class="subtitle has-text-centered is-6 mb-2">Select Class and Section OR Search</h1>
+    <!-- <h1 class="subtitle has-text-centered is-6 mb-2">Select Class and Section OR Search</h1> -->
     <div class="box ">  
-      <div class="box mb-2">      
+      <!-- <div class="box mb-2">      
         <div class="columns is-vcentered">
           <div class="column">
             <div class="field is-horizontal">
@@ -32,8 +32,8 @@
             </div>
           </div>
         </div> 
-      </div>
-      <h2 class="title is-6 mb-2 has-text-centered">OR</h2>
+      </div> -->
+      <h2 class="title is-6 mb-2 has-text-centered">Search Students</h2>
       <div class="box" style="max-width: 600px; margin: 0 auto;">
         <div class="field has-addons">        
           <div class="control is-expanded">
@@ -43,10 +43,11 @@
               v-model="searchQuery"
               placeholder="Search by Name, PEN or APAR"
               @keyup.enter="searchStudents"
+              @keydown.enter = "searchStudents"
             />
           </div>
           <div class="control">
-            <button class="button is-primary" @click="searchStudents" :disabled="isSearching">
+            <button class="button is-primary" @click="searchStudents"  :disabled="isSearching">
               <span v-if="!isSearching">Search</span>
               <span v-else>Searching...</span>
             </button>
@@ -69,51 +70,31 @@
     <!-- Search Results -->
     <div v-if="students.length > 0" class="mt-2">
       <div class="box">
-        <h2 class="subtitle is-4">Student Records</h2>
+        <div class="has-text-right mb-4"><i>{{ students.length }} records found.</i></div>
         
         <div class="table-container">
           <table class="table is-fullwidth is-striped is-hoverable">
             <thead>
               <tr> 
-                <th>Roll No</th>             
+                <th>Registration No</th>             
                 <th>Name</th>
                 <th>Gender</th>
-                <th>Class</th>
-                <th>Section</th>                               
-                <th class="has-text-right">Actions</th>
+                <th>Father's Name</th>
+                <th>Action</th>                  
               </tr>
             </thead>
             <tbody>
-              <tr v-for="student in students" :key="student.id">                
-                <td>{{ student.rollNo || '-' }}</td>
-                <td>{{ student.name }}</td>
-                <td>{{ student.gender }}</td>
-                <td>{{ student.className || '-' }}</td>
-                <td>{{ student.sectionName || '-' }}</td>               
-
-                <td>
-                  <div class="buttons is-justify-content-end">
-                    <button 
-                      class="button is-small is-info no-padding"
-                      @click="viewStudentDetails(student.id)"
-                      title="View Details"
-                    >
-                      <span class="icon">
-                        <i class="fas fa-eye"></i>
-                      </span>
-                    </button>
-                    <button 
-                      class="button is-small is-warning"
-                      @click="openPromotionModal(student)"
-                      title="Promote to Next Class"
-                    >
-                      <span class="icon">
-                        <i class="fas fa-arrow-up"></i>
-                      </span>
-                      <span>Re-Admit</span>
-                    </button>
-                  </div>
-                </td>
+              <tr v-for="student in students" :key="student.Id">                
+                <td clickable @click="viewLastAcademicRecords(student.Id)"><a>{{ student.RegistrationNumber || 'N/A' }}</a></td>          
+                <td clickable @click="viewLastAcademicRecords(student.Id)"><a>{{ student.Name }}</a></td> 
+                <td>{{ student.Gender }}</td>          
+                <td>{{ student.FathersName }}</td>               
+                <!-- <td><button class="button is-small is-primary" @click="viewLastAcademicRecords(student.Id)">View Latest Records</button></td>                 -->
+                <td><button 
+                  class="button is-small is-primary" 
+                  @click="openPromotionModal(student.Id)"
+                  :disabled="student.reAdmitted"
+                  >{{ student.reAdmitted ? 'Admitted' : 'Re-Admit' }}</button></td>                
               </tr>
             </tbody>
           </table>
@@ -130,7 +111,7 @@
           <button class="delete" aria-label="close" @click="closeModal"></button>
         </header>
         <section class="modal-card-body">
-          <StudentDetailsView v-if="selectedStudent && modalMode === 'view'" :student="selectedStudent" :admission="selectedAdmission" />
+          <LastAdmissionInfo v-if="selectedStudent && modalMode === 'view'" :student="selectedStudent" :admission="selectedAdmission" />
         </section>
         <footer class="modal-card-foot" v-if="modalMode === 'view'">
           <button class="button" @click="closeModal">Close</button>
@@ -143,43 +124,61 @@
       <div class="modal-background" @click="showPromotionModal = false"></div>
       <div class="modal-card">
         <header class="modal-card-head">
-          <p class="modal-card-title">Student Re-Admission for {{ CurrentYear }}</p>
+          <p class="modal-card-title">Readmission </p>
           <button class="delete" aria-label="close" @click="showPromotionModal = false"></button>
         </header>
         <section class="modal-card-body">
-          <div class="student-promotion-form">
-            <div class="columns is-multiline">              
-                <table class="table is-fullwidth is-striped">
-                  <thead>       
+          <div class="student-promotion-form">         
+            <div class="columns is-multiline">
+              <h2 class="title is-5 mr-3 ">Latest Admission Details</h2>            
+                <table class="sikul-table is-fullwidth is-striped">
+                  <thead>   
                     <tr>
-                      <th>Name:</th> 
-                      <td>{{admissionData.Name}}</td>
+                      <th>Registration No.</th> 
+                      <td>: {{selectedStudent?.RegistrationNumber || 'N/A'}}</td>
+                    </tr>                  
+                    <tr>
+                      <th>Name</th> 
+                      <td>: {{selectedStudent?.Name}}</td>
+                    </tr>
+                    
+                    <tr>
+                      <th>Father's Name</th> 
+                      <td>: {{selectedStudent?.FathersName}}</td>
                     </tr>
                     <tr>
-                      <th>APAR:</th> 
-                      <td>{{admissionData.APAR}}</td>
+                      <th> Admitted to</th> 
+                      <td>: Class {{admissionData.ClassName}}</td>
                     </tr>
                     <tr>
-                      <th>PEN:</th> 
-                      <td>{{admissionData.PEN}}</td>
+                      <th> Academic Year</th> 
+                      <td>: {{admissionData?.YearName}}</td>
+                    </tr>
+                    
+                    <tr>
+                      <th>Admission Date</th> 
+                      <td>: {{formatDate(admissionData?.Creation_at)}}</td>
                     </tr>
                     <tr>
-                      <th>Previous Class</th> 
-
-                      <td>{{admissionData.ClassName}} </td>
-                    </tr>    
-                    <tr v-if="!isClassX">
-                      <th>Previous Result:</th> 
-                      <td>{{lastResultData.ResultStatus}}</td>
-                    </tr>
+                      <th>Admission Type</th> 
+                      <td>: {{admissionData?.AdmissionType}}</td>
+                    </tr>                   
                   </thead>
                 </table>
-             <h2 class="title is-5">Re-Admit to:</h2>
+            <div class="help is-danger" v-if="jumpReAdmission" >This student was not addmitted to previous Academic Year. i.e {{ PreviousYear }}</div> 
+            <hr>
+            <h2 v-if="!reAdmitted" class="title is-5 mr-3 ">Re-Admission for Academic Year {{ CurrentYear }} </h2>
+            <i v-if="!reAdmitted" class=" is-danger" > (All fields are required)</i>
             </div>
-            <div class="columns is-multiline">
+            <div class="notification is-warning" v-if="reAdmitted">
+              This student is already admitted for current Academic Year {{ CurrentYear }}.
+            </div>
+            
+            <div v-if="!reAdmitted" class="columns is-multiline">
+              
               <div class="column is-half">                
                 <div class="field">
-                  <label class="label">Class</label>
+                  <label class="label">Class*</label>
                   <div class="control">
                     <div class="select is-fullwidth">
                       <select v-model="newClassId">
@@ -192,7 +191,7 @@
                   </div>
                 </div>
                 <div class="field">
-                  <label class="label">New Section</label>
+                  <label class="label">Section*</label>
                   <div class="control">
                     <div class="select is-fullwidth">
                       <select v-model="newSectionId" :disabled="!newClassId || newSections.length === 0">
@@ -207,21 +206,22 @@
               </div>    
               <div class="column is-half">
                 <div class="field">
-                  <label class="label">New Roll Number</label>
+                  <label class="label">Roll Number*</label>
                   <div class="control">
                     <input class="input" type="number" v-model="newRollNo" placeholder="Enter new roll number" />
                   </div>
                 </div>
                 <div class="field">
-                  <label class="label">Re-Admission Type</label>
+                  <label class="label">Admission Type* </label>
                   <div class="control">
                     <div class="select is-fullwidth">
                       <select v-model="admissionType" required>
                         <option value='' disabled>-- Select Admission Type --</option> 
                         <option value="Promoted">Promotion</option> 
-                        <option value="Repeat">Admit to same class</option>
+                        <option value="Repeat">Repeat</option>
                       </select>
                     </div>
+                    
                   </div>
                 </div>
               </div>
@@ -229,13 +229,13 @@
          </div>
         </section>
         <footer class="modal-card-foot">
-          <button class="button is-primary mr-2" @click="reAdmitStudent" :disabled="isSaving">
+          <button class="button is-primary mr-2" @click="reAdmitStudent()" :disabled="isSaving || reAdmitted">
             <span v-if="isSaving" class="icon is-small">
               <i class="fas fa-spinner fa-spin"></i>
             </span>
-            <span>Admit</span>
+            <span>Process Admission</span>
           </button>
-          <button class="button is-light" @click="showPromotionModal = false">Cancel</button>
+          <button class="button is-light" @click="showPromotionModal = false">Close</button>
         </footer>
       </div>
     </div>
@@ -243,10 +243,10 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch, computed } from 'vue';
+import { ref, onMounted, watch, computed, h } from 'vue';
 import { useRouter } from 'vue-router';
-import StudentDetailsView from '@/components/StudentDetailsView.vue';
 import { useAcademicYear } from '../../composables/useAcademicYear';
+import LastAdmissionInfo from '../../components/lastAdmissionInfo.vue';
 
 // Composables
 const { CurrentYearId, CurrentYear, PreviousYearId, PreviousYear, loadAcademicYear } = useAcademicYear();
@@ -281,10 +281,12 @@ const isSaving = ref(false);
 const modalMode = ref('view'); // 'view' | 'promote'
 
 // Student Data
-const selectedStudent = ref(null);
-const selectedAdmission = ref(null);
+const selectedStudent = ref({});
+const selectedAdmission = ref([]);
 const admissionData = ref({});
 const lastResultData = ref({});
+const reAdmitted = ref(false);
+const jumpReAdmission = ref(false);
 
 // Messages
 const errorMessage = ref('');
@@ -292,6 +294,20 @@ const successMessage = ref('');
 const searchQuery = ref('');
 const isClassX = ref(false);
 
+
+function formatDate(dateString) {
+  if (!dateString || dateString === '-') return '-';
+  try {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-IN', {
+      year: 'numeric',
+      month: 'numeric',
+      day: 'numeric'
+    });
+  } catch {
+    return dateString;
+  }
+}
 // ======================
 // Computed Properties
 // ======================
@@ -313,33 +329,33 @@ const sectionName = computed(() => {
 async function fetchClasses() {
   try {
     const response = await window.electronAPI.getClasses();
-    if (response.success) classes.value = response.classes;
+    if (response.success) newClasses.value = response.classes;
   } catch (error) {
     errorMessage.value = 'Failed to load classes';
   }
 }
 
-async function fetchSections() {
-  if (!selectedClassId.value) return;
+// async function fetchSections() {
+//   if (!selectedClassId.value) return;
   
-  try {
-    sections.value = [];
-    selectedSectionId.value = '';   
+//   try {
+//     sections.value = [];
+//     selectedSectionId.value = '';   
     
-    const response = await window.electronAPI.getSectionsByClassId(selectedClassId.value);
-    if (response.success) {
-      sections.value = response.sections;
-      noSections.value = sections.value.length === 0;
-      if (noSections.value) selectedSectionId.value = 0;
-    }
-  } catch (error) {
-    errorMessage.value = 'Failed to load sections';
-  }
-}
+//     const response = await window.electronAPI.getSectionsByClassId(selectedClassId.value);
+//     if (response.success) {
+//       sections.value = response.sections;
+//       noSections.value = sections.value.length === 0;
+//       if (noSections.value) selectedSectionId.value = 0;
+//     }
+//   } catch (error) {
+//     errorMessage.value = 'Failed to load sections';
+//   }
+// }
 
 async function fetchNewClasses() {
   try {
-    const response = await window.electronAPI.fetchUpperClasses(className.value);
+    const response = await window.electronAPI.fetchUpperClasses(admissionData.value.ClassName);
     if (response.success) {      
       newClasses.value = response.classes;
     }
@@ -350,7 +366,7 @@ async function fetchNewClasses() {
 
 async function fetchNewSections() {
   if (!newClassId.value) return;
-  
+  //console.log('Fetching sections for ClassId:', newClassId.value);
   try {
     newSections.value = [];
     newSectionId.value = '';   
@@ -360,6 +376,7 @@ async function fetchNewSections() {
       newSections.value = response.sections;
       noSections.value = newSections.value.length === 0;
       if (noSections.value) newSectionId.value = 0;
+      //console.log('Fetched Sections for Promotion:', newSections.value);
     }
   } catch (error) {
     errorMessage.value = 'Failed to load sections';
@@ -369,13 +386,14 @@ async function fetchNewSections() {
 async function fetchExistingStudents() {
   try {
     isSearching.value = true;
-    const response = await window.electronAPI.getStudentsByClassSectionsId({
+    const response = await window.electronAPI.getStudentsByClassSectionId({
       YearId: PreviousYearId.value,
       ClassId: selectedClassId.value,
       SectionId: selectedSectionId.value
     });
     if (response.success) students.value = response.students;
     else errorMessage.value = response.message || 'Failed to fetch existing students';
+    // console.log('Fetched Students:', students.value);
   } catch (error) {
     errorMessage.value = error.message;
   } finally {
@@ -392,9 +410,9 @@ async function searchStudents() {
 
   try {
     isSearching.value = true;
-    const response = await window.electronAPI.searchStudents({
+    const response = await window.electronAPI.searchStudentsforReAdmission({
       query: searchQuery.value.trim(),
-      yearId: PreviousYearId.value
+      CurrentYearId: CurrentYearId.value
     });
     
     if (response.success) {
@@ -412,19 +430,18 @@ async function searchStudents() {
   }
 }
 
-async function refreshStudents() {
-  searchQuery.value = '';
-  hasSearched.value = false;
-  await fetchExistingStudents();
-}
+
 
 // ==================
 // Student Operations
 // ==================
 
-async function viewStudentDetails(studentId) {
+
+async function viewLastAcademicRecords(studentId) {
   try {
-    const response = await window.electronAPI.getStudentDetails(studentId, PreviousYearId.value);
+    // Fetch latest admission details for the student to determine current class and promotion eligibility
+    const response = await window.electronAPI.getLastAcademicRecords(studentId);
+    // console.log('Admission Details:', response);
     if (response.success) {
       selectedStudent.value = response.student;
       selectedAdmission.value = response.admission;
@@ -439,31 +456,26 @@ async function viewStudentDetails(studentId) {
   }
 }
 
-async function openPromotionModal(student) {
+async function openPromotionModal(studentId) {
   try {
-    const response = await window.electronAPI.getPreviousAdmission(student.id, PreviousYearId.value);
-    // Here filter class X, for class X Readmission Roll not based on Rank
+    //Fetch latest admission details for the student to determine current class and promotion eligibility
+    const response = await window.electronAPI.getPreviousAdmission(studentId, CurrentYearId.value, PreviousYearId.value);
     if (response.success) {
-      admissionData.value = response.admission;      
-      lastResultData.value = response.lastResults;      
-      newRollNo.value = lastResultData.value.Rank;
+      selectedStudent.value = response.student;
+      admissionData.value = response.admission; 
+      reAdmitted.value = response.reAdmitted;
+      jumpReAdmission.value = response.jumpReAdmission;
       showPromotionModal.value = true;
+
+      console.log('Jump Re-Admission Status:', jumpReAdmission.value);
+
       errorMessage.value = '';
       await fetchNewClasses();
-      newClassId.value = newClasses.value[1].Id; // Default to next class
-      if (admissionData.value.ClassName !== 'X'){
-        isClassX.value = false;
-        if(lastResultData.value.ResultStatus === 'Fail' || lastResultData.value.ResultStatus === 'fail'){       
-          newClassId.value = newClasses.value[0].Id;// Stay in same class if failed 
-          newClasses.value = newClasses.value.filter(cls => cls.Id === newClasses.value[0].Id);
-        } else {
-          newClassId.value = newClasses.value[1].Id; // Promote to next class if passed
-          newClasses.value = newClasses.value.filter(cls => cls.Id === newClasses.value[1].Id); 
-        }
+      if(jumpReAdmission.value) {
+        fetchClasses()
       }
-      else {
-        isClassX.value = true;
-      }
+
+      
     } else {
       errorMessage.value = response.message || 'Failed to load student details for promotion';
     }
@@ -477,11 +489,20 @@ async function reAdmitStudent() {
     errorMessage.value = 'Please select a class and enter a roll number';
     return;
   }
+  if (!admissionType.value ) {
+    errorMessage.value = 'Please select an admission type and enter a roll number';
+    return;
+  }
 
   isSaving.value = true;
   try {
-    const response = await window.electronAPI.reAdmitStudent({
-      StudentId: admissionData.value.studentId,
+      const confirmed = await window.electronAPI.showConfirmationDialog(
+      `Are you sure you want to re-admit ${selectedStudent.value.Name}? 
+      to Class: ${newClasses.value.find(c => c.Id === newClassId.value)?.ClassName} for Academic Year: ${CurrentYear.value}?`
+    );
+    if (!confirmed) return;
+    console.log('Re-admission data being sent:', {
+      StudentId: selectedStudent.value.Id, //Student Id
       ClassId: newClassId.value,
       SectionId: newSectionId.value || 0,
       RollNo: newRollNo.value,
@@ -489,9 +510,20 @@ async function reAdmitStudent() {
       AdmissionType: admissionType.value,
       PreviousYearId: PreviousYearId.value
     });
+
+    const response = await window.electronAPI.reAdmitStudent({
+      StudentId: selectedStudent.value.Id,
+      ClassId: newClassId.value,
+      SectionId: newSectionId.value || 0,
+      RollNo: newRollNo.value,
+      AcademicYearId: CurrentYearId.value,
+      AdmissionType: admissionType.value,
+      PreviousYearId: PreviousYearId.value //Required to update previous record with readmission info
+    });
     
     if (response.success) {
       showPromotionModal.value = false;
+      await searchStudents(); // Refresh the student list to reflect changes
       successMessage.value = 'Student readmitted successfully';
     } else {
       throw new Error(response.error || 'Failed to readmit student');
@@ -536,8 +568,8 @@ onMounted(async () => {
   await fetchClasses();
 });
 
-watch(selectedClassId, async (newClassId) => {
-  if (newClassId) {
+watch(selectedClassId, async (ClassId) => {
+  if (ClassId) {
     await fetchSections();
     noSections.value = sections.value.length < 2;
     if (noSections.value) {
@@ -551,8 +583,8 @@ watch(selectedClassId, async (newClassId) => {
   }
 });
 
-watch(newClassId, async (selectedClassId) => {
-  if (selectedClassId) {
+watch(newClassId, async (newId) => {
+  if (newId) {
     await fetchNewSections();     
     noSections.value = newSections.value.length < 2;
     if (noSections.value) newSectionId.value = 0;
@@ -562,9 +594,6 @@ watch(newClassId, async (selectedClassId) => {
   }
 });
 
-watch(selectedSectionId, (newSectionId) => {
-  if (newSectionId) fetchExistingStudents();
-});
 </script>
 
 <style scoped>
@@ -572,18 +601,23 @@ watch(selectedSectionId, (newSectionId) => {
   padding: 1rem;
 }
 
-.table {
+.sikul-table {
   width: 100%;
   border-collapse: collapse;
+  
 }
 
-.table th, .table td {
-  padding: 0.5em 0.75em;
+.sikul-table th, .sikul-table td {
+  padding: 0.25em 0;
    text-align: left; 
 }
 
-.table th { 
-  font-weight: bold;
+.sikul-table th { 
+  font-weight: 470;
+  width: 250px;
+}
+.sikul-table td { 
+  font-weight: 700;
   max-width: 100px;
 }
 

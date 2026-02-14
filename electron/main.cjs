@@ -3,6 +3,7 @@ const path = require('path');
 const db = require('./database.cjs');
 const authService = require('./ipcHandlers/auth.cjs');
 const { runMigrations } = require('./utils/databaseMigrations.cjs');
+
 runMigrations();
 
 let mainWindow;

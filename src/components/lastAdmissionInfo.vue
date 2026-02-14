@@ -1,64 +1,55 @@
 <template>
   <div class="student-details">
+    <h3 class="title is-4 has-text-centered">Calvary higher Secondary School, Tuidu</h3>
+    <hr>
+    <h3 class="subtitle is-4 has-text-centered">Student's Latest Academic Information</h3>
 
     <!-- Personal Information -->
     <div class="box">
-      <h3 class="title is-5">Personal Information</h3>
-      <table class="sikul-table is-fullwidth">
-        <thead>
-          <tr><th>Regn. No.</th><td>{{ student.RegistrationNumber || '-' }}</td></tr>
-          <tr><th>Name</th><td>{{ student.Name || '-' }}</td></tr>         
+      <table class="table sikul-table is-fullwidth">
+        <thead>          
+                             
+          <tr><th>Name</th><td>{{ student.Name || '-' }}</td></tr>          
           <tr><th>Father's Name</th><td>{{ student.FathersName || '-' }}</td></tr>
-       
+          <tr><th style="height: 40px">Registration Number</th><td>{{ student.RegistrationNumber || '-' }}</td></tr>
         </thead>
       </table>
     </div>
 
     <!-- Academic Information -->
     <div class="box">
-      <h3 class="title is-5">Current Academic Information</h3>
-      <table class="sikul-table is-fullwidth">
-        <thead>
-         
-          <tr><th>Class</th><td>{{ admission.ClassName || '-' }}</td></tr>
-          <tr><th>Section</th><td>{{ admission.SectionName || '-' }}</td></tr>
-          <tr><th>Roll No</th><td>{{ admission.RollNo || '-' }}</td></tr>
-          <tr><th>Admission Type</th><td>{{ admission.AdmissionType || '-' }}</td></tr>
-          <tr><th>First Admission</th><td>{{ formatDate(student.FirstAdmissionDate) }}</td></tr>
+      <h3 class="title is-5">Last Admission Info:</h3>
+      <table class="table sikul-table is-fullwidth">
+        <thead>         
+          <tr><th>Academic Year</th><td>{{ admission.YearName || '-' }}</td></tr>
           <tr>
             <th>Current Status</th>
             <td>
-              <span class="tag" :class="statusTagClass(student.Status)">
-                {{ student.Status || '-' }}
+              <span class="tag" :class="statusTagClass(student.Status)" style="margin-left:0">
+                {{ student.Status || '-' }} 
               </span>
             </td>
           </tr>
+          <tr><th>Class</th><td>{{ admission.ClassName || '-' }}</td></tr>
+          <tr><th>Section</th><td>{{ admission.SectionName || '-' }}</td></tr>
+          <tr><th>Roll No</th><td>{{ admission.RollNo || '-' }}</td></tr>
+          <tr><th>Admission Type</th><td>{{ admission.AdmissionType || '-' }}</td></tr>          
+          
         </thead>
       </table>
     </div>
 
     <!-- Identification -->
     <div class="box">
-      <h3 class="title is-5">UNIQUE ID</h3>
-      <table class="sikul-table is-fullwidth">
+      <h3 class="title is-5">Unique Identification</h3>
+      <table class="table sikul-table is-fullwidth">
         <thead>
           <tr><th>PEN</th><td>{{ student.PEN || '-' }}</td></tr>
           <tr><th>APAAR</th><td>{{ student.APAR || '-' }}</td></tr>
           <tr><th>Aadhaar</th><td>{{ student.Aadhaar || '-' }}</td></tr>
         </thead>
       </table>
-    </div>
-
-    <!-- Physical Attributes -->
-    <div class="box">
-      <h3 class="title is-5">Physical Attributes</h3>
-      <table class="sikul-table is-fullwidth">
-        <thead>
-          <tr><th>Height</th><td>{{ student.Height || '-' }} cm</td></tr>
-          <tr><th>Weight</th><td>{{ student.Weight || '-' }} Kg</td></tr>
-        </thead>
-      </table>
-    </div>
+    </div> 
 
   </div>
 </template>
@@ -80,9 +71,9 @@ function formatDate(dateString) {
   if (!dateString || dateString === '-') return '-';
   try {
     const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
+    return date.toLocaleDateString('en-IN', {
       year: 'numeric',
-      month: 'long',
+      month: 'numeric',
       day: 'numeric'
     });
   } catch {
@@ -102,6 +93,10 @@ function statusTagClass(status) {
 </script>
 
 <style scoped>
+.student-details {
+  width: 70%;
+  margin: 0 auto;
+}
 .student-details .box {
   margin-bottom: 1.5rem;
 }
@@ -113,5 +108,12 @@ function statusTagClass(status) {
 }
 .sikul-table th{
 width: 250px;
+font-weight: 450;
+}
+.sikul-table td {
+font-weight: 700;
+}
+.is-success {
+  color: white;
 }
 </style>

@@ -36,12 +36,12 @@
               <th>Exam ID</th>
               <th>Exam Name</th>
               <th>Type</th>
-              <th>Major Marks</th>
-              <th>Minor Marks</th>
+              <th>Major Max Marks</th>
+              <th>Minor Max Marks</th>
               <th>Passing %</th>
               <th>Published?</th>
               <th>Publish Date</th>
-              <th>#working Days</th>
+              <th>#Working Days</th>
               <th>Actions</th>
             </tr>
           </thead>

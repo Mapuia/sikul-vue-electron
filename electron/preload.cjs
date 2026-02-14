@@ -12,6 +12,7 @@ contextBridge.exposeInMainWorld('electronAuth', {
 
   //Functional
   contextBridge.exposeInMainWorld("electronAPI", {
+  //getAvailableYears: () => ipcRenderer.invoke('get-available-years'),
   getAcademicYears: () => ipcRenderer.invoke('get-academic-years'),
   getCurrentAcademicYear: () => ipcRenderer.invoke('get-current-academic-year'),
   getYearId: (yearName) => ipcRenderer.invoke('get-year-Id', yearName),
@@ -124,18 +125,33 @@ contextBridge.exposeInMainWorld('electronAuth', {
 
   // Student management
   getAllStudents: () => ipcRenderer.invoke('get-all-students'),
-  getStudentsByClassSectionsId: (params) => ipcRenderer.invoke('get-students-by-class-sectionsId', params),
+  
   searchAllStudents: (query) => ipcRenderer.invoke('search-all-students', query),
   searchStudents: (query) => ipcRenderer.invoke('search-students', query),
-  getStudentDetails: (studentId, YearId) => ipcRenderer.invoke('get-student-details', studentId, YearId),
+  searchStudentsforReAdmission: (query) => ipcRenderer.invoke('search-students-for-readmission', query),
+
+  //for viewing
+  getLastAcademicRecords: (studentId) => ipcRenderer.invoke('get-last-academic-records', studentId),
+  //for readmission
+  getPreviousAdmission: (studentId, CurrentYearId, PreviousYearId) => ipcRenderer.invoke('get-previous-admission', studentId, CurrentYearId, PreviousYearId),
+
+  getStudentPersonalInfo: (studentId) => ipcRenderer.invoke('get-student-personal-info', studentId),
+  updateStudentPersonal: (studentData) => ipcRenderer.invoke('update-student-personal', studentData),
+  
+  //Get Student by Year, Class and Section for academic info
+  getStudentsByClassSectionId: (params) => ipcRenderer.invoke('get-students-by-class-sectionId', params),
+  getStudentAcademicInfo: (studentId, YearId) => ipcRenderer.invoke('get-student-academic-info', studentId, YearId),
+  deleteFromAdmission: (studentId, YearId) => ipcRenderer.invoke('delete-from-admission', studentId, YearId),
+
   updateStudent: (studentData) => ipcRenderer.invoke('update-student', studentData),
   deleteStudent: (studentId) => ipcRenderer.invoke('delete-student', studentId),
+  
   reAdmitStudent: (studentData) => ipcRenderer.invoke('readmit-student', studentData),
   updateAdmission:(payload)=> ipcRenderer.invoke('update-admission', payload),
   fetchUpperClasses:(className)=>ipcRenderer.invoke('fetch-upper-classes', className),
 
   getStudentAdmissionDetails: (studentId, YearId) => ipcRenderer.invoke('get-admission-details', studentId, YearId),
-  getPreviousAdmission: (studentId, YearId) => ipcRenderer.invoke('get-previous-admission', studentId, YearId),
+  
 
   getmarkEntryStatus: (examId, examType) => ipcRenderer.invoke('get-mark-entry-status', examId, examType),
 

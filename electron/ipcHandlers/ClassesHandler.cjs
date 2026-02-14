@@ -93,7 +93,7 @@ ipcMain.handle('fetch-upper-classes', async (event, className) => {
         result.push(sortedClasses[currentIndex + 1]); // Next class if available
       }
     }
-    //console.log("Upper classes fetched successfully:", result);
+    // console.log("Upper classes fetched successfully:", result);
     return { success: true, classes: result };
   } catch (error) {
     return { success: false, error: error.message };

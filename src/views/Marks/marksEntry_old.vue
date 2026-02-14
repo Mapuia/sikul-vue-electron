@@ -1,6 +1,6 @@
 <template>
   <div class="form-container full">
-    <h1 class="title has-text-centered is-4">Marks Entry for {{ currentExamName }}</h1>
+    <h1 class="title has-text-centered is-4">New Marks Entry for {{ currentExamName }}</h1>
     <h2 class="subtitle has-text-centered">{{ examType ? "" : 'There is something wrong. Logout and login again'}}</h2>
 
     <div v-if="isMarkEntryDisabled">

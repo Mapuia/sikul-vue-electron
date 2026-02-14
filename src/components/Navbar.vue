@@ -23,9 +23,10 @@
               <span class="fas fa-solid fa-id-badge"></span>Students
             </a>
             <div class="navbar-dropdown">
-              <router-link class="navbar-item" to="/students/new" @click="closeDropdown">New Student</router-link>
-              <router-link class="navbar-item" to="/students/re" @click="closeDropdown">Re-Admission</router-link>
-              <router-link class="navbar-item" to="/manage/student" @click="closeDropdown">Manage Student ({{ CurrentYear }})</router-link>
+              <router-link class="navbar-item" to="/students/new" @click="closeDropdown">New Admission (New Student)</router-link>
+              <router-link class="navbar-item" to="/students/re" @click="closeDropdown">Re-Admission (Existing Student)</router-link>
+              <router-link class="navbar-item" to="/manage/student/academic" @click="closeDropdown">Manage Student (Academic Info)</router-link>
+              <router-link class="navbar-item" to="/manage/student/personal" @click="closeDropdown">Manage Student (Personal Info)</router-link>
             </div>
           </div>
 

@@ -8,6 +8,21 @@ const currentTime = new Date(new Date().getTime() + 5.5 * 60 * 60 * 1000).toISOS
 ipcMain.handle('insert-student-admission', (event, form) => {
   //console.log("Student Insert:", form);
   const studentId = crypto.randomUUID();
+
+  const existingRollNo = db.prepare(`
+    SELECT COUNT(*) as count 
+    FROM Admissions 
+    WHERE ClassId = ? AND SectionId = ? AND RollNo = ? AND AcademicYearId = ?
+  `).get(form.ClassId, form.SectionId, form.RollNo, form.AcademicYearId).count;
+  
+  if (existingRollNo > 0) {    
+    console.error('Duplicate Roll No. detected for the same Class & Section');      
+    return { 
+      success: false, 
+      error: "Roll Number already assigned for the selected class and section.",
+      duplicate: true
+    };
+  }
   
   const insertStudent = db.prepare(`
     INSERT INTO Students (
@@ -75,7 +90,7 @@ ipcMain.handle('insert-student-admission', (event, form) => {
       if (admissionError.message.includes('UNIQUE constraint failed: Admissions.AcademicYearId, Admissions.ClassId, Admissions.SectionId, Admissions.RollNo')) {
         throw new Error('Duplicate Roll No. Please assign a different Roll No.');
       }
-      throw admissionError; // Re-throw other errors
+      //throw admissionError; // Re-throw other errors
     }
   });
 
@@ -121,58 +136,104 @@ ipcMain.handle('get-admission-details', async (event, studentId, AcademicYearId)
   }
 });
 
-ipcMain.handle('get-previous-admission', async (event, studentId, AcademicYearId) => {  
+// For Re-Admission - Fetch Previous Admission Details
+ipcMain.handle('get-previous-admission', async (event, studentId, CurrentYearId, PreviousYearId) => {  
   try {
     // Get previous admission details
-    console.log('Student and YearID:', studentId, AcademicYearId) 
- 
-    const admissionStmt = db.prepare(`
-      SELECT s.Id as studentId, s.Name as Name,
-        a.RollNo, a.AdmissionType, c.ClassName, sec.SectionName,
-        s.PEN, s.APAR
-      FROM Students s
-      LEFT JOIN Admissions a ON s.Id = a.StudentId
-      LEFT JOIN Classes c ON a.ClassId = c.Id
-      LEFT JOIN Sections sec ON a.SectionId = sec.Id       
-      WHERE s.Id = ? 
-        AND a.AcademicYearId = ?       
-        AND a.reAdmitted = 0     
+    // console.log('Student and YearID:', studentId, CurrentYearId, PreviousYearId) 
+    const studentStmt = db.prepare(`
+      SELECT Id, Name, FathersName, Aadhaar, APAR, PEN, FirstAdmissionDate, Status, RegistrationNumber
+      FROM Students WHERE Id = ?
     `);
-    const lastResultStmt = db.prepare(`
-      SELECT * FROM Results
-      WHERE StudentId = ? AND AcademicYearId = ? AND ResultType = 'final'
-    `);
-    const admission = admissionStmt.get(studentId, AcademicYearId);
-    let lastResults = null;
-    if(admission.ClassName!== 'X'){
-      lastResults = lastResultStmt.all(studentId, AcademicYearId); 
+    const student = studentStmt.get(studentId);
+       
+    if (!student) {
+      return { success: false, error: 'Student not found' };
     }
-
-    console.log('Admission Data:', admission)
-    console.log('Last Result Data:', lastResults)
+    const admissionStmt = db.prepare(`
+      SELECT 
+        a.*, c.ClassName, s.SectionName, ay.YearName as YearName
+      FROM Admissions a
+      JOIN Classes c ON c.Id = a.ClassId
+      LEFT JOIN Sections s ON s.Id = a.SectionId AND a.SectionId != 0
+      JOIN AcademicYears ay ON ay.Id = a.AcademicYearId
+      WHERE a.StudentId = ?
+      ORDER BY ay.YearName DESC
+      LIMIT 1
+    `);
+   
+    const admissions = admissionStmt.all(studentId);    
+    const admission = admissions.length > 0 ? admissions[0] : null;
+    
+    //check whether student is already readmitted in current year or not, 
+    let reAdmitted = false;
+    let jumpReAdmission = false;
+    if(admission && admission.AcademicYearId === CurrentYearId){
+      reAdmitted = true;
+    }
+    // If there is an admission record but it's not for the previous year, it means the student has to jump years for readmission
+    // This can happen if the student was not admitted in the previous year but had an admission record from an earlier year, 
+    // or if the student was admitted in the previous year but is now applying for readmission in a later year without being readmitted in the immediate next year.
+    // or student may have been studying in another school in the previous year and now seeking admission in current year, so there is an admission record but not for previous year, hence jump readmission
+    else if(admission && admission.AcademicYearId != PreviousYearId){
+      jumpReAdmission = true;
+    }
+    // console.log('Student Details:', student)        
+    // console.log('Admission Details:', admission)        
     return { 
-      success: true, 
+      success: true,
+      student,
       admission: {
         ...admission
-      },
-      lastResults: {
-        ...lastResults
-      }
+      },      
+      reAdmitted: reAdmitted,
+      jumpReAdmission: jumpReAdmission
     };
   } catch (error) {
-    //console.log('Error:', error.message)
+    console.log('Error:', error.message)
     return { success: false, error: error.message };
   }
 });
 
 ipcMain.handle('readmit-student', async (event, admissionData) => {
-  
-    // Get admission details
-    //console.log('Promoted:', admissionData)
     try{
+
+      //console.log('Previous year ID:', admissionData.PreviousYearId)
+      const currentAdmission = db.prepare(`
+        SELECT ClassId, SectionId, RollNo FROM Admissions WHERE StudentId = ?
+      `).get(admissionData.StudentId);
+
+        //console.log('Current Admission:', currentAdmission)
+
+      if (admissionData.RollNo !== currentAdmission.RollNo || 
+          admissionData.ClassId !== currentAdmission.ClassId ||
+          admissionData.SectionId !== currentAdmission.SectionId) {
+        
+        const duplicateCheck = db.prepare(`
+          SELECT COUNT(*) as count 
+          FROM Admissions 
+          WHERE ClassId = ? AND SectionId = ? AND RollNo = ? AND StudentId != ? AND AcademicYearId = ?
+        `).get(
+          admissionData.ClassId,
+          admissionData.SectionId,
+          admissionData.RollNo,
+          admissionData.StudentId,
+          admissionData.AcademicYearId
+        );
+        //console.log("Duplicate", duplicateCheck.count)
+        if (duplicateCheck.count > 0) {
+          
+          return { 
+            success: false, 
+            error: "Roll Number already assigned for the selected class and section.",
+            duplicate: true
+          };
+        }
+      }
+
       const promoteAdmission = db.prepare(`
-        INSERT OR REPLACE INTO Admissions
-        (StudentId, AcademicYearId, ClassId, SectionId, RollNo, Admissiong, Creation_at)
+        INSERT INTO Admissions
+        (StudentId, AcademicYearId, ClassId, SectionId, RollNo, AdmissionType, Creation_at)
         VALUES
         (?, ?, ?, ?, ?, ?, ?)        
 
@@ -189,13 +250,13 @@ ipcMain.handle('readmit-student', async (event, admissionData) => {
 
       const updatePreviousAdmission = db.prepare(`
         UPDATE Admissions
-        SET reAdmitted = 1
-        WHERE StudentId = ? AND AcademicYearId = ? AND Last_Modified_at = ?
+        SET reAdmitted = 1, Last_Modified_at = ?
+        WHERE StudentId = ? AND AcademicYearId = ?
       `);
       updatePreviousAdmission.run(
+        currentTime,
         admissionData.StudentId,
-        admissionData.PreviousYearId,
-        currentTime
+        admissionData.PreviousYearId       
       );
       
       return { success: true };
