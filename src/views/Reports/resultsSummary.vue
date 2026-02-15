@@ -228,7 +228,7 @@ const displayDate = stringReverse => {
   })
 }
 
-const currentDate = ref(new Date().toLocaleDateString('en-US', {
+const currentDate = ref(new Date().toLocaleDateString('en-IN', {
   year: 'numeric',
   month: 'long',
   day: 'numeric'

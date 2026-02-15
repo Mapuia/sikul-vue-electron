@@ -175,7 +175,6 @@ import { useRouter, useRoute } from 'vue-router'
 import { useAcademicYear } from '../../composables/useAcademicYear'
 import { useActiveExam } from '../../composables/useActiveExam'
 const { CurrentYearId, CurrentYear } = useAcademicYear()
-const { PassingPercentage, loadActiveExam } = useActiveExam()
 
 import { useCurrentExam } from '../../composables/useCurrentExam'
 const { currentExamId, currentExamName, getExamByType } = useCurrentExam()
@@ -194,7 +193,7 @@ const examType = ref('')
 // const currentExamId = ref('')
 // const currentExamName = ref('')
 const classSectionStatus = ref([])
-//const isResult = ref('')
+const PassingPercentage = 35.0 //for Selection Test, passing percentage is fixed at 35 as per the request of school admin. This value is not taken from settings. It can be changed in future if needed.
 const isLoading = ref(false)
 const isGenerating = ref(false)
 const modalVisible = ref(false)
@@ -213,8 +212,7 @@ const resultPublished = ref(false)
 const userRole = ref('')
 
 
-onMounted(async () => {
-     await loadActiveExam()
+onMounted(async () => {     
      const today = new Date();
       const formattedDate = today.toISOString().split('T')[0];
       currentDate.value = formattedDate; 
@@ -226,8 +224,7 @@ watch(() => route.query.type, (newType) => {
   examType.value = newType
   getExamByType(newType, CurrentYearId.value)
   setResultName(newType)
-  fetchMarkEntryStatus()
-  
+  fetchMarkEntryStatus()  
 
 }, { immediate: true })
 
@@ -240,8 +237,6 @@ async function getUser() {
 const canAccess = (requiredRoles) => {
   return requiredRoles.includes(userRole.value)
 }
-
-
 
 const filteredClassSectionStatus = computed(() => {
   return classSectionStatus.value.filter(item => item.finishedSubjects !== 0);
@@ -387,7 +382,7 @@ async function generateResult(classId, sectionId) {
       examId: currentExamId.value,
       classId,
       sectionId,
-      PassingPercentage: PassingPercentage.value
+      PassingPercentage: 35.0 //for Selection Test, passing percentage is fixed at 35 as per the request of school admin. This value is not taken from settings. It can be changed in future if needed.
     })
     
     if (response.success) {

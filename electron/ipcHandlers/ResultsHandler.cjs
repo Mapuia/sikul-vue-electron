@@ -220,14 +220,14 @@ ipcMain.handle('verify-result-status', async (event, { academicYearId, resultTyp
 // Generate results
 ipcMain.handle('generate-results', async (event, { academicYearId, resultType, examId, classId, sectionId, PassingPercentage }) => {
   
-  //console.log("Generating results for Academic Year:", academicYearId, "Exam ID:", examId, "Class ID:", classId, "Section ID:", sectionId, "Result Type:", resultType, "Passing Percentage:", PassingPercentage)
+  console.log("Generating results for Academic Year: Passing percentage", PassingPercentage)
   const transaction = db.transaction(() => {
     // 1. Fetch class info
     const classInfo = db.prepare(`SELECT ClassName FROM Classes WHERE Id = ?`).get(classId);
     if (!classInfo) {
       throw new Error('Class not found.');
     }
-
+   
     const Class = romanToInt(classInfo.ClassName);
 
     try {
@@ -325,7 +325,8 @@ ipcMain.handle('generate-results', async (event, { academicYearId, resultType, e
                 
                 if (failedSubjects.length > 2) {
                   resultStatus = 'Fail';
-                } else if (Percentage > PassingPercentage) {                
+                }
+                 if (Percentage > PassingPercentage) {                
                   resultStatus = 'Simple Pass';
                 } else if(Percentage < PassingPercentage) {
                   resultStatus = 'Fail';
@@ -684,7 +685,7 @@ ipcMain.handle('get-result-summary', async (event, { academicYearId, examId, res
         AND r.ActiveExamId = rs.ActiveExamId AND a.ClassId = rs.ClassId AND a.SectionId = rs.SectionId
         AND r.AcademicYearId = a.AcademicYearId
         WHERE r.ActiveExamId = ? AND a.AcademicYearId = ? AND a.ClassId = ? AND a.SectionId = ?
-        AND r.Division = 'Distinction'
+        AND r.Division = 'Dist'
         AND rs.isPublished = 1
       `, params);
 
