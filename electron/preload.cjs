@@ -60,7 +60,7 @@ contextBridge.exposeInMainWorld('electronAuth', {
   updateActiveExam: (examData) => ipcRenderer.invoke('update-active-exam', examData),
   deleteActiveExam: (examId) => ipcRenderer.invoke('delete-active-exam', examId),
   deactivateAllActiveExams: (academicYearId) => ipcRenderer.invoke('deactivate-all-active-exams', academicYearId),
-  checkWorkingDays: (examId, yearId) => ipcRenderer.invoke('check-working-days', examId, yearId),
+  getWorkingDays: (examId, yearId) => ipcRenderer.invoke('get-working-days', examId, yearId),
   submitWorkingDays: (data) => ipcRenderer.invoke('submit-working-days', data),
 
   getCurrentExam: (academicYearId) => ipcRenderer.invoke('get-current-exam', academicYearId),

@@ -106,7 +106,7 @@ ipcMain.handle('get-report-card', (event, { studentId, classId, sectionId, examI
         m.ActiveExamId = ? AND m.StudentId = ?
       ORDER BY s.DisplayOrder ASC
     `).all(examId, studentId)
-
+      // console.log("Marks Data:", examId, studentId, marksData)
     const resultData = db.prepare(`
       SELECT 
         TotalMaxMarks as FullMark,

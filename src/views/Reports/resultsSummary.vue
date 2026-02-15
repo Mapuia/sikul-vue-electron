@@ -164,7 +164,7 @@
             <!-- Left Side -->
             <div class="column has-text-left">
               <div class="signature">
-                <p class="publish-date">Publish Date: {{ displayDate(publishDate) }}</p>
+                <p class="publish-date">Date: {{ displayDate(currentDate) }}</p>
               </div>
             </div>
             <div class="column"></div>
@@ -221,14 +221,14 @@ const isLoading = ref(false)
 
 const displayDate = stringReverse => {
   const date = new Date(stringReverse)
-  return date.toLocaleDateString('en-IN', {
+  return date.toLocaleDateString('en-US', {
     year: 'numeric',
     month: 'long',
     day: 'numeric'
   })
 }
 
-const currentDate = ref(new Date().toLocaleDateString('en-IN', {
+const currentDate = ref(new Date().toLocaleDateString('en-US', {
   year: 'numeric',
   month: 'long',
   day: 'numeric'

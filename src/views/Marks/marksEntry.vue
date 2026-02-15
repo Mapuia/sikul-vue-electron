@@ -628,7 +628,7 @@ function toggleWithoutInternalMarks() {
 async function fetchWorkingDays(){ 
   try{
     if(selected.value==='attendance'){
-      const res = await window.electronAPI.checkWorkingDays(currentExamId.value,CurrentYearId.value)
+      const res = await window.electronAPI.getWorkingDays(currentExamId.value,CurrentYearId.value)
       if(res.success)
         existingWorkingDays.value = res.workingDays          
     } else return

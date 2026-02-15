@@ -219,7 +219,7 @@ ipcMain.handle('get-active-exam-by-type', async (event, examType, YearId) => {
   }
 })
 
-ipcMain.handle('check-working-days', async (event, examId, yearId) => {
+ipcMain.handle('get-working-days', async (event, examId, yearId) => {
   try {
 
     // console.log("Cheking Working days for:", examId, yearId)
