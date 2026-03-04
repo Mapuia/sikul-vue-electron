@@ -587,9 +587,12 @@ watch(() => route.query.type, async (newType) => {
   await getExam()
   checkResultStatus(currentExamId.value, CurrentYearId.value)  
   fetchClasses() 
-  resetSelections()
+  resetSelections()  
   //fetchWorkingDays()
   selected.value = 'scholastic'
+  if(newType === 'annual') {
+    classes.value = classes.value.filter(cls => cls.ClassName !== 'X')
+  }
     
 }, { immediate: true })
 

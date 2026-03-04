@@ -242,9 +242,9 @@ ipcMain.handle('generate-results', async (event, { academicYearId, resultType, e
           FROM FinalCumulativeTotalMarks ctm 
           JOIN Students s ON s.Id = ctm.StudentId 
           JOIN Admissions a ON s.Id = a.StudentId AND a.AcademicYearId = ? AND a.ClassId = ? AND a.SectionId = ?
-          WHERE ctm.AcademicYearId = ? AND ctm.ActiveExamId = ? AND ctm.TotalMarksObtained IS NOT NULL 
+          WHERE ctm.AcademicYearId = ? AND ctm.TotalMarksObtained IS NOT NULL 
           ORDER BY ctm.TotalMarksObtained DESC
-        `).all(academicYearId, classId, sectionId, academicYearId, examId);
+        `).all(academicYearId, classId, sectionId, academicYearId);
       } else {
         students = db.prepare(`
           SELECT s.Id as studentId, s.Name, a.RollNo, ctm.TotalMarksObtained, 
