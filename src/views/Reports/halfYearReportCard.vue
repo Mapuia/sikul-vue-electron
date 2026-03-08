@@ -588,7 +588,7 @@ function openInputModal(studentId, studentName) {
 async function proceedToGenerateReportCard() {  
   // Close input modal
   inputModalVisible.value = false
-  
+  //here
   // Generate report card with the entered data
   await generateReportCard(
     currentStudentId.value,     
@@ -638,7 +638,7 @@ async function fetchReportCard(studentId, Name) {
       if(reports?.success){ 
         studentData.value = reports.studentData || []
         marksData.value = reports.marksData || []
-        console.log("Marks Data:", marksData.value)
+        // console.log("Marks Data:", marksData.value)
         resultData.value = reports.resultData || []
         reportCardData.value = reports.reportCardData || []
         activities.value = reports.activities || []

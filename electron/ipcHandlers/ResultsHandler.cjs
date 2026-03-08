@@ -901,9 +901,9 @@ ipcMain.handle('get-section-results', async (event, { academicYearId, examId, cl
   }
 });
 
-
+//Get Result publish status.
 ipcMain.handle('get-publish-status', async (event, { academicYearId, activeExamId }) => {
-    
+    // console.log("Check for Status-annual", academicYearId, activeExamId)
   try {
     // Get count of finished mark entries
     const markEntryStmt = db.prepare(`
@@ -953,9 +953,11 @@ ipcMain.handle('get-publish-status', async (event, { academicYearId, activeExamI
   } 
 });
 
+//publish Result
 ipcMain.handle('publish-results', async (event, { academicYearId, activeExamId, publishDate }) => {  
 
   try {
+    
     // Begin transaction
     db.prepare('BEGIN TRANSACTION').run();
 
@@ -975,16 +977,18 @@ ipcMain.handle('publish-results', async (event, { academicYearId, activeExamId, 
     }*/
 
     // 2. Update ResultStatus table
+    // console.log("check Result publih status")
     const updateResultStatus = db.prepare(`
       UPDATE ResultStatus 
       SET isPublished = 1, Last_Modified_at = CURRENT_TIMESTAMP
       WHERE AcademicYearId = ? AND ActiveExamId = ? AND isGenerated = 1
     `);
+    
     updateResultStatus.run(academicYearId, activeExamId);
 
     // 3. Update ActiveExams table
     const updateActiveExams = db.prepare(`
-      UPDATE ActiveExams 
+      UPDATE ActiveExams
       SET Result_Published = 1, PublishDate = ?, Modified_at = CURRENT_TIMESTAMP
       WHERE Id = ? AND AcademicYearId = ?
     `);
@@ -1001,6 +1005,7 @@ ipcMain.handle('publish-results', async (event, { academicYearId, activeExamId, 
   } 
 });
 
+//Unpublish Resukt
 ipcMain.handle('unpublish-results', async (event, { academicYearId, activeExamId }) => {
   try {
     // Begin transaction
@@ -1033,20 +1038,8 @@ ipcMain.handle('unpublish-results', async (event, { academicYearId, activeExamId
   } 
 });
 
-//Section Result Summary
-// electron/ipcHandlers/getResultsSummary.js
-// const getSubjectsByClassId = (classId) => {
-//   return db.prepare(`
-//       SELECT s.Id, SubjectCode as SubjectName
-//       FROM ClassSubjectMapping csm
-//       JOIN Subjects s ON csm.SubjectId = s.Id
-//       WHERE csm.ClassId = ?
-//       AND s.SubjectCategory != 'Co-Scholastic'
-//       ORDER BY s.DisplayOrder
-//     `).all(classId);
-//   }
 
-const getResultSummary = async (classId, sectionId, examId, academicYearId, examType) => {
+const getResultSummary = async (classId, sectionId, examId, academicYearId, examType, resultType) => {
          
   const students = db.prepare(`
     SELECT 
@@ -1072,9 +1065,11 @@ const getResultSummary = async (classId, sectionId, examId, academicYearId, exam
     LEFT JOIN Results r ON stu.Id = r.StudentId
     WHERE a.ClassId = ? 
         AND a.SectionId = ? 
-        AND a.AcademicYearId = ?
+        AND r.AcademicYearId = ?
         AND r.resultType = ?
     ORDER BY a.RollNo;`).all(classId, sectionId, academicYearId, examType);
+
+    // console.log("Results check:",classId, sectionId, academicYearId, examType, results)
 
     const resultMap = new Map(results.map(r => [r.StudentId, r]));
 
@@ -1087,7 +1082,7 @@ const getResultSummary = async (classId, sectionId, examId, academicYearId, exam
       stu.Result = res?.Result || null;
     }
 
-  //console.log("Students: ", students)
+  // console.log("Students: ", students)
   
 // Get Marks based on examType
   let marks;
@@ -1159,11 +1154,11 @@ const getResultSummary = async (classId, sectionId, examId, academicYearId, exam
         marks: currentMarks
       })
     });
-
+    // console.log("Summary check:", studentMarks)
   return studentMarks;
 }
 
-ipcMain.handle('get-section-results-summary', async (event, { classId, sectionId, examId, academicYearId, examType }) => {
+ipcMain.handle('get-section-results-summary', async (event, { classId, sectionId, examId, academicYearId, examType, resultType }) => {
   try {
    const studentMarks = await getResultSummary(classId, sectionId, examId, academicYearId, examType);
     //console.log("Student Marks: ", studentMarks)

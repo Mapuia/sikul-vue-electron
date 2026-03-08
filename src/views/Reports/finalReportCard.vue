@@ -330,10 +330,10 @@
                           <tr>
                             <th  >Total No. of Students:</th>
                             <td  class="bottom">
-                              <span>{{ reportCardData?.TerminalNoOfStudents }}</span>                                 
+                              <span>{{ TerminalNoOfStudents }}</span>                                 
                             </td>
                             <td class="bottom">                                
-                              <span>{{ reportCardData?.AnnualNoOfStudents }}</span> 
+                              <span>{{ AnnualNoOfStudents }}</span> 
                             </td>
                           </tr>
                           </tbody>
@@ -447,6 +447,8 @@ const selectedStudentName = ref('')
 const totalWorkingDays = ref(0)
 const currentAttendance = ref(0)
 const currentTeachersRemark = ref('')
+const AnnualNoOfStudents = ref(0)
+const TerminalNoOfStudents = ref(0)
 
 //For Report Card Fetch
 
@@ -713,6 +715,8 @@ async function fetchReportCard(studentId, Name) {
       reportCardData.value = reports.attendanceData || {};
       activities.value = reports.activities || [];
       modalVisible.value = true;
+      AnnualNoOfStudents.value = reports.AnnualNoOfStudents || 0;
+      TerminalNoOfStudents.value = reports.TerminalNoOfStudents || 0;
     }
   } catch (error) {
     console.error('Error fetching report card:', error);

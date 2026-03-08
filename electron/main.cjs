@@ -77,7 +77,8 @@ async function loadHandlers() {
     'ResultsHandler',
     'ReportCardHandler',
     'ExportHandler',
-    'ImportHandler'
+    'ImportHandler',
+    'attendance'
   ];
 
   for (const handler of handlers) {

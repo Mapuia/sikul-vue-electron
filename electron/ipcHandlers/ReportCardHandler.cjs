@@ -9,12 +9,22 @@ ipcMain.handle('generate-report-card', async (event, {
   examId,
   studentId,   
   teachersRemark,
-  resultType 
+  resultType
+  
    }) => {
     if (!studentId ) {
-      console.error('Missing required parameters for report card generation');
+      console.error('Missing Stident Id for report card generation');
       return { success: false, error: 'Missing required parameters' };
     }
+//
+    // const classId = db.prepare(`
+    //   SELECT ClassId FROM Admissions
+    //   WHERE StudentId = ?
+    //   AND AcademicYearId = ?
+    //   `).get(studentId, academicYearId)?.ClassId;
+
+    //   console.log("ClassId: for working Days", classId);
+      
     try {   
         // Insert new report card
       db.prepare(`
@@ -89,25 +99,33 @@ ipcMain.handle('get-report-card', (event, { studentId, classId, sectionId, examI
       FROM ReportCards
       WHERE ActiveExamId = ? AND StudentId = ? AND AcademicYearId = ? AND ReportCardType = ?
     `).get(examId, studentId, academicYearId, resultType)
-
+    // console.log("Report Card Data:", examId, studentId, academicYearId, resultType,reportCardData)
+    
     const marksData = db.prepare(`
       SELECT
         s.SubjectName as SubjectName,
-        m.TotalMaxMarks as FullMark,        
-        m.PeriodicMarksObtained as PeriodicMark,
-        m.TerminalMarksObtained as TerminalMark,
-        m.TotalMarksObtained as TotalMark,
-        m.SubjectResult as SubjectResult
-      FROM
-        Marks m 
-      JOIN
-        Subjects s ON m.SubjectId = s.Id
-      WHERE
-        m.ActiveExamId = ? AND m.StudentId = ?
+        COALESCE(m.TotalMaxMarks, s.FullMark) as FullMark,
+        COALESCE(m.PeriodicMarksObtained, 0) as PeriodicMark,
+        COALESCE(m.TerminalMarksObtained, 0) as TerminalMark,
+        COALESCE(m.TotalMarksObtained, 0) as TotalMark,
+        COALESCE(m.SubjectResult, '') as SubjectResult
+      FROM ClassSubjectMapping csm
+
+      JOIN Subjects s 
+        ON s.Id = csm.SubjectId
+
+      LEFT JOIN Marks m 
+        ON m.SubjectId = s.Id 
+        AND m.ActiveExamId = ? 
+        AND m.StudentId = ?
+
+      WHERE csm.ClassId = ?
+      AND s.SubjectCategory != 'Co-Scholastic'
+
       ORDER BY s.DisplayOrder ASC
-    `).all(examId, studentId)
-      // console.log("Marks Data:", examId, studentId, marksData)
-    const resultData = db.prepare(`
+    `).all(examId, studentId, classId)
+    
+     const resultData = db.prepare(`
       SELECT 
         TotalMaxMarks as FullMark,
         TotalMarksObtained as TotalMark,       
@@ -148,8 +166,7 @@ ipcMain.handle('get-report-card', (event, { studentId, classId, sectionId, examI
      
       // Step 5: Add to attendanceData
       if (reportCardData) {
-        reportCardData.noOfStudents = TerminalNoOfStudents;
-        
+        reportCardData.noOfStudents = TerminalNoOfStudents;        
       }
 
     return {
@@ -205,31 +222,57 @@ ipcMain.handle('get-final-report-card', (event, { studentId, classId, sectionId,
     const marksData = db.prepare(`
       SELECT
         s.SubjectName as SubjectName,
-        t.TotalMaxMarks as FullMark,
-        ROUND(t.TotalMaxMarks * ? / 100) as PassMark,
-        t.PeriodicMarksObtained as FirstPeriodicMarks,
-        t.TerminalMarksObtained as TerminalMarks,
-        t.TotalMarksObtained as TerminalTotal,
-        a.PeriodicMarksObtained as SecondPeriodicMarks,
-        a.TerminalMarksObtained as AnnualMarks,
-        a.TotalMarksObtained as AnnualTotalMarks
-      FROM Subjects s
-      JOIN Marks t ON t.SubjectId = s.Id AND t.ActiveExamId = ? AND t.StudentId = ?
-      JOIN Marks a ON a.SubjectId = s.Id AND a.ActiveExamId = ? AND a.StudentId = ?
+        COALESCE(t.TotalMaxMarks, a.TotalMaxMarks, s.FullMark) as FullMark,
+        ROUND(COALESCE(t.TotalMaxMarks, a.TotalMaxMarks, s.FullMark) * ? / 100) as PassMark,
+
+        COALESCE(t.PeriodicMarksObtained, 0) as FirstPeriodicMarks,
+        COALESCE(t.TerminalMarksObtained, 0) as TerminalMarks,
+        COALESCE(t.TotalMarksObtained, 0) as TerminalTotal,
+
+        COALESCE(a.PeriodicMarksObtained, 0) as SecondPeriodicMarks,
+        COALESCE(a.TerminalMarksObtained, 0) as AnnualMarks,
+        COALESCE(a.TotalMarksObtained, 0) as AnnualTotalMarks
+
+      FROM ClassSubjectMapping csm
+
+      JOIN Subjects s 
+        ON s.Id = csm.SubjectId
+
+      LEFT JOIN Marks t 
+        ON t.SubjectId = s.Id 
+        AND t.ActiveExamId = ? 
+        AND t.StudentId = ?
+
+      LEFT JOIN Marks a 
+        ON a.SubjectId = s.Id 
+        AND a.ActiveExamId = ? 
+        AND a.StudentId = ?
+
+      WHERE csm.ClassId = ?
+
       ORDER BY s.DisplayOrder ASC
-    `).all(PassingPercentage, terminal.Id, studentId, annual.Id, studentId);
+    `).all(
+      PassingPercentage,
+      terminal.Id, studentId,
+      annual.Id, studentId,
+      classId
+    );
 
     const finalMarksData = marksData.map(subject => {
       const finalFullMark = subject.FullMark * 2;
       const finalPassMark = subject.PassMark * 2;
       const finalMarks = subject.TerminalTotal + subject.AnnualTotalMarks;
-      const result = finalMarks >= finalPassMark ? "Pass" : "Fail";
+      // const result = finalMarks >= finalPassMark ? "Pass" : "Fail";
+      const result = db.prepare(`
+        SELECT ResultStatus FROM Results
+        WHERE StudentId = ? AND ResultType = 'final'
+      `).get(studentId);
       return {
         ...subject,
         finalFullMark,
         finalPassMark,
         finalMarks,
-        Result: result
+        Result: result?.ResultStatus
       };
     });
 
@@ -351,11 +394,7 @@ ipcMain.handle('get-final-report-card', (event, { studentId, classId, sectionId,
       const TerminalNoOfStudents = studentIdsInAdmissions.filter(id => terminalResultStudents.includes(id)).length;
       const AnnualNoOfStudents = studentIdsInAdmissions.filter(id => finalResultStudents.includes(id)).length;
 
-      // Step 5: Add to attendanceData
-      if (attendanceData) {
-        attendanceData.TerminalNoOfStudents = TerminalNoOfStudents;
-        attendanceData.AnnualNoOfStudents = AnnualNoOfStudents;
-      }
+
 
 
     return {
@@ -378,7 +417,9 @@ ipcMain.handle('get-final-report-card', (event, { studentId, classId, sectionId,
       },
       totalMarks,
       attendanceData,
-      activities
+      activities,
+      TerminalNoOfStudents,
+      AnnualNoOfStudents
     };
 
   } catch (error) {

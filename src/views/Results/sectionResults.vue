@@ -1,5 +1,6 @@
 <template>
-  <div v-if="resultPublished" class="form-container box wide">
+  <!-- <div v-if="resultPublished" class="form-container box wide"> -->
+  <div class="form-container box wide">
     <div class="has-text-centered mb-4">
       <h1 class="title is-4">{{ resultName }}, {{ CurrentYear }}</h1>
       <h2 class="subtitle is-5" v-if="examType !== 'selection'">Select Class and Section</h2>
@@ -196,11 +197,11 @@
       </div>
     </div>
   </div>
-  <div v-else class="form-container wide pb-1" >
+  <!-- <div v-else class="form-container wide pb-1" >
     <div class="notification is-warning has-text-centered " >
       <p>{{ resultName }} has not been published.</p>      
     </div>    
-  </div>
+  </div> -->
 </template>
 
 <script setup>

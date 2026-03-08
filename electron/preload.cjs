@@ -60,8 +60,8 @@ contextBridge.exposeInMainWorld('electronAuth', {
   updateActiveExam: (examData) => ipcRenderer.invoke('update-active-exam', examData),
   deleteActiveExam: (examId) => ipcRenderer.invoke('delete-active-exam', examId),
   deactivateAllActiveExams: (academicYearId) => ipcRenderer.invoke('deactivate-all-active-exams', academicYearId),
-  getWorkingDays: (examId, yearId) => ipcRenderer.invoke('get-working-days', examId, yearId),
-  submitWorkingDays: (data) => ipcRenderer.invoke('submit-working-days', data),
+  // getWorkingDays: (examId, yearId) => ipcRenderer.invoke('get-working-days', examId, yearId),
+  // submitWorkingDays: (data) => ipcRenderer.invoke('submit-working-days', data),
 
   getCurrentExam: (academicYearId) => ipcRenderer.invoke('get-current-exam', academicYearId),
   activateExam: (Id) => ipcRenderer.invoke('activate-exam',Id),
@@ -193,6 +193,11 @@ contextBridge.exposeInMainWorld('electronAuth', {
   //results Summary
   getSubjectsByClassIdforSummary:(ClassId) => ipcRenderer.invoke('get-subjects-by-classId-for-summary', ClassId),
   getSectionResultsSummary:(params) => ipcRenderer.invoke('get-section-results-summary', params),
-  exportSectionResultsSummary:(data) => ipcRenderer.invoke('export-section-results-summary', data)
+  exportSectionResultsSummary:(data) => ipcRenderer.invoke('export-section-results-summary', data),
+
+  //Attendance
+  insertWorkingDays:(params) => ipcRenderer.invoke('insert-working-days', params),
+  getWorkingDays:(params) => ipcRenderer.invoke('get-working-days', params),
+  editWorkingDays:(params) => ipcRenderer.invoke('edit-working-days', params)
 });
 

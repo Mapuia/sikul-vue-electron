@@ -2,7 +2,7 @@
   <div class="form-container full mt-5 mb-1">
     <div v-if="isPublished">
       <div class="has-text-centered mb-2">
-        <h1 class="title is-4 mb-1">Section Summary - {{ resultName }}</h1>
+        <h1 class="title is-4 mb-1"> Section Summary - {{ resultName }}</h1>
         <h2 class="title is-4 mt-1 mb-1">({{ CurrentYear }})</h2>
       </div>
 
@@ -192,7 +192,7 @@ const examType = ref(route.query.type)
 // console.log('Academic Year ID:', CurrentYearId.value)
 //const currentExamId = ref('')
 //const currentExamName = ref('')
-// const resultName = ref('')
+// const resultType = ref('')
 
 let examOrder = []
 let examKeyMap = {}
@@ -364,6 +364,7 @@ async function initializeClasses() {
       selectedClassId.value = classes.value[0]?.Id || ''
     }
   if(examType.value === 'annual' || examType.value === 'final'){
+      // resultType = 'final'
       classes.value = classes.value.filter(c => c.ClassName !== 'X')
     }
   }    

@@ -326,6 +326,19 @@ CREATE TABLE IF NOT EXISTS Signatories (
     Creation_at DATETIME DEFAULT CURRENT_TIMESTAMP       
 );
 
+--working days
+CREATE TABLE IF NOT EXISTS totalWorkingDays (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    academicYearId INTEGER,
+    classId INTEGER,
+    term TEXT NOT NULL CHECK(TERM IN ('terminal', 'annual')),
+    noOfWorkingDays INTEGER,
+    creation_At DATETIME DEFAULT CURRENT_TIMESTAMP,
+    modified_At DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (academicYearId) REFERENCES AcademicYears(Id) ON DELETE CASCADE, 
+    FOREIGN KEY (classId) REFERENCES Classes(Id) ON DELETE CASCADE
+)
+
 -- Foreign Key Indexes
 -- Users
 CREATE UNIQUE INDEX IF NOT EXISTS idx_users_username ON Users(Username);

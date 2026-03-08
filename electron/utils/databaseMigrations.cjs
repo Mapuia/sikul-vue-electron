@@ -5,6 +5,39 @@ const { db } = require('../database.cjs');
 async function runMigrations() {
   try {
     // Check if the column already exists
+
+      // Start transaction
+      db.prepare('BEGIN TRANSACTION').run();
+
+      db.prepare(`
+      CREATE TABLE IF NOT EXISTS totalWorkingDays (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        academicYearId INTEGER,
+        classId INTEGER,
+        term TEXT NOT NULL CHECK(term IN ('terminal', 'annual')),
+        noOfWorkingDays INTEGER,
+        creation_At DATETIME DEFAULT CURRENT_TIMESTAMP,
+        modified_At DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (academicYearId) REFERENCES AcademicYears(Id) ON DELETE CASCADE, 
+        FOREIGN KEY (classId) REFERENCES Classes(Id) ON DELETE CASCADE
+      )
+      `).run();
+
+      db.prepare('COMMIT').run();
+
+  } catch (error) {
+    db.prepare('ROLLBACK').run();
+    console.error('Migration failed:', error);
+    throw error;
+  }
+}
+module.exports = { runMigrations };
+
+
+
+
+/*
+*************************************
     const RegistrationNumberExists = db.prepare(`PRAGMA table_info(Students)`).all().some(col => col.name === 'RegistrationNumber');
     const noOfWorkingDaysExists = db.prepare(`PRAGMA table_info(ActiveExams)`).all().some(col => col.name === 'noOfWorkingDays');
 
@@ -108,19 +141,13 @@ async function runMigrations() {
       db.prepare('COMMIT').run();
 
       console.log('RegistrationNumber column added after FirstAdmissionDate.');
-    } else {
-    //console.log(`Column RegistrationNumber already exists in "Students".`);
-  }
+***********************************
 
-  } catch (error) {
-    db.prepare('ROLLBACK').run();
-    console.error('Students migration failed:', error);
-    throw error;
-  }
-}
-module.exports = { runMigrations };
 
-/*
+
+
+
+
 function ensureGradeColumnIsText() {
   // Step 1: Check column type
   db=getDatabase();

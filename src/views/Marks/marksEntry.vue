@@ -478,14 +478,20 @@
               <button class="button is-primary mt-3" @click="submitWorkingDays()">Submit</button>
             </div> -->
 
+            
+            <div v-if="selectedClassId" class="box has-text-centered" >
+              <h1 class="">
+              Total Working Days: <b>{{ existingWorkingDays }}</b>
+              </h1>
+            </div>
             <div v-else class="button is-info has-text-centered is-flex is-align-items-center is-flex-direction-column p-5">
-             <b> No. of Working Days: {{ existingWorkingDays }} days. </b> <br /> Select Class and Section to enter the attendance.
+             Select Class and Section to enter the attendance.
             </div>
 
             <!-- Modal -->
             <div 
               class="modal" 
-              :class="{ 'is-active': existingWorkingDays === null || existingWorkingDays === '' }"
+              :class="{ 'is-active': workingDaysModal }"
             >
               <div class="modal-background"></div>
               <div class="modal-card working-days-modal">
@@ -500,7 +506,7 @@
                     class="input"
                     type="number"
                     v-model="noOfWorkingDays"
-                    @keydown.enter.prevent="submitWorkingDays"
+                    
                   />                
                 </section>
 
@@ -581,6 +587,7 @@ const grades = ref({})
 const attendance = ref({})
 const existingWorkingDays = ref(null)
 const noOfWorkingDays = ref('')
+const workingDaysModal = ref(false)
 
 watch(() => route.query.type, async (newType) => {
   examType.value = newType
@@ -629,12 +636,20 @@ function toggleWithoutInternalMarks() {
 }
 //WORKING DAYS 
 async function fetchWorkingDays(){ 
-  try{
-    if(selected.value==='attendance'){
-      const res = await window.electronAPI.getWorkingDays(currentExamId.value,CurrentYearId.value)
-      if(res.success)
-        existingWorkingDays.value = res.workingDays          
-    } else return
+  const params = {
+        yearId: CurrentYearId.value,
+        classId: selectedClassId.value,
+        term: examType.value
+      }
+  try{         
+    const res = await window.electronAPI.getWorkingDays(params)
+    // console.log("wORKINGDAYS  Data:", params)
+    if(res.success){
+        existingWorkingDays.value = res.workingDays
+        if(existingWorkingDays.value === '' || existingWorkingDays.value === undefined) 
+        workingDaysModal.value = true
+    }         
+    else return
       
   }catch(err){
     console.log("Something went Wrong", err.message)
@@ -657,13 +672,16 @@ onMounted(async () => {
 watch(selected, async (newTab) => {
   await resetSelections()
   await fetchClasses()
-  await fetchWorkingDays()   
 
   // console.log("Selected is activated", selected.value)
 })
 
 // Watch class changes
 watch(selectedClassId, async (classId) => {
+  // console.log('selected class Id:', selectedClassId.value)
+  if(selected.value === 'attendance'){
+    await fetchWorkingDays()
+  }
   selectedSubjectId.value = ''
   if (!classId) {
     resetSectionData()    
@@ -675,6 +693,7 @@ watch(selectedClassId, async (classId) => {
   await fetchSections(classId)
   await fetchSubjects(classId)
   studentloaded.value = false 
+  
 })
 
 // Watch section changes
@@ -690,7 +709,7 @@ watch(selectedSectionId, async (sectionId) => {
   }else {
     studentloaded.value = true
   }
-  
+
 })
 
 // Watch subject changes
@@ -862,6 +881,7 @@ async function resetSelections() {
   selectAllAppeared.value = false
   appeared.value = {}
   withoutInternalMarks.value = false
+  workingDaysModal.value = false
 }
 
 function resetSectionData() {
@@ -1018,12 +1038,14 @@ async function submitWorkingDays(){
   try{
     const workingDaysData = {
       yearId: CurrentYearId.value,
-      examId: currentExamId.value,
+      classId: selectedClassId.value,
+      term: examType.value,
       noOfWorkingDays: noOfWorkingDays.value
     }
-    const res = await window.electronAPI.submitWorkingDays(workingDaysData)
+    const res = await window.electronAPI.insertWorkingDays(workingDaysData)
     if(res.success)
-    window.electronAPI.showInfoDialog(`No. of Working Days entered successfully.`)
+    window.electronAPI.showInfoDialog(`Working Days entered successfully.`)
+    workingDaysModal.value=false
     await fetchWorkingDays()
 
   }catch(error){
@@ -1069,7 +1091,11 @@ async function submitAttendance() {
     const result = await window.electronAPI.saveAttendance(attendanceData, examData)
 
     if (result.success) {
-      successMessage.value = 'Attendance submitted successfully!'
+      // successMessage.value = 'Attendance submitted successfully!'
+      window.electronAPI.showInfoDialog('Attendance submitted successfully!')
+      // selectedSectionId.value = ''
+      // selectedClassId.value = ''
+      // selected.value = 'attendance'
       setTimeout(() => successMessage.value = '', 3000)
       await loadStudentsBySectionId()
     } else {
@@ -1146,8 +1172,8 @@ async function saveMarks(isDraft = false) {
       totalMax = terminalMax
       periodicMax = 0
     }
-console.log("Without Internal Marks while saving:", withoutInternalMarks.value)
-console.log("totalMax:", totalMax)
+// console.log("Without Internal Marks while saving:", withoutInternalMarks.value)
+// console.log("totalMax:", totalMax)
     const marksData = students.value
       .filter(student => !!appeared.value[student.StudentId])
       .map(student => {

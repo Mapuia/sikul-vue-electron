@@ -219,24 +219,24 @@ ipcMain.handle('get-active-exam-by-type', async (event, examType, YearId) => {
   }
 })
 
-ipcMain.handle('get-working-days', async (event, examId, yearId) => {
-  try {
+// ipcMain.handle('get-working-days', async (event, examId, yearId) => {
+//   try {
 
-    // console.log("Cheking Working days for:", examId, yearId)
-    const workingDays = db.prepare(`
-      SELECT noOfWorkingDays
-      FROM ActiveExams
-      WHERE Id = ?
-      AND AcademicYearId = ?
-      `).get(examId, yearId).noOfWorkingDays   
+//     // console.log("Cheking Working days for:", examId, yearId)
+//     const workingDays = db.prepare(`
+//       SELECT noOfWorkingDays
+//       FROM ActiveExams
+//       WHERE Id = ?
+//       AND AcademicYearId = ?
+//       `).get(examId, yearId).noOfWorkingDays   
    
-  //  console.log("working Days", workingDays)
-    return { success: true, workingDays }
-  } catch (error) {
-    console.log("Error")
-    return { success: false, error: error.message }
-  }
-})
+//   //  console.log("working Days", workingDays)
+//     return { success: true, workingDays }
+//   } catch (error) {
+//     console.log("Error")
+//     return { success: false, error: error.message }
+//   }
+// })
 
 
 ipcMain.handle('get-exam-by-type', async (event, type, YearId) => {
@@ -256,22 +256,22 @@ ipcMain.handle('get-exam-by-type', async (event, type, YearId) => {
 })
 
 
-ipcMain.handle('submit-working-days', async (event, data) => {
-  //console.log("Workingdays Data", data)
-  try {
-    db.prepare(`
-      UPDATE ActiveExams 
-      SET noOfWorkingDays = ?
-      WHERE Id = ? AND AcademicYearId = ?
-    `).run(data.noOfWorkingDays, data.examId, data.yearId)
+// ipcMain.handle('submit-working-days', async (event, data) => {
+//   //console.log("Workingdays Data", data)
+//   try {
+//     db.prepare(`
+//       UPDATE ActiveExams 
+//       SET noOfWorkingDays = ?
+//       WHERE Id = ? AND AcademicYearId = ?
+//     `).run(data.noOfWorkingDays, data.examId, data.yearId)
 
-    //console.log("Update result:", result)
-    return { success: true }
-  } catch (error) {
-    //console.error("Error updating:", error.message)
-    return { success: false, error: error.message }
-  }
-})
+//     //console.log("Update result:", result)
+//     return { success: true }
+//   } catch (error) {
+//     //console.error("Error updating:", error.message)
+//     return { success: false, error: error.message }
+//   }
+// })
 
 
 

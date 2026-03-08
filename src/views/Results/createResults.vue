@@ -263,7 +263,7 @@ async function getExam() {
   const result = await window.electronAPI.getExamByType(examType.value, CurrentYearId.value)
   currentExamId.value = result.exam.Id
   currentExamName.value = result.exam.ExamName
-  checkResultStatus(currentExamId.value, CurrentYearId.value) 
+  // checkResultStatus(currentExamId.value, CurrentYearId.value) 
 }
 
 async function getUser() {
