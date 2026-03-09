@@ -43,11 +43,11 @@ ipcMain.handle('get-working-days',async(event, {yearId, classId, term})=>{
 })
 
 //edit No. of Working Days
-ipcMain.handle('edit-working-days',(event, {yearId, classId, term, totalWorkingDays})=>{
+ipcMain.handle('edit-working-days',(event, {yearId, classId, term, noOfWorkingDays})=>{
  // console.log('edit Data:', yearId)
   try{
     const workingDays = db.prepare(`
-      UPDATE noOfWorkingDays 
+      UPDATE totalWorkingDays 
       SET
         noOfWorkingDays = ?
       WHERE
@@ -56,7 +56,7 @@ ipcMain.handle('edit-working-days',(event, {yearId, classId, term, totalWorkingD
         classId = ?
       AND
         term = ?
-    `).run(totalWorkingDays, yearId, classId, term );
+    `).run(noOfWorkingDays, yearId, classId, term );
     
     return { 
       success: true,      

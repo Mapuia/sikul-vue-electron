@@ -385,7 +385,11 @@
               </div>
               <div class="tags are-medium">
                 <span class="tag ml-2">Total Working Days: {{ existingWorkingDays }}</span>
+                
               </div>
+             <div class="buttons is-grouped is-justify-content-end">
+                  
+              </div>    
             </div>      
 
               <div v-if="students.length > 0 || students.length === 1" class="is-flex is-flex-direction-column">
@@ -464,31 +468,35 @@
               <p v-else class="notification is-info is-danger is-fullwidth has-text-centered mt-4">
                 No students found for this section.
               </p>       
-            </div>
-            <!-- <div 
-              v-else-if="workingDays === null || workingDays === ''" 
-              class="working-days-container"
-            >
-              <label class="label">Enter the Number of Working Days</label>
-              <input 
-                class="input" 
-                type="number"
-                v-model="noOfWorkingDays"
-              />
-              <button class="button is-primary mt-3" @click="submitWorkingDays()">Submit</button>
-            </div> -->
-
+            </div>       
             
-            <div v-if="selectedClassId" class="box has-text-centered" >
-              <h1 class="">
-              Total Working Days: <b>{{ existingWorkingDays }}</b>
-              </h1>
+            <div v-if="selectedClassId" class="box has-text-centered" >              
+              <div v-if="existingWorkingDays">
+                  Total Working Days: <b>{{ existingWorkingDays }}  </b>            
+                  <button
+                        class="button is-small is-info no-padding ml-2"
+                        title = "edit total working days"
+                        @click="showEditModal()"                   
+                      >
+                        <i class="fas fa-edit"></i>
+                  </button>
+              </div>
+              <div v-else>
+                Total Working Days not set. Please set the total working days to enter attendance.
+                <button
+                        class="button is-small is-info no-padding ml-2"
+                        title = "edit total working days"
+                        @click="showNewModal()"                   
+                      >
+                        <i class="fas fa-plus"></i>
+                  </button>
+              </div>
             </div>
             <div v-else class="button is-info has-text-centered is-flex is-align-items-center is-flex-direction-column p-5">
              Select Class and Section to enter the attendance.
             </div>
 
-            <!-- Modal -->
+            <!--Working Days Entry Modal -->
             <div 
               class="modal" 
               :class="{ 'is-active': workingDaysModal }"
@@ -516,7 +524,37 @@
                 </footer>
                 
               </div>
-            </div>      
+            </div>
+            <!--End of Working Days Entry Modal--> 
+            <!--Working Days Edit Modal -->
+            <div 
+              class="modal" 
+              :class="{ 'is-active': workingDaysEditModal }"
+            >
+              <div class="modal-background"></div>
+              <div class="modal-card working-days-modal">
+                <header class="modal-card-head">
+                  <p class="modal-card-title">Working Days - {{ currentExamName }}</p>
+                 
+                </header>
+                
+                <section class="modal-card-body">                 
+                  <label class="label">Number of total Working Days (Edit)</label>                  
+                  <input 
+                    class="input"
+                    type="number"
+                    v-model="noOfWorkingDays"                    
+                  />                
+                </section>
+
+                <footer class="modal-card-foot is-justify-content-center">
+                  <button class="button is-primary mr-1" @click="editWorkingDays()">Save</button>
+                  <button class="button" @click="closeAndReturn">Cancel</button>
+                </footer>
+                
+              </div>
+            </div>
+            <!--End of Working Days Edit Modal-->      
         </div>
         <!--End of Marks Entry-->
       </div>     
@@ -588,6 +626,7 @@ const attendance = ref({})
 const existingWorkingDays = ref(null)
 const noOfWorkingDays = ref('')
 const workingDaysModal = ref(false)
+const workingDaysEditModal = ref(false)
 
 watch(() => route.query.type, async (newType) => {
   examType.value = newType
@@ -646,8 +685,10 @@ async function fetchWorkingDays(){
     // console.log("wORKINGDAYS  Data:", params)
     if(res.success){
         existingWorkingDays.value = res.workingDays
+        noOfWorkingDays.value = existingWorkingDays.value
         if(existingWorkingDays.value === '' || existingWorkingDays.value === undefined) 
         workingDaysModal.value = true
+
     }         
     else return
       
@@ -1227,32 +1268,40 @@ async function saveMarks(isDraft = false) {
 
 
 // ============== UTILITY FUNCTIONS ==============
-// function closeModal() {
-//   if(noOfWorkingDays.value === null || noOfWorkingDays.value === ''){
-//     window.electronAPI.showConfirmationDialog("Please enter the number of working days to proceed.")
-//     return
-//   }  
-// }
 
 function closeAndReturn(){
-  selected.value = 'scholastic'
+  workingDaysModal.value = false
+  workingDaysEditModal.value = false
+}
+function showNewModal(){
+  noOfWorkingDays.value = ''
+  workingDaysModal.value = true
+}
+function showEditModal(){
+  noOfWorkingDays.value = existingWorkingDays.value
+  workingDaysEditModal.value = true
 }
 
-// async function verifyResultStatus() { 
-//   const result = await window.electronAPI.verifyResultStatus({
-//     academicYearId: CurrentYearId.value,
-//     resultType: examType.value === 'terminal' ? examType.value : 
-//                examType.value === 'selection' ? 'selection' : 'final',
-//     examId: currentExamId.value,
-//     classId: selectedClassId.value,
-//     sectionId: selectedSectionId.value
-//   })       
-  
-//   if (result.success) {
-//     Result_Published.value = result.isPublished
-//     return    
-//   }
-// }
+async function editWorkingDays(){
+  try{
+    const workingDaysData = {
+      yearId: CurrentYearId.value,
+      classId: selectedClassId.value,
+      term: examType.value,
+      noOfWorkingDays: noOfWorkingDays.value
+    }
+    const res = await window.electronAPI.editWorkingDays(workingDaysData)
+    if(res.success)
+    window.electronAPI.showInfoDialog(`Working Days updated successfully.`)
+    workingDaysEditModal.value=false
+    await fetchWorkingDays()
+
+  }catch(error){
+    window.electronAPI.showErrorDialog(`Error: ${error.message}`)
+    console.error("Error updating working days:", error)
+  }
+
+}
 </script>
 
 <style scoped>
