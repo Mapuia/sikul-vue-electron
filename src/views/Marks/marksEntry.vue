@@ -1,6 +1,5 @@
 <template>
-  <div class="form-container full">
-    
+  <div class="form-container full">   
 
     <div v-if="isPublished">
       <div class="box single">
@@ -90,7 +89,7 @@
           <div v-if="selected != 'attendance'" class="field">
             <label class="label">{{ selected === "scholastic" ? "Subject" : "Co-Scholastic Activities" }}</label>
             <div class="select is-fullwidth is-small">
-              <select v-model="selectedSubjectId" :disabled="!selectedClassId || !selectedSectionId && sections.length > 0">
+              <select v-model="selectedSubjectId" :disabled="!selectedClassId || (!selectedSectionId && sections.length > 0)">
                 <option disabled value="">-- Select --</option>
                 <option v-for="subject in subjects" :key="subject.Id" :value="subject.Id">
                   {{ subject.SubjectName }} {{ subject.SubjectCategory ? '(' + subject.SubjectCategory + ')' : '' }}
@@ -728,7 +727,7 @@ watch(selectedClassId, async (classId) => {
     resetSectionData()    
     return
   } 
-  
+  // await fetchSubjects(classId)
   selectedSectionId.value = ''
   marksEntered.value = false
   await fetchSections(classId)
