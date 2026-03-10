@@ -5,7 +5,7 @@ const { db } = require('../database.cjs');
 async function runMigrations() {
   try {
     // Check if the column already exists
-
+    
       // Start transaction
       db.prepare('BEGIN TRANSACTION').run();
 

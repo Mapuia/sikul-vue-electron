@@ -8,84 +8,6 @@ const currentTime = new Date(new Date().getTime() + 5.5 * 60 * 60 * 1000).toISOS
 // const path = require('path');
 // IPC Handlers for Result
 //////////////////////////////////////////////////////////////////////////////
-//Export Result Summary as PDF
-
-
-// ipcMain.handle('export-section-results-summary', async (event, { classId, sectionId, examId, academicYearId }) => {
-//   try {
-//     // Step 1: Fetch result data
-//     const studentMarks = await getResultSummary(classId, sectionId, examId, academicYearId);
-
-//     if (!studentMarks || studentMarks.length === 0) {
-//       return { success: false, message: 'No data found for this section.' };
-//     }
-
-//     // Step 2: Choose save location
-//     const { filePath } = await dialog.showSaveDialog({
-//       title: 'Save Results Summary',
-//       defaultPath: `Section_Summary_${classId}_${sectionId}.pdf`,
-//       filters: [{ name: 'PDF Files', extensions: ['pdf'] }]
-//     });
-//     if (!filePath) return { success: false, message: 'Save cancelled' };
-
-//     // Step 3: Create PDF
-//     const doc = new PDFDocument({ margin: 25, size: 'A4', layout: 'landscape' });
-//     const stream = fs.createWriteStream(filePath);
-//     doc.pipe(stream);
-
-//     // Step 4: Title
-//     doc.font('Helvetica-Bold').fontSize(16).text('Section Results Summary', { align: 'center' });
-//     doc.moveDown(0.5);
-//     doc.font('Helvetica').fontSize(10).text(`Class ID: ${classId} | Section ID: ${sectionId} | Exam ID: ${examId} | Academic Year: ${academicYearId}`, { align: 'center' });
-//     doc.moveDown(1);
-
-//     // Step 5: Prepare Table Data
-//     const table = {
-//       headers: [
-//         { label: 'Roll No', property: 'RollNo', width: 50, headerColor: '#d3d3d3' },
-//         { label: 'Name', property: 'Name', width: 150 },
-//         { label: 'Total Marks', property: 'totalMarks', width: 80 },
-//         { label: 'Percentage', property: 'Percentage', width: 80 },
-//         { label: 'Division', property: 'Division', width: 70 },
-//         { label: 'Position', property: 'Position', width: 70 },
-//         { label: 'Result', property: 'Result', width: 70 }
-//       ],
-//       datas: studentMarks.map(s => ({
-//         RollNo: s.RollNo ?? '',
-//         Name: s.Name ?? '',
-//         totalMarks: s.totalMarks ?? '',
-//         Percentage: s.Percentage ? s.Percentage.toFixed(1) + '%' : '',
-//         Division: s.Division ?? '',
-//         Position: s.Position ?? '',
-//         Result: s.Result ?? ''
-//       }))
-//     };
-
-//     // Step 6: Draw Table
-//     await doc.table(table, {
-//       prepareHeader: () => doc.font('Helvetica-Bold').fontSize(9),
-//       prepareRow: (row, i) => doc.font('Helvetica').fontSize(8),
-//       columnSpacing: 5,
-//       padding: 3
-//     });
-
-//     // Step 7: Finalize PDF
-//     doc.end();
-
-//     await new Promise((resolve, reject) => {
-//       stream.on('finish', resolve);
-//       stream.on('error', reject);
-//     });
-
-//     return { success: true, filePath };
-
-//   } catch (err) {
-//     console.error('PDF Export Error:', err);
-//     return { success: false, message: err.message };
-//   }
-// });
-
-
 
 ipcMain.handle('get-mark-entry-status', async (event, examId, examType) => {
   try {
@@ -218,24 +140,27 @@ ipcMain.handle('verify-result-status', async (event, { academicYearId, resultTyp
 })
 
 // Generate results
-ipcMain.handle('generate-results', async (event, { academicYearId, resultType, examId, classId, sectionId, PassingPercentage }) => {
-  
-  console.log("Generating results for Academic Year: Passing percentage", PassingPercentage)
+ipcMain.handle('generate-results', async (event, { academicYearId, examType, resultType, examId, classId, sectionId, PassingPercentage }) => {
+  if(examType === 'selection'){
+    PassingPercentage = 35;
+  }   // Override passing percentage for selection test
+  // console.log("Generating results for Academic Year: Passing percentage", PassingPercentage)
   const transaction = db.transaction(() => {
     // 1. Fetch class info
     const classInfo = db.prepare(`SELECT ClassName FROM Classes WHERE Id = ?`).get(classId);
     if (!classInfo) {
       throw new Error('Class not found.');
     }
-   
+  //  console.log("Class Info in Result Handler file", classInfo.ClassName)
     const Class = romanToInt(classInfo.ClassName);
+    // console.log("Class in integer format for Result Handler file", Class)
 
     try {
       // 2. Fetch students with total marks and arrange by marks desc
       // For 'final' resultType, use FinalCumulativeTotalMarks
       // else, use CumulativeTotalMarks for the given examId
       let students;
-      if (resultType === 'final') {
+      if (examType === 'annual') {
         students = db.prepare(`
           SELECT s.Id as studentId, s.Name, a.RollNo, ctm.TotalMarksObtained, 
                  ctm.TotalMaxMarks, ctm.Percentage 
@@ -275,13 +200,51 @@ ipcMain.handle('generate-results', async (event, { academicYearId, resultType, e
       const passStudents = [];
       const simplePassStudents = [];
       const failStudents = [];
+      let failCount = 0;
+      let lowScoreCount = 0;
+      const examIds = db.prepare(`
+          SELECT a.Id 
+          FROM ActiveExams a
+          JOIN Exams e ON e.Id = a.ExamId
+          WHERE a.AcademicYearId = 2 
+          AND e.ExamType IN ('terminal','annual')
+      `).all().map(row => row.Id);
+      
+      const subjectIds = db.prepare(`
+          SELECT SubjectId 
+          FROM ClassSubjectMapping 
+          WHERE ClassId = ?
+      `).all(classId).map(row => row.SubjectId);
 
       // First pass: determine result status for all students
       for (const student of students) {
         const { studentId, TotalMarksObtained, TotalMaxMarks, Percentage } = student;
         //console.log("totalMaxMarks in Result Handler file", TotalMaxMarks)
         // Count number of subjects failed for each student (non co-scholastic)
-        const failCount = db.prepare(`
+        if(resultType === 'final'){
+          //count for failed subjects in final cumulative marks
+
+          for (const subject of subjectIds) {
+            const result = db.prepare(`
+                SELECT 
+                  SUM(TotalMarksObtained) AS totalObtained,
+                  SUM(TotalMaxMarks) AS totalMax
+                FROM Marks
+                WHERE StudentId = ?
+                AND SubjectId = ?
+                AND ActiveExamId IN (?,?)
+            `).get(studentId, subject, ...examIds);
+
+            const totalObtained = result.totalObtained || 0;
+            const totalMax = result.totalMax || 0;
+
+            if (totalObtained < totalMax * 0.40) failCount++;
+            if (totalObtained < totalMax * 0.20) lowScoreCount++;
+          }
+          // console.log(`Student ${studentId} - Fail Count: ${failCount}, Low Score Count: ${lowScoreCount}, Percentage: ${Percentage}`);
+          
+        } else {
+          failCount = db.prepare(`
           SELECT COUNT(*) AS fails 
           FROM Marks 
           JOIN Subjects sub ON sub.Id = Marks.SubjectId 
@@ -291,21 +254,20 @@ ipcMain.handle('generate-results', async (event, { academicYearId, resultType, e
         `).get(studentId, examId).fails;
        
       //check for less than 20% scored in any subject. If yes, then fail irrespective of overall percentage and fail count.
-        const lowScoreCount = db.prepare(`
+        lowScoreCount = db.prepare(`
           SELECT COUNT(*) AS lowScores
           FROM Marks
           WHERE StudentId = ? AND ActiveExamId = ?
           AND TotalMarksObtained < TotalMaxMarks * 0.20
         `).get(studentId, examId).lowScores;
-
+        }
         // Initialize status
         let resultStatus = "Pass";
-        let division = "N.A.";
-
-        
+        let division = "N.A.";        
 
         if (failCount > 2 || lowScoreCount > 0 || Percentage < PassingPercentage) {
           resultStatus = 'Fail';
+          
         }
         // if (failCount !== 0 && failCount <= 2) {  
         //   resultStatus = 'Simple Pass';
@@ -314,23 +276,12 @@ ipcMain.handle('generate-results', async (event, { academicYearId, resultType, e
           switch (true) {
             // Case: Classes 1 - 10
             case (Class > 0 && Class <= 10): {
+              // console.log("Class 1-10 logic for student", studentId)
               if (failCount !== 0 && failCount <= 2) {
-                const failedSubjects = db.prepare(`
-                  SELECT * 
-                  FROM Marks m 
-                  JOIN Subjects sub ON sub.Id = m.SubjectId 
-                  WHERE m.StudentId = ? AND m.ActiveExamId = ?                  
-                  AND m.TotalMarksObtained < m.TotalMaxMarks * 0.40
-                `).all(studentId, examId);
-                
-                if (failedSubjects.length > 2) {
-                  resultStatus = 'Fail';
-                }
-                 if (Percentage > PassingPercentage) {                
+                // If there are 1 or 2 fails, check if any subject has less than 20% marks
+                 if (lowScoreCount === 0) {                
                   resultStatus = 'Simple Pass';
-                } else if(Percentage < PassingPercentage) {
-                  resultStatus = 'Fail';
-                }
+                } 
               }
               division = getDivision(Percentage, failCount);
               break;
@@ -339,28 +290,22 @@ ipcMain.handle('generate-results', async (event, { academicYearId, resultType, e
             // Case: Classes11+
             case (Class >= 11): {
               if (failCount === 1) {
-                const anysubject = db.prepare(`
-                  SELECT * 
-                  FROM Marks m 
-                  JOIN Subjects sub ON sub.Id = m.SubjectId 
-                  WHERE m.StudentId = ? AND m.ActiveExamId = ? 
-                  AND m.TotalMarksObtained < m.TotalMaxMarks * 0.40
-                `).all(studentId, examId);
-                
-                if (anysubject.length > 0) {
+                if(lowScoreCount > 0){
                   resultStatus = 'Fail';
                 } else {
                   resultStatus = 'Simple Pass';
-                }
-              } else if (failCount > 1) {
+                }    
+              }
+              else if (failCount > 1) {
                 resultStatus = 'Fail';
               }
+
               division = getDivision(Percentage, failCount);
               break;
             }
             
             // Case: KG-I, KG-II, Class 11
-            case (classInfo.ClassName === 'KG-I' || classInfo.ClassName === 'KG-II' || Class === 11): {
+            case (classInfo.ClassName === 'KG-I' || classInfo.ClassName === 'KG-II'): {
               if (failCount > 0) {
                 resultStatus = 'Fail';
               } else {
@@ -493,21 +438,7 @@ ipcMain.handle('generate-results', async (event, { academicYearId, resultType, e
           resultType
         );
       }
-      //sort by marks desc and then by name asc for simple pass and fail students to assign continuing ranks
-      // simplePassStudents.sort((a, b) => {
-      //   if (b.TotalMarksObtained !== a.TotalMarksObtained) {
-      //     return b.TotalMarksObtained - a.TotalMarksObtained;
-      //   }
-      //   return a.Name.localeCompare(b.Name);
-      // });
-
-      // failStudents.sort((a, b) => {
-      //   if (b.TotalMarksObtained !== a.TotalMarksObtained) {
-      //     return b.TotalMarksObtained - a.TotalMarksObtained;
-      //   }
-      //   return a.Name.localeCompare(b.Name);
-      // });
-      // 6. Update ResultStatus
+    
       db.prepare(`
         INSERT OR REPLACE INTO ResultStatus (
           AcademicYearId, ActiveExamId, ClassId, SectionId, 
@@ -541,6 +472,7 @@ function getDivision(percentage, failCount) {
 }
 
 function romanToInt(roman) {
+  console.log(`Converting Roman numeral: ${roman}`);
   const romanNumerals = { 'I': 1, 'V': 5, 'X': 10, 'L': 50, 'C': 100, 'D': 500, 'M': 1000 };
   let total = 0;
   let prevValue = 0;
@@ -556,52 +488,16 @@ function romanToInt(roman) {
       }
       prevValue = value;
   }
+
   return total;
 }
-// Helper functions
 
+// Helper functions
 function getResultStatus(percentage, failCount, PassingPercentage) {
   //if (failCount === 2 && percentage < passingThreshold) return 'Simple Pass'; /////Noooo
   if (failCount > 0 && percentage < PassingPercentage) return 'Fail';
   return 'Pass';
 }
-
-//Check for if Result is Generated for given ClassID and SectionId of CurrentExam Sections.
-
-
-/*
-ipcMain.handle('publish-results', async (event, { academicYearId, examId, classId, sectionId }) => {
-  try {
-    // Check if results are generated
-    const isResult = await db.prepare(`
-      SELECT isGenerated
-      FROM ResultStatus
-      WHERE AcademicYearId = ?
-      AND ActiveExamId = ?
-      AND ClassId = ?
-      AND SectionId = ?
-     `).get(academicYearId, examId, classId, sectionId);
-
-    if (!isResult || !isResult.isGenerated) {
-      //console.log('Results not generated for this exam/class/section.');
-      return { success: false, message: 'Results not generated for this exam/class/section.' };
-    }
-
-    // Update the published status
-    db.prepare(`
-      UPDATE ResultStatus
-      SET isPublished = 1, Last_Modified_at = CURRENT_TIMESTAMP
-      WHERE AcademicYearId =? AND ActiveExamId = ? AND ClassId = ? AND SectionId = ?
-    `).run(academicYearId, examId, classId, sectionId);
-
-    return { success: true, message: 'Results published successfully.' };
-
-  } catch (error) {
-    console.error('Error publishing results:', error);
-    return { success: false, error: error.message };
-  }
-});
-*/
 
 //Get generated Result Summary
 ipcMain.handle('get-result-summary', async (event, { academicYearId, examId, resultType }) => {
@@ -611,7 +507,8 @@ ipcMain.handle('get-result-summary', async (event, { academicYearId, examId, res
     }
     // console.log("Current ExamId for Summary:", examId)
     // Get all class-section mappings (synchronously)
-    const classSections = db.prepare(`
+    let classSections = [];
+    const classes = db.prepare(`
       SELECT 
         c.Id as classId, 
         c.ClassName as className,
@@ -623,6 +520,16 @@ ipcMain.handle('get-result-summary', async (event, { academicYearId, examId, res
       LEFT JOIN Sections s ON csm.SectionId = s.Id
       ORDER BY c.Id, s.Id
     `).all();
+    // console.log("Classes fetched for summary: with result Type", classes, resultType)
+    classSections = classes; // Default to all class sections 
+    if(resultType === 'selection'){
+      classSections = classes.filter(cs => cs.className === 'X'); 
+      console.log("Class sections for selection test", classSections)
+    }
+    else if(resultType === 'final'){
+      classSections = classes.filter(cs => cs.className !== 'X');
+      console.log("Class sections for final test", classSections)
+    } 
 
     const results = [];
 
@@ -1038,7 +945,7 @@ ipcMain.handle('unpublish-results', async (event, { academicYearId, activeExamId
   } 
 });
 
-
+// Helper function to get result summary for a given class, section, and exam
 const getResultSummary = async (classId, sectionId, examId, academicYearId, examType, resultType) => {
          
   const students = db.prepare(`
@@ -1158,6 +1065,7 @@ const getResultSummary = async (classId, sectionId, examId, academicYearId, exam
   return studentMarks;
 }
 
+//Getting Section Result Summary for a given ClassId and SectionId of CurrentExam Sections.
 ipcMain.handle('get-section-results-summary', async (event, { classId, sectionId, examId, academicYearId, examType, resultType }) => {
   try {
    const studentMarks = await getResultSummary(classId, sectionId, examId, academicYearId, examType);
@@ -1171,225 +1079,6 @@ ipcMain.handle('get-section-results-summary', async (event, { classId, sectionId
     return { success: false, error: error.message };
   }
 });
-
-// electron/ipcHandlers/exportSectionResultsSummary.js
-
-// ipcMain.handle('export-section-results-summary', async (event, { classId, sectionId, examId, academicYearId }) => {
-//   try {
-//     const { filePath } = await dialog.showSaveDialog({
-//       title: 'Save Results Summary',
-//       defaultPath: `Section_Summary_${classId}_${sectionId}.pdf`,
-//       filters: [{ name: 'PDF Files', extensions: ['pdf'] }]
-//     });
-//     if (!filePath) return { success: false, message: 'Save cancelled' };
-
-//     const subjects = await getSubjectsByClassId(classId) || [];
-//     const studentMarks = await getResultSummary(classId, sectionId, examId, academicYearId) || [];
-
-//     const doc = new PDFDocument({ margin: 20, size: 'A4', layout: 'landscape' });
-//     const stream = fs.createWriteStream(filePath);
-//     doc.pipe(stream);
-
-//     doc.fontSize(16).text(`Results Summary - Class ${classId} Section ${sectionId}`, { align: 'center' });
-//     doc.moveDown(1);
-
-//     const headers = [
-//       'Roll No',
-//       'Name',
-//       'Exam',
-//       ...subjects.map(s => s.SubjectName),
-//       'Total',
-//       '%',
-//       'Div',
-//       'Pos',
-//       'Result'
-//     ];
-
-//     const examLabels = ['Periodic', 'Half Yearly', 'Total'];
-//     const examKeys = { Periodic: 'periodic', 'Half Yearly': 'terminal', Total: 'total' };
-
-//     const rows = [];
-//     studentMarks.forEach(student => {
-//       examLabels.forEach(exam => {
-//         const row = [
-//           student.RollNo,
-//           student.Name,
-//           exam,
-//         ];
-
-//         subjects.forEach(subj => {
-//           const marks = student.marks[subj.Id];
-//           row.push(marks ? marks[examKeys[exam]] : '-');
-//         });
-
-//         row.push(student.totalMarks || '-');
-//         row.push(student.Percentage || '-');
-//         row.push(student.Division || '-');
-//         row.push(student.Position || '-');
-//         row.push(student.Result || '-');
-
-//         rows.push(row);
-//       });
-//     });
-
-//     doc.table({ headers, rows }, {
-//       prepareHeader: () => doc.font('Helvetica-Bold').fontSize(8),
-//       prepareRow: (row, i) => doc.font('Helvetica').fontSize(7),
-//       columnSpacing: 3,
-//       padding: 3,
-//       width: doc.page.width - 40
-//     });
-
-//     doc.end();
-//     await new Promise((resolve, reject) => {
-//       stream.on('finish', resolve);
-//       stream.on('error', reject);
-//     });
-
-//     return { success: true, filePath };
-//   } catch (err) {
-//     console.error('PDF Export failed:', err);
-//     return { success: false, message: err.message };
-//   }
-// });
-
-// ipcMain.handle(
-//   'export-section-results-summary',
-//   async (event, { classId, sectionId, examId, academicYearId, subjects}) => {
-//     try {
-//       // Ask where to save
-//       const { filePath } = await dialog.showSaveDialog({
-//         title: 'Save Results Summary',
-//         defaultPath: `Section_Summary_${classId}_${sectionId}.pdf`,
-//         filters: [{ name: 'PDF Files', extensions: ['pdf'] }],
-//       });
-//       if (!filePath) return { success: false, message: 'Save cancelled' };
-
-//       // Fetch data
-//       //const subjects = await getSubjectsByClassId(classId);
-//       const studentMarks = await getResultSummary(
-//         classId,
-//         sectionId,
-//         examId,
-//         academicYearId
-//       );
-
-//       // Create PDF
-//       const doc = new PDFDocument({
-//         margin: 20,
-//         size: 'A4',
-//         layout: 'landscape',
-//       });
-//       const stream = fs.createWriteStream(filePath);
-//       doc.pipe(stream);
-
-//       // Title
-//       doc.fontSize(16).text(`Results Summary - Class ${classId} Section ${sectionId}`, {
-//         align: 'center',
-//       });
-//       doc.moveDown(1);
-
-//       // Build headers: Roll No | Name | Exams | subject1 | subject2 ... | Total | % | Div | Pos | Result
-//       const headers = [
-//         'Roll No',
-//         'Name',
-//         'Exam',
-//         ...subjects.map((s) => s.SubjectName),
-//         'Total',
-//         '%',
-//         'Div',
-//         'Pos',
-//         'Result',
-//       ];
-
-//       // Exams to display
-//       const examLabels = ['Periodic', 'Half Yearly', 'Total'];
-//       const examKeys = { Periodic: 'periodic', 'Half Yearly': 'terminal', Total: 'total' };
-
-//       // Build rows
-//       const rows = [];
-//       studentMarks.forEach((student) => {
-//         examLabels.forEach((exam, examIndex) => {
-//           const row = [];
-
-//           // RollNo & Name only in first exam row
-//           if (examIndex === 0) {
-//             row.push({ label: student.RollNo, options: { rowspan: 3 } });
-//             row.push({ label: student.Name, options: { rowspan: 3 } });
-//           } else {
-//             row.push('');
-//             row.push('');
-//           }
-
-//           // Exam Name
-//           row.push(exam);
-
-//           // Subject marks
-//           subjects.forEach((subj) => {
-//             const markObj = student.marks[subj.Id];
-//             const val = markObj ? markObj[examKeys[exam]] : '-';
-//             row.push(val);
-//           });
-
-//           // Totals etc only in first exam row
-//           if (examIndex === 0) {
-//             row.push({ label: student.totalMarks || '-', options: { rowspan: 3 } });
-//             row.push({ label: student.Percentage || '-', options: { rowspan: 3 } });
-//             row.push({ label: student.Division || '-', options: { rowspan: 3 } });
-//             row.push({ label: student.Position || '-', options: { rowspan: 3 } });
-//             row.push({ label: student.Result || '-', options: { rowspan: 3 } });
-//           } else {
-//             row.push('');
-//             row.push('');
-//             row.push('');
-//             row.push('');
-//             row.push('');
-//           }
-
-//           rows.push(row);
-//         });
-//       });
-
-//       // Draw table
-//       await doc.table(
-//         {
-//           headers,
-//           rows,
-//         },
-//         {
-//           prepareHeader: () => doc.font('Helvetica-Bold').fontSize(8),
-//           prepareRow: (row, i) => doc.font('Helvetica').fontSize(7),
-//           columnSpacing: 3,
-//           padding: 3,
-//           width: doc.page.width - 40,
-//         }
-//       );
-
-//       // Finish
-//       doc.end();
-//       await new Promise((resolve, reject) => {
-//         stream.on('finish', resolve);
-//         stream.on('error', reject);
-//       });
-
-//       return { success: true, filePath };
-//     } catch (err) {
-//       console.error('PDF Export failed:', err);
-//       return { success: false, message: err.message };
-//     }
-//   }
-// );
-
-
-
-/*
-const results = students.map(stu => {
-   //   const studentMarks = subjects.map(sub => {
-   //     const markEntry = marksMap[stu.StudentId]?.[sub.Id];
-   //     return markEntry || { periodic: null, terminal: null, total: null, result: null };
-   //   });
-   */
-
 
 
 

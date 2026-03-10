@@ -1,7 +1,7 @@
 <template>
   <div class="form-container box wide">
     <div class="has-text-centered mb-4">
-      <h1 class="title is-4">Selection Report Card</h1>
+      <h1 class="title is-4">Selection Report Card </h1>
          
     </div>
 

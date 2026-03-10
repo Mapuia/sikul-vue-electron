@@ -430,6 +430,7 @@ watch(() => route.query, (newQuery) => {
     examType.value = newQuery.examType
     fetchClasses() 
     getExam()
+    resetSelections()
   }
 }, { immediate: true })
 
@@ -483,6 +484,7 @@ watch(selectedSubjectId, async (subjectId) => {
 
 // ============== LIFECYCLE HOOKS ==============
 onMounted(async () => {
+  selectedClassId.value = ''
   await Promise.all([
     loadAcademicYear(),
     loadActiveExam(),

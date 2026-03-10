@@ -727,13 +727,16 @@ watch(selectedClassId, async (classId) => {
     resetSectionData()    
     return
   } 
-  // await fetchSubjects(classId)
+  fetchSubjects(classId)
   selectedSectionId.value = ''
   marksEntered.value = false
   await fetchSections(classId)
-  await fetchSubjects(classId)
-  studentloaded.value = false 
-  
+  if(sections.value.length === 0) {   
+    await loadStudentsBySectionId()    
+  }
+  else {  
+    studentloaded.value = false 
+  }
 })
 
 // Watch section changes
@@ -824,7 +827,7 @@ async function fetchSections(classId) {
   }
   if (sections.value.length === 0) {
     selectedSectionId.value = 0
-    await verifyResultStatus()
+    // await verifyResultStatus()
     await loadStudentsBySectionId()     
   }
 }
@@ -851,6 +854,7 @@ async function loadStudentsBySectionId() {
 
     if (result.success) {
       students.value = await result.students
+      studentloaded.value = true
       resetMarkData()
     } else {
       resetStudentData()

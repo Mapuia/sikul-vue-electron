@@ -417,6 +417,7 @@ async function generateResult(classId, sectionId) {
     //console.log("Passing Percentage in API:", PassingPercentage.value)
     const response = await window.electronAPI.generateResults({
       academicYearId: CurrentYearId.value,
+      examType: examType.value,
       resultType: resultType.value,  //if examType is not terminal, result will be final
       examId: currentExamId.value,
       classId,

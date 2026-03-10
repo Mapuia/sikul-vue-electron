@@ -387,9 +387,10 @@
                 </div>
                 <div class="columns is-flex is-justify-content-space-between is-align-items-center mx-1 mt-6">
                   <div>Issue Date: {{ currentDate }}</div>
+                  <div class=" is-size-7">Signature of Class Teacher</div>
                   <div class="mr-6 is-size-7">Signature of {{ head.designation || "Principal" }}</div>
                 </div>                
-                <div class="help is-flex is-justify-content-center has-text-centered mt-7">
+                <div class="help is-flex is-justify-content-left mt-7">
                   * This is a computer-generated report card.
                 </div>
               </section>

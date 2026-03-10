@@ -315,7 +315,7 @@ async function fetchResultSummary() {
     const response = await window.electronAPI.getResultSummary({
       academicYearId: CurrentYearId.value,
       examId: currentExamId.value,
-      resultType: examType.value === 'terminal' ? (examType.value === 'selection' ? 'selection' : 'final') : 'final'
+      resultType: examType.value === 'terminal' ? 'terminal' : (examType.value === 'selection' ? 'selection' : 'final')
     })
 
     if (response.success) {
