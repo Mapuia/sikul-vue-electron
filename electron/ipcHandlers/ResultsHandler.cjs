@@ -733,7 +733,7 @@ ipcMain.handle('get-section-results', async (event, { academicYearId, examId, cl
       absent: noOfAbsent,
       passed: results.filter(r => r.ResultStatus === 'Pass').length,
       failed: results.filter(r => r.ResultStatus === 'Fail').length,
-      distinction: results.filter(r => r.Division === 'Distinction').length,
+      distinction: results.filter(r => r.Division === 'Dist').length,
       firstDivision: results.filter(r => r.Division === 'First').length,
       secondDivision: results.filter(r => r.Division === 'Second').length,
       thirdDivision: results.filter(r => r.Division === 'Third').length,      

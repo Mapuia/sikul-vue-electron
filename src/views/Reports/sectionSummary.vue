@@ -207,10 +207,10 @@ function initializeExamConfig() {
       examOrder = ['Periodic', 'Annual', 'Total']
       examKeyMap = { Periodic: 'periodic', 'Annual': 'terminal', Total: 'total' }
       break
-    case 'final':
-      examOrder = ['Periodic', 'Term', 'Total']
-      examKeyMap = { Periodic: 'periodic', 'Term': 'terminal', Total: 'total' }
-      break  
+    // case 'final':
+    //   examOrder = ['Periodic', 'Term', 'Total']
+    //   examKeyMap = { Periodic: 'periodic', 'Term': 'terminal', Total: 'total' }
+    //   break  
     case 'selection':
       examOrder = ['Internal', 'Selection Test', 'Total']
       examKeyMap = { Internal: 'periodic', 'Selection Test': 'terminal', Total: 'total' }
@@ -221,27 +221,27 @@ function initializeExamConfig() {
   }
 }
 
-switch(examType.value) {
-  case 'terminal':
-      examOrder = ['Periodic', 'Half Yearly', 'Total']
-      examKeyMap = { Periodic: 'periodic', 'Half Yearly': 'terminal', Total: 'total' }
-    break
-  case 'annual':
-    examOrder = ['Periodic', 'Annual', 'Total']
-    examKeyMap = { Periodic: 'periodic', 'Annual': 'terminal', Total: 'total' }
-    break
-  case 'final':
-    examOrder = ['Periodic', 'Term', 'Total']
-    examKeyMap = { Periodic: 'periodic', 'Term': 'terminal', Total: 'total' }
-    break  
-  case 'selection':
-    examOrder = ['Internal', 'Selection Test', 'Total']
-    examKeyMap = { Internal: 'periodic', 'Selection Test': 'terminal', Total: 'total' }
-    break
-  default:
+// switch(examType.value) {
+//   case 'terminal':
+//       examOrder = ['Periodic', 'Half Yearly', 'Total']
+//       examKeyMap = { Periodic: 'periodic', 'Half Yearly': 'terminal', Total: 'total' }
+//     break
+//   case 'annual':
+//     examOrder = ['Periodic', 'Annual', 'Total']
+//     examKeyMap = { Periodic: 'periodic', 'Annual': 'terminal', Total: 'total' }
+//     break
+//   case 'final':
+//     examOrder = ['Periodic', 'Term', 'Total']
+//     examKeyMap = { Periodic: 'periodic', 'Term': 'terminal', Total: 'total' }
+//     break  
+//   case 'selection':
+//     examOrder = ['Internal', 'Selection Test', 'Total']
+//     examKeyMap = { Internal: 'periodic', 'Selection Test': 'terminal', Total: 'total' }
+//     break
+//   default:
     
-    break
-}
+//     break
+// }
 
 //  examOrder = ['Periodic', 'Half Yearly', 'Total']
 //  examKeyMap = { Periodic: 'periodic', 'Half Yearly': 'terminal', Total: 'total' }
@@ -294,7 +294,7 @@ async function fetchSubjectsForClass(classId) {
 
 // --- Pagination ---
 const currentPage = ref(1)
-const perPage = 10
+const perPage = 9
 
 const totalPages = computed(() => Math.ceil(studentMarks.value.length / perPage))
 

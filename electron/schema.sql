@@ -1,4 +1,5 @@
 --30.08.2025
+--12.03.2026
 -- Users Table
 CREATE TABLE IF NOT EXISTS Users (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -173,22 +174,6 @@ CREATE TABLE IF NOT EXISTS Marks (
     UNIQUE(StudentId, SubjectId, ActiveExamId)
 );
 
-CREATE TABLE IF NOT EXISTS Marks (
-    Id INTEGER PRIMARY KEY AUTOINCREMENT,
-    ActiveExamId INTEGER NOT NULL,
-    StudentId TEXT NOT NULL,
-    attendance INTEGER,
-    Creation_at DATETIME DEFAULT CURRENT_TIMESTMP,
-    Last_Modified_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    CreatedBy INTEGER REFERENCES Users(Id),
-    ModifiedBy INTEGER REFERENCES Users(Id),
-    FOREIGN KEY (StudentId) REFERENCES Students(Id) ON DELETE CASCADE,
-    FOREIGN KEY (SubjectId) REFERENCES Subjects(Id) ON DELETE CASCADE,
-    FOREIGN KEY (ActiveExamId) REFERENCES ActiveExams(Id) ON DELETE CASCADE,
-    UNIQUE(StudentId, SubjectId, ActiveExamId)
-);
-
-
 -- Mark Entry Status
 CREATE TABLE IF NOT EXISTS MarkEntryStatus (
     Id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -238,6 +223,7 @@ CREATE TABLE IF NOT EXISTS CumulativeTotalMarks (
     Last_Modified_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (StudentId) REFERENCES Students(Id) ON DELETE CASCADE,
     FOREIGN KEY (AcademicYearId) REFERENCES AcademicYears(Id) ON DELETE CASCADE,
+    FOREIGN KEY (ActiveExamId) REFERENCES ActiveExams(Id) ON DELETE CASCADE,
     UNIQUE(StudentId, ActiveExamId, AcademicYearId)
 );
 

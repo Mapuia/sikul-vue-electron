@@ -102,6 +102,22 @@
           <!-- Scholastic Marks Entry -->
         <div v-if="selected === 'scholastic'" class="main-content box column p-5">
           <div v-if="studentloaded && selectedSubjectId">
+            <div class="is-flex is-align-items-center  mb-3 is-justify-content-end">
+                <div class="buttons mt-2">
+                  <button class="button is-primary mr-2" @click="saveMarks(true)" :disabled="isSaving">
+                    <i class="fas fa-pencil-alt mr-2"></i>
+                    {{ isSaving ? 'Saving...' : 'Save as Draft' }}
+                  </button>
+                  <button class="button is-primary mr-2" @click="saveMarks(false)" :disabled="isSaving">
+                    <i class="fas fa-check-circle mr-2"></i>
+                    {{ isSaving ? 'Saving...' : 'Submit Final Marks' }}
+                  </button>
+                  <button class="button is-dark" @click="resetMarkData" :disabled="isSaving">
+                    <i class="fas fa-times mr-2"></i>
+                    Clear all Marks
+                  </button>
+                </div>
+              </div>
             <div class="title tab-heading has-text-weight-bold is-primary is-flex is-justify-content-space-between ">
               <div class="mb-3">
                 {{ selectedSubjectName }} 

@@ -25,7 +25,7 @@ ipcMain.handle('generate-report-card', async (event, {
       AND a.AcademicYearId = ?
       `).get(studentId, academicYearId);
 
-      console.log("ClassId: for working Days", classInfo);
+      // console.log("ClassId: for working Days", classInfo);
     const classInt = romanToInt(classInfo.ClassName);  
       
     try { 
@@ -69,7 +69,7 @@ ipcMain.handle('generate-report-card', async (event, {
         currentTime,
         currentTime
       );
-console.log("Final Remark:", finalRemark, "Result Status:", resultStatus?.ResultStatus);
+// console.log("Final Remark:", finalRemark, "Result Status:", resultStatus?.ResultStatus);
       db.prepare(`
         UPDATE Results
         SET ReportCard = 1
@@ -515,44 +515,15 @@ ipcMain.handle('save-attendance', async (event, attendanceData, examData ) => {
 
 });
 
-
-//converting number to Roman
-
-
-//Converting Roman to Number
-function romanToInt(s) {
-  const romanMap = {
-    'I': 1,
-    'V': 5,
-    'X': 10,
-    'L': 50,
-    'C': 100,
-    'D': 500,
-    'M': 1000
-  };  
-  let total = 0;
-  let prevValue = 0;  
-  for (let i = s.length - 1; i >= 0; i--) {
-    const currentValue = romanMap[s[i]];
-    if (currentValue < prevValue) {
-      total -= currentValue;
-    } else {
-      total += currentValue;
-    }
-    prevValue = currentValue;
-  }
-  return total;
-}
-
 ///////////////////Helper Functions/////////////////////
-function getDivision(percentage, failCount) {
-  if (failCount > 0) return 'N.A.'; 
-  if (percentage >= 80) return 'Dist';
-  if (percentage >= 60) return 'First';
-  if (percentage >= 50) return 'Second';
-  if (percentage >= 40) return 'Third';
-  return 'N.A.';
-}
+// function getDivision(percentage, failCount) {
+//   if (failCount > 0) return 'N.A.'; 
+//   if (percentage >= 80) return 'Dist';
+//   if (percentage >= 60) return 'First';
+//   if (percentage >= 50) return 'Second';
+//   if (percentage >= 40) return 'Third';
+//   return 'N.A.';
+// }
 
 //Convert Roman numeral to Integer
 function romanToInt(roman) {

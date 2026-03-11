@@ -1,6 +1,6 @@
 {
   "name": "sikulapp",
-  "version": "1.4.6",
+  "version": "1.4.67",
   "private": true,
   "type": "module",
   "main": "electron/main.cjs",

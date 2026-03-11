@@ -245,15 +245,14 @@
                         <td>-</td>
                         <td>-</td>
                         <td><b>{{ resultData.TotalMark }}</b></td>
-                        <td>-</td>
+                        <td>{{resultData.ResultStatus}}</td>
                       </tr>
-
                     </tbody>
                   </table>
                 </div>
                   <div class="columns is-vcentered" style="align-items: flex-end;">
                     <div class="column is-half is-flex is-flex-direction-column is-justify-content-flex-end">
-                    <table class="report-card-b">
+                      <table class="report-card-b">
                           <tbody>                            
                             <tr>
                               <th colspan="2" class="summary-header">GENERAL REPORT</th>    
@@ -262,14 +261,14 @@
                               <th class = "summary">No. of Students</th>
                               <td>{{reportCardData.noOfStudents}}</td>
                             </tr>
-                            <tr>
+                            <!-- <tr>
                               <th class = "summary">No. of Working Days</th>
                               <td>{{reportCardData.TotalWorkingDays}}</td>
                             </tr>
                             <tr>  
                               <th class = "summary">No. of Days Present</th>
                               <td>{{reportCardData.TotalPresentDays}}</td>
-                            </tr>
+                            </tr> -->
                             <tr>
                               <th class = "summary">Percentage</th>
                               <td>{{ Number(resultData.Percentage).toFixed(2) }}</td>
@@ -288,27 +287,33 @@
                             </tr>
                           </tbody>
                         </table>
-                      </div>
                     </div>
-                    <div class="">
-                        <table class="report-table">
+                    <div class="column is-half has-text-left is-flex-direction-column">
+                        <table class="report-table" style="margin-bottom: 50px;">
                           <tbody>
                             <tr>
-                              <th class="top" style>Class Teacher's Remark:</th>
-                              <td class="">
-                                <span>{{ reportCardData.TeachersRemark }}</span>                                
+                              <td class="top" style="width: 150px;">Class Teacher's Remark:</td>
+                              <td class="has-text-left">
+                                <span><b>{{ reportCardData.TeachersRemark }}</b></span>                                
                               </td>
                             </tr>
+                          </tbody>
+                        </table>
+                    </div>        
+                  </div>
+                   <div class="column">
+                        <table class="report-table">
+                          <tbody>                            
                           
-                            <tr>
+                            <!-- <tr>
                               <th class="top">Name of Class Teacher:</th>
                               <td class="">
                                <span v-if="classTeacher.name">{{ classTeacher.name }}</span>
                                 <span v-else>Class Teacher's Name</span>
                               </td>
-                            </tr> 
+                            </tr>  -->
                             <tr>
-                              <th class="bottom"></th>
+                              <th class="bottom" style="height:80px"></th>
                               <th class="bottom"></th>
                               <th class="bottom pt-5"></th>
                             </tr>
@@ -320,7 +325,7 @@
                           </tbody>
                         </table>
                       </div>
-
+                      
                 <div class="mb-2" style="position: relative;">
                   <p class="is-size-6">Issue Date: {{ currentDate }}</p>
                 </div>  
@@ -442,7 +447,7 @@ async function fetchHeadInfo() {
         designation: response.data.Designation
       }
 
-      console.log("Head Signatory:", head.value)
+      // console.log("Head Signatory:", head.value)
     }
   } catch (error) {
     console.error('Error fetching head signatory:', error)
@@ -846,7 +851,6 @@ function closeModal() {
 .report-table{
   color: black;
   width:100%;
-  
   border-collapse: collapse;
   margin-bottom: 20px;
 }

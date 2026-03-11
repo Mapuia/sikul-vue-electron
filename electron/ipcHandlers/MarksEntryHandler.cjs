@@ -155,6 +155,7 @@ ipcMain.handle('save-marks', async (event, { marksData, subjectData }) => {
         Percentage = excluded.Percentage,
         Last_Modified_at = excluded.Last_Modified_at
     `);
+     
 
     // Direct query to calculate totals from Marks table
       studentTotalsStmt = db.prepare(`
@@ -233,14 +234,14 @@ ipcMain.handle('save-marks', async (event, { marksData, subjectData }) => {
           currentTime
         );
       }
-
+      // console.log("ExamType:", subjectData.ExamType)
       //when examtype is annual, need to fetch and sum the marks andinsert new entry for final cumulative marks.
       if (subjectData.ExamType === 'annual') {
       // Insert new entry for final cumulative marks
         finalTotalsStmt = db.prepare(`
           SELECT
             StudentId,
-            AcademicYearId,
+            ? as AcademicYearId,       
             ? * 2 AS finalTotalMax, 
             SUM(TotalMarksObtained) AS finalTotalObtained,
             CASE 
@@ -248,14 +249,17 @@ ipcMain.handle('save-marks', async (event, { marksData, subjectData }) => {
               THEN ROUND(SUM(TotalMarksObtained) * 100.0 / (? * 2), 2)
               ELSE 0 
             END AS finalPercentage
-          FROM CumulativeTotalMarks
-          WHERE AcademicYearId = ? AND StudentId = ?
-          GROUP BY StudentId
+          FROM Marks m
+          WHERE ActiveExamId 
+          IN (SELECT Id FROM ActiveExams WHERE AcademicYearId = ?)
+          AND StudentId = ?
+          
         `);
 
         let finalTotals = [];
         for (const student of studentTotals) {
           const finalTotal = finalTotalsStmt.get(
+            subjectData.YearId,
             totalMarks,   // First ? (for finalTotalMax)
             totalMarks,   // Second ? (in CASE)
             totalMarks,   // Third ? (in division)
@@ -266,7 +270,7 @@ ipcMain.handle('save-marks', async (event, { marksData, subjectData }) => {
             finalTotals.push(finalTotal);
           }
         }
-
+        console.log('Final Total:', finalTotals)
         for (const final of finalTotals) {
           finalCumulativeStmt.run(
             final.AcademicYearId,
@@ -279,7 +283,7 @@ ipcMain.handle('save-marks', async (event, { marksData, subjectData }) => {
           );
         }     
     //console.log('Final Totals:', finalTotals);
-    }
+      }
       // Commit transaction
       db.prepare('COMMIT').run();
     
