@@ -304,7 +304,8 @@ CREATE TABLE IF NOT EXISTS ReportCards (
     TotalWorkingDays INTEGER, 
     TotalPresentDays INTEGER,   
     ReportCardType TEXT NOT NULL, -- terminal, final
-    TeachersRemark TEXT, 
+    TeachersRemark TEXT,
+    FinalRemarks TEXT,
     Creation_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     Last_Modified_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (StudentId) REFERENCES Students(Id) ON DELETE CASCADE,
@@ -338,6 +339,8 @@ CREATE TABLE IF NOT EXISTS totalWorkingDays (
     FOREIGN KEY (academicYearId) REFERENCES AcademicYears(Id) ON DELETE CASCADE, 
     FOREIGN KEY (classId) REFERENCES Classes(Id) ON DELETE CASCADE
 )
+
+
 
 -- Foreign Key Indexes
 -- Users

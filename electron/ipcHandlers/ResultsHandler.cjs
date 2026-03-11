@@ -202,65 +202,71 @@ ipcMain.handle('generate-results', async (event, { academicYearId, examType, res
       const failStudents = [];
       let failCount = 0;
       let lowScoreCount = 0;
-      const examIds = db.prepare(`
-          SELECT a.Id 
-          FROM ActiveExams a
-          JOIN Exams e ON e.Id = a.ExamId
-          WHERE a.AcademicYearId = 2 
-          AND e.ExamType IN ('terminal','annual')
-      `).all().map(row => row.Id);
+      // const examIds = db.prepare(`
+      //     SELECT a.Id 
+      //     FROM ActiveExams a
+      //     JOIN Exams e ON e.Id = a.ExamId
+      //     WHERE a.AcademicYearId = ? 
+      //     AND e.ExamType IN ('terminal','annual')
+      // `).all(academicYearId).map(row => row.Id);
       
-      const subjectIds = db.prepare(`
-          SELECT SubjectId 
-          FROM ClassSubjectMapping 
-          WHERE ClassId = ?
-      `).all(classId).map(row => row.SubjectId);
+      // const subjectIds = db.prepare(`
+      //     SELECT SubjectId 
+      //     FROM ClassSubjectMapping 
+      //     WHERE ClassId = ?
+      // `).all(classId).map(row => row.SubjectId);
+      // console.log("Exam IDs for fail count calculation", examIds)
 
       // First pass: determine result status for all students
       for (const student of students) {
         const { studentId, TotalMarksObtained, TotalMaxMarks, Percentage } = student;
-        //console.log("totalMaxMarks in Result Handler file", TotalMaxMarks)
+        // console.log("totalMaxMarks in Result Handler file", TotalMaxMarks)
         // Count number of subjects failed for each student (non co-scholastic)
+        
         if(resultType === 'final'){
           //count for failed subjects in final cumulative marks
-
-          for (const subject of subjectIds) {
-            const result = db.prepare(`
+          let totalObtained = 0;
+          let totalMax = 0;
+          failcount = 0;         
+           const result = db.prepare(`
                 SELECT 
-                  SUM(TotalMarksObtained) AS totalObtained,
+                  SUM(m.TotalMarksObtained) AS totalObtained,
                   SUM(TotalMaxMarks) AS totalMax
-                FROM Marks
-                WHERE StudentId = ?
-                AND SubjectId = ?
-                AND ActiveExamId IN (?,?)
-            `).get(studentId, subject, ...examIds);
+                FROM Marks m
+                JOIN ActiveExams ae ON m.ActiveExamId = ae.Id 
+                LEFT JOIN Exams e ON ae.ExamId = e.Id
+                WHERE m.StudentId = ?                
+                AND ae.AcademicYearId = ?
+            `).get(studentId, academicYearId);            
+          
+           totalObtained = result.totalObtained || 0;
+           totalMax = result.totalMax || 0;
 
-            const totalObtained = result.totalObtained || 0;
-            const totalMax = result.totalMax || 0;
-
-            if (totalObtained < totalMax * 0.40) failCount++;
-            if (totalObtained < totalMax * 0.20) lowScoreCount++;
-          }
-          // console.log(`Student ${studentId} - Fail Count: ${failCount}, Low Score Count: ${lowScoreCount}, Percentage: ${Percentage}`);
+          if (totalObtained < totalMax * 0.40) failCount++;
+          if (totalObtained < totalMax * 0.20) lowScoreCount++;
+         
+          // console.log(`Student ${studentId} Total: ${totalObtained}/${totalMax} - Fail Count: ${failCount}, Low Score Count: ${lowScoreCount}, Percentage: ${Percentage}`);
           
         } else {
-          failCount = db.prepare(`
+          const fCount = db.prepare(`
           SELECT COUNT(*) AS fails 
           FROM Marks 
           JOIN Subjects sub ON sub.Id = Marks.SubjectId 
           WHERE Marks.StudentId = ? AND Marks.ActiveExamId = ? 
           AND sub.SubjectCategory != 'Co-Scholastic' 
           AND Marks.SubjectResult = 'Fail'
-        `).get(studentId, examId).fails;
-       
-      //check for less than 20% scored in any subject. If yes, then fail irrespective of overall percentage and fail count.
-        lowScoreCount = db.prepare(`
+        `).get(studentId, examId);
+          failCount = fCount?.fails;  
+        //check for less than 20% scored in any subject. If yes, then fail irrespective of overall percentage and fail count.
+          const lsCount = db.prepare(`
           SELECT COUNT(*) AS lowScores
           FROM Marks
           WHERE StudentId = ? AND ActiveExamId = ?
           AND TotalMarksObtained < TotalMaxMarks * 0.20
-        `).get(studentId, examId).lowScores;
+        `).get(studentId, examId);
+          lowScoreCount = lsCount?.lowScores;
         }
+        // console.log(`Student ${studentId} - Fail Count: ${failCount}, Low Score Count: ${lowScoreCount}, Percentage: ${Percentage}`);
         // Initialize status
         let resultStatus = "Pass";
         let division = "N.A.";        
@@ -268,11 +274,7 @@ ipcMain.handle('generate-results', async (event, { academicYearId, examType, res
         if (failCount > 2 || lowScoreCount > 0 || Percentage < PassingPercentage) {
           resultStatus = 'Fail';
           
-        }
-        // if (failCount !== 0 && failCount <= 2) {  
-        //   resultStatus = 'Simple Pass';
-        // } 
-        else {
+        }else {
           switch (true) {
             // Case: Classes 1 - 10
             case (Class > 0 && Class <= 10): {
@@ -281,6 +283,7 @@ ipcMain.handle('generate-results', async (event, { academicYearId, examType, res
                 // If there are 1 or 2 fails, check if any subject has less than 20% marks
                  if (lowScoreCount === 0) {                
                   resultStatus = 'Simple Pass';
+                  console.log(`Student ${studentId} has ${failCount} fails but no low scores, hence Simple Pass.`);
                 } 
               }
               division = getDivision(Percentage, failCount);
@@ -322,12 +325,14 @@ ipcMain.handle('generate-results', async (event, { academicYearId, examType, res
           }
         }
 
+       
         // Add student to appropriate array with their status and division
         const studentWithStatus = {
           ...student,
           resultStatus,
           division
         };
+
 
         if (resultStatus === 'Pass') {
           passStudents.push(studentWithStatus);
@@ -462,42 +467,13 @@ ipcMain.handle('generate-results', async (event, { academicYearId, examType, res
   return transaction();
 });
 
-function getDivision(percentage, failCount) {
-  if (failCount > 0) return 'N.A.'; 
-  if (percentage >= 80) return 'Dist';
-  if (percentage >= 60) return 'First';
-  if (percentage >= 50) return 'Second';
-  if (percentage >= 40) return 'Third';
-  return 'N.A.';
-}
 
-function romanToInt(roman) {
-  console.log(`Converting Roman numeral: ${roman}`);
-  const romanNumerals = { 'I': 1, 'V': 5, 'X': 10, 'L': 50, 'C': 100, 'D': 500, 'M': 1000 };
-  let total = 0;
-  let prevValue = 0;
-
-  for (let i = roman.length - 1; i >= 0; i--) {
-      const char = roman[i];
-      const value = romanNumerals[char];
-
-      if (value < prevValue) {
-          total -= value;
-      } else {
-          total += value;
-      }
-      prevValue = value;
-  }
-
-  return total;
-}
-
-// Helper functions
-function getResultStatus(percentage, failCount, PassingPercentage) {
-  //if (failCount === 2 && percentage < passingThreshold) return 'Simple Pass'; /////Noooo
-  if (failCount > 0 && percentage < PassingPercentage) return 'Fail';
-  return 'Pass';
-}
+// // Helper functions
+// function getResultStatus(percentage, failCount, PassingPercentage) {
+//   //if (failCount === 2 && percentage < passingThreshold) return 'Simple Pass'; /////Noooo
+//   if (failCount > 0 && percentage < PassingPercentage) return 'Fail';
+//   return 'Pass';
+// }
 
 //Get generated Result Summary
 ipcMain.handle('get-result-summary', async (event, { academicYearId, examId, resultType }) => {
@@ -1080,5 +1056,66 @@ ipcMain.handle('get-section-results-summary', async (event, { classId, sectionId
   }
 });
 
+///////////////////Helper Functions/////////////////////
+function getDivision(percentage, failCount) {
+  if (failCount > 0) return 'N.A.'; 
+  if (percentage >= 80) return 'Dist';
+  if (percentage >= 60) return 'First';
+  if (percentage >= 50) return 'Second';
+  if (percentage >= 40) return 'Third';
+  return 'N.A.';
+}
+
+//Convert Roman numeral to Integer
+function romanToInt(roman) {
+  // console.log(`Converting Roman numeral: ${roman}`);
+  const romanNumerals = { 'I': 1, 'V': 5, 'X': 10, 'L': 50, 'C': 100, 'D': 500, 'M': 1000 };
+  let total = 0;
+  let prevValue = 0;
+
+  for (let i = roman.length - 1; i >= 0; i--) {
+      const char = roman[i];
+      const value = romanNumerals[char];
+
+      if (value < prevValue) {
+          total -= value;
+      } else {
+          total += value;
+      }
+      prevValue = value;
+  }
+
+  return total;
+}
+
+//Convert Integer to Roman numeral
+function intToRoman(num) {
+  const romanMap = [
+    { value: 1000, symbol: 'M' },
+    { value: 900, symbol: 'CM' },
+    { value: 500, symbol: 'D' },
+    { value: 400, symbol: 'CD' },
+    { value: 100, symbol: 'C' },
+    { value: 90, symbol: 'XC' },
+    { value: 50, symbol: 'L' },
+    { value: 40, symbol: 'XL' },
+    { value: 10, symbol: 'X' },
+    { value: 9, symbol: 'IX' },
+    { value: 5, symbol: 'V' },
+    { value: 4, symbol: 'IV' },
+    { value: 1, symbol: 'I' }
+  ];
+
+  let result = '';
+
+  for (const { value, symbol } of romanMap) {
+    while (num >= value) {
+      result += symbol;
+      num -= value;
+    }
+  }
+
+  return result;
+}
 
 

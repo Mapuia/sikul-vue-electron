@@ -16,16 +16,33 @@ ipcMain.handle('generate-report-card', async (event, {
       console.error('Missing Stident Id for report card generation');
       return { success: false, error: 'Missing required parameters' };
     }
-//
-    // const classId = db.prepare(`
-    //   SELECT ClassId FROM Admissions
-    //   WHERE StudentId = ?
-    //   AND AcademicYearId = ?
-    //   `).get(studentId, academicYearId)?.ClassId;
 
-    //   console.log("ClassId: for working Days", classId);
+    const classInfo = db.prepare(`
+      SELECT c.ClassId, c.ClassName
+      FROM Classes c
+      JOIN Admissions a ON a.ClassId = c.Id
+      WHERE a.StudentId = ?
+      AND a.AcademicYearId = ?
+      `).get(studentId, academicYearId);
+
+      console.log("ClassId: for working Days", classInfo);
+    const classInt = romanToInt(classInfo.ClassName);  
       
-    try {   
+    try { 
+      //getting result status for the student
+      const resultStatus = db.prepare(`
+        SELECT ResultStatus FROM Results
+        WHERE ActiveExamId = ? AND StudentId = ? AND AcademicYearId = ? AND ResultType = ?
+      `).get(examId, studentId, academicYearId, resultType);
+       //Create Final Remarks for the student based on their result status 
+        let finalRemark = '';
+        if(resultStatus !== 'Fail'){
+            const promotedToNextClass = classInt + 1;
+            const promotedToNextClassRoman = intToRoman(promotedToNextClass); // Convert
+            finalRemark = `Promoted to Class - ${promotedToNextClassRoman}`;
+        } else {
+          finalRemark = 'Needs Improvement';
+        }
         // Insert new report card
       db.prepare(`
         INSERT INTO ReportCards (
@@ -34,10 +51,12 @@ ipcMain.handle('generate-report-card', async (event, {
           ActiveExamId,          
           ReportCardType,
           TeachersRemark,
+          FinalRemarks,
           Creation_at,
           Last_Modified_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?)
-         ON CONFLICT (StudentId, AcademicYearId, ActiveExamId, ReportCardType) DO UPDATE SET         
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+         ON CONFLICT (StudentId, AcademicYearId, ActiveExamId, ReportCardType) DO UPDATE SET
+         FinalRemarks = EXCLUDED.FinalRemarks,         
          TeachersRemark = EXCLUDED.TeachersRemark,         
          Last_Modified_at = EXCLUDED.Last_Modified_at
       `).run(
@@ -46,10 +65,11 @@ ipcMain.handle('generate-report-card', async (event, {
         examId,        
         resultType,
         teachersRemark,
+        finalRemark,
         currentTime,
         currentTime
       );
-
+console.log("Final Remark:", finalRemark, "Result Status:", resultStatus?.ResultStatus);
       db.prepare(`
         UPDATE Results
         SET ReportCard = 1
@@ -258,7 +278,7 @@ ipcMain.handle('get-final-report-card', (event, { studentId, classId, sectionId,
       classId
     );
 
-    const finalMarksData = marksData.map(subject => {
+      const finalMarksData = marksData.map(subject => {
       const finalFullMark = subject.FullMark * 2;
       const finalPassMark = subject.PassMark * 2;
       const finalMarks = subject.TerminalTotal + subject.AnnualTotalMarks;
@@ -330,8 +350,7 @@ ipcMain.handle('get-final-report-card', (event, { studentId, classId, sectionId,
     const resultData = {
       terminal: results.find(r => r.ExamType === 'terminal'),
       finalResult: results.find(r => r.ExamType === 'annual')
-    };
-    
+    };    
 
     const reportCardData = db.prepare(`
       SELECT
@@ -339,7 +358,8 @@ ipcMain.handle('get-final-report-card', (event, { studentId, classId, sectionId,
         t.TotalPresentDays as TerminalPresentDays,
         f.TotalWorkingDays as AnnualWorkingDays,
         f.TotalPresentDays as AnnualPresentDays,
-        f.TeachersRemark as FinalRemark
+        f.TeachersRemark as teachersRemark,
+        f.FinalRemarks as finalRemark
       FROM 
         (SELECT * FROM ReportCards 
          WHERE ActiveExamId = ? AND StudentId = ? AND AcademicYearId = ? AND ReportCardType = 'terminal') t
@@ -368,7 +388,8 @@ ipcMain.handle('get-final-report-card', (event, { studentId, classId, sectionId,
       AnnualPresentDays: reportCardData.AnnualPresentDays || 0,
       TotalWorkingDays: (reportCardData.TerminalWorkingDays || 0) + (reportCardData.AnnualWorkingDays || 0),
       TotalPresentDays: (reportCardData.TerminalPresentDays || 0) + (reportCardData.AnnualPresentDays || 0),
-      remarks: reportCardData.FinalRemark || ''
+      teachersRemarks: reportCardData.teachersRemark || '',
+      finalRemarks: reportCardData.finalRemark || ''
     } : null;
 
     /////No of Students
@@ -492,6 +513,96 @@ ipcMain.handle('save-attendance', async (event, attendanceData, examData ) => {
     return { success: false, error: error.message };
   }
 
-
 });
+
+
+//converting number to Roman
+
+
+//Converting Roman to Number
+function romanToInt(s) {
+  const romanMap = {
+    'I': 1,
+    'V': 5,
+    'X': 10,
+    'L': 50,
+    'C': 100,
+    'D': 500,
+    'M': 1000
+  };  
+  let total = 0;
+  let prevValue = 0;  
+  for (let i = s.length - 1; i >= 0; i--) {
+    const currentValue = romanMap[s[i]];
+    if (currentValue < prevValue) {
+      total -= currentValue;
+    } else {
+      total += currentValue;
+    }
+    prevValue = currentValue;
+  }
+  return total;
+}
+
+///////////////////Helper Functions/////////////////////
+function getDivision(percentage, failCount) {
+  if (failCount > 0) return 'N.A.'; 
+  if (percentage >= 80) return 'Dist';
+  if (percentage >= 60) return 'First';
+  if (percentage >= 50) return 'Second';
+  if (percentage >= 40) return 'Third';
+  return 'N.A.';
+}
+
+//Convert Roman numeral to Integer
+function romanToInt(roman) {
+  // console.log(`Converting Roman numeral: ${roman}`);
+  const romanNumerals = { 'I': 1, 'V': 5, 'X': 10, 'L': 50, 'C': 100, 'D': 500, 'M': 1000 };
+  let total = 0;
+  let prevValue = 0;
+
+  for (let i = roman.length - 1; i >= 0; i--) {
+      const char = roman[i];
+      const value = romanNumerals[char];
+
+      if (value < prevValue) {
+          total -= value;
+      } else {
+          total += value;
+      }
+      prevValue = value;
+  }
+
+  return total;
+}
+
+//Convert Integer to Roman numeral
+function intToRoman(num) {
+  const romanMap = [
+    { value: 1000, symbol: 'M' },
+    { value: 900, symbol: 'CM' },
+    { value: 500, symbol: 'D' },
+    { value: 400, symbol: 'CD' },
+    { value: 100, symbol: 'C' },
+    { value: 90, symbol: 'XC' },
+    { value: 50, symbol: 'L' },
+    { value: 40, symbol: 'XL' },
+    { value: 10, symbol: 'X' },
+    { value: 9, symbol: 'IX' },
+    { value: 5, symbol: 'V' },
+    { value: 4, symbol: 'IV' },
+    { value: 1, symbol: 'I' }
+  ];
+
+  let result = '';
+
+  for (const { value, symbol } of romanMap) {
+    while (num >= value) {
+      result += symbol;
+      num -= value;
+    }
+  }
+
+  return result;
+}
 

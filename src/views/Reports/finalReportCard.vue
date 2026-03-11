@@ -369,16 +369,15 @@
                     <table class="report-card-c">
                       <tbody>
                         <tr>
-                          <th >Name of Class Teacher:</th>
+                          <th >Class Teacher's Remark:</th>
                           <td >
-                            <span v-if="classTeacher.name">{{ classTeacher.name }}</span>
-                            <span v-else>Class Teacher's Name</span>
+                            <span><b>{{ reportCardData.teachersRemarks }} </b></span>
                           </td>
                         </tr>
                         <tr>
-                          <th >Class Teacher's Remark:</th>
+                          <th >Final Remark:</th>
                           <td >
-                            <span>{{ reportCardData.remarks }} </span> 
+                            <span><b>{{ reportCardData.finalRemarks }} </b></span> 
                           </td>
                         </tr>
                       </tbody>

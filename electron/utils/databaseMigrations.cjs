@@ -9,19 +9,29 @@ async function runMigrations() {
       // Start transaction
       db.prepare('BEGIN TRANSACTION').run();
 
-      db.prepare(`
-      CREATE TABLE IF NOT EXISTS totalWorkingDays (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        academicYearId INTEGER,
-        classId INTEGER,
-        term TEXT NOT NULL CHECK(term IN ('terminal', 'annual')),
-        noOfWorkingDays INTEGER,
-        creation_At DATETIME DEFAULT CURRENT_TIMESTAMP,
-        modified_At DATETIME DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (academicYearId) REFERENCES AcademicYears(Id) ON DELETE CASCADE, 
-        FOREIGN KEY (classId) REFERENCES Classes(Id) ON DELETE CASCADE
-      )
-      `).run();
+      // db.prepare(`
+      // CREATE TABLE IF NOT EXISTS totalWorkingDays (
+      //   id INTEGER PRIMARY KEY AUTOINCREMENT,
+      //   academicYearId INTEGER,
+      //   classId INTEGER,
+      //   term TEXT NOT NULL CHECK(term IN ('terminal', 'annual')),
+      //   noOfWorkingDays INTEGER,
+      //   creation_At DATETIME DEFAULT CURRENT_TIMESTAMP,
+      //   modified_At DATETIME DEFAULT CURRENT_TIMESTAMP,
+      //   FOREIGN KEY (academicYearId) REFERENCES AcademicYears(Id) ON DELETE CASCADE, 
+      //   FOREIGN KEY (classId) REFERENCES Classes(Id) ON DELETE CASCADE
+      // )
+      // `).run();
+
+      //Check if the column finalRemark already exists in ReportCards table
+      const columnInfo = db.prepare("PRAGMA table_info(ReportCards)").all();
+      const finalRemarkColumn = columnInfo.find(col => col.name === 'FinalRemarks');
+      if (!finalRemarkColumn) {
+        console.log("Adding 'FinalRemarks' column to ReportCards table...");
+        db.prepare(`ALTER TABLE ReportCards ADD COLUMN FinalRemarks TEXT`).run();
+      } else {
+        console.log("'FinalRemarks' column already exists in ReportCards table.");
+      } 
 
       db.prepare('COMMIT').run();
 

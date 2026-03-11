@@ -89,7 +89,7 @@
                     <td>{{ result.Percentage }}%</td>
                     <td>{{ result.ResultStatus === 'Pass' ? result.Division : '' }}</td>
                     <td>
-                      <span class="tag" :class="result.ResultStatus === 'Pass' ? 'is-success' : 'is-danger'">
+                      <span class="tag" :class="result.ResultStatus === 'Pass' ? 'is-success' : result.ResultStatus === 'Fail'? 'is-danger': 'is-warning'">
                         {{ result.ResultStatus }}
                       </span>
                     </td>
