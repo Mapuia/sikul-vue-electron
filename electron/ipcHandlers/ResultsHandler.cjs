@@ -1256,7 +1256,7 @@ const getResultSummary = async (classId, sectionId, examId, academicYearId, exam
         GROUP BY stu.Id, s.Id
         ORDER BY a.RollNo, s.displayOrder;`)
       .all(classId, sectionId, academicYearId);
-      //console.log("Final Marks:", marks)
+      // console.log("Final Marks:", marks)
   }
   else{
     marks = db.prepare(`

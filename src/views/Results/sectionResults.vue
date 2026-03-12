@@ -438,7 +438,7 @@ function downloadPDF() {
   const element = document.querySelector('.print-page') // or any specific container you want
   const opt = {
     margin: 0.1,
-    filename: `Result-Class_${ className.value }_${ sectionName.value }.pdf`,
+    filename: `Final_Result-Class_${ className.value }_${ sectionName.value }-${CurrentYear.value}.pdf`,
     image: { type: 'jpeg', quality: 0.98 },
     html2canvas: { scale: 2 },
     jsPDF:{ unit: 'in', format: 'a4', orientation: 'portrait' }

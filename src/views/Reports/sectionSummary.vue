@@ -207,10 +207,10 @@ function initializeExamConfig() {
       examOrder = ['Periodic', 'Annual', 'Total']
       examKeyMap = { Periodic: 'periodic', 'Annual': 'terminal', Total: 'total' }
       break
-    // case 'final':
-    //   examOrder = ['Periodic', 'Term', 'Total']
-    //   examKeyMap = { Periodic: 'periodic', 'Term': 'terminal', Total: 'total' }
-    //   break  
+    case 'final':
+      examOrder = ['Periodic', 'Term', 'Total']
+      examKeyMap = { Periodic: 'periodic', 'Term': 'terminal', Total: 'total' }
+      break  
     case 'selection':
       examOrder = ['Internal', 'Selection Test', 'Total']
       examKeyMap = { Internal: 'periodic', 'Selection Test': 'terminal', Total: 'total' }
