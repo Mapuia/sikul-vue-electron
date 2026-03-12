@@ -450,6 +450,7 @@ ipcMain.handle('import-student-data', async (event, { academicYearId, filePath }
 // Import Marks Data Handler
 ipcMain.handle('import-marks-data', async (event, { academicYearId, filePath }) => {
   try {
+
     if (!filePath || typeof filePath !== 'string') {
       return { success: false, message: 'Invalid file path.' };
     }
@@ -469,65 +470,332 @@ ipcMain.handle('import-marks-data', async (event, { academicYearId, filePath }) 
         markEntryStatus,
         coScholasticMarks,
         cumulativeMarks,
-        finalCumulativeMarks
+        finalCumulativeMarks,
+        attendance
       }
     } = jsonData;
 
-    // ✅ Academic year mismatch check
+    // Academic year validation
     if (academicYearId !== fileAcademicYearId) {
       return { success: false, message: 'Academic Year ID mismatched with the file.' };
     }
 
     db.exec('BEGIN TRANSACTION');
-    const insertOrIgnore = (table, columns, rows) => {
-      const keys = columns.join(',');
-      const placeholders = columns.map(() => '?').join(',');
-      const stmt = db.prepare(`INSERT OR IGNORE INTO ${table} (${keys}) VALUES (${placeholders})`);
-      for (const row of rows) {
-        const values = columns.map(col => row[col]);
-        stmt.run(values);
+
+    // ---------- MARKS UPSERT ----------
+    if (marks?.length) {
+      const stmt = db.prepare(`
+        INSERT INTO Marks (
+          ActiveExamId, StudentId, SubjectId,
+          PeriodicMaxMark, TerminalMaxMark, TotalMaxMarks,
+          PeriodicMarksObtained, TerminalMarksObtained, TotalMarksObtained,
+          SubjectResult, Appeared, Creation_at, Last_Modified_at,
+          CreatedBy, ModifiedBy
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ON CONFLICT(StudentId, SubjectId, ActiveExamId)
+        DO UPDATE SET
+          PeriodicMaxMark=excluded.PeriodicMaxMark,
+          TerminalMaxMark=excluded.TerminalMaxMark,
+          TotalMaxMarks=excluded.TotalMaxMarks,
+          PeriodicMarksObtained=excluded.PeriodicMarksObtained,
+          TerminalMarksObtained=excluded.TerminalMarksObtained,
+          TotalMarksObtained=excluded.TotalMarksObtained,
+          SubjectResult=excluded.SubjectResult,
+          Appeared=excluded.Appeared,
+          Last_Modified_at=excluded.Last_Modified_at,
+          ModifiedBy=excluded.ModifiedBy
+      `);
+
+      for (const row of marks) {
+        stmt.run(
+          row.ActiveExamId,
+          row.StudentId,
+          row.SubjectId,
+          row.PeriodicMaxMark,
+          row.TerminalMaxMark,
+          row.TotalMaxMarks,
+          row.PeriodicMarksObtained,
+          row.TerminalMarksObtained,
+          row.TotalMarksObtained,
+          row.SubjectResult,
+          row.Appeared,
+          row.Creation_at,
+          row.Last_Modified_at,
+          row.CreatedBy,
+          row.ModifiedBy
+        );
       }
-    };
+    }
 
-    insertOrIgnore('Marks', [
-      'ActiveExamId', 'StudentId', 'SubjectId',
-      'PeriodicMaxMark', 'TerminalMaxMark', 'TotalMaxMarks',
-      'PeriodicMarksObtained', 'TerminalMarksObtained', 'TotalMarksObtained',
-      'SubjectResult', 'Appeared', 'Creation_at', 'Last_Modified_at',
-      'CreatedBy', 'ModifiedBy'
-    ], marks);
+    // ---------- MARK ENTRY STATUS ----------
+    if (markEntryStatus?.length) {
+      const stmt = db.prepare(`
+        INSERT INTO MarkEntryStatus (
+          ActiveExamId, ClassId, SectionId, SubjectId,
+          FinishedEntry, Remarks, Creation_at, Last_Modified_at
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        ON CONFLICT(ActiveExamId, ClassId, SectionId, SubjectId)
+        DO UPDATE SET
+          FinishedEntry=excluded.FinishedEntry,
+          Remarks=excluded.Remarks,
+          Last_Modified_at=excluded.Last_Modified_at
+      `);
 
-    insertOrIgnore('MarkEntryStatus', [
-      'ActiveExamId', 'ClassId', 'SectionId', 'SubjectId',
-      'FinishedEntry', 'Remarks', 'Creation_at', 'Last_Modified_at'
-    ], markEntryStatus);
+      for (const row of markEntryStatus) {
+        stmt.run(
+          row.ActiveExamId,
+          row.ClassId,
+          row.SectionId,
+          row.SubjectId,
+          row.FinishedEntry,
+          row.Remarks,
+          row.Creation_at,
+          row.Last_Modified_at
+        );
+      }
+    }
 
-    insertOrIgnore('CoScholasticMarks', [
-      'ActiveExamId', 'StudentId', 'SubjectId', 'Grade',
-      'Appeared', 'Remark', 'Creation_at', 'Last_Modified_at',
-      'CreatedBy', 'ModifiedBy'
-    ], coScholasticMarks);
+    // ---------- CO-SCHOLASTIC ----------
+    if (coScholasticMarks?.length) {
+      const stmt = db.prepare(`
+        INSERT INTO CoScholasticMarks (
+          ActiveExamId, StudentId, SubjectId, Grade,
+          Appeared, Remark, Creation_at, Last_Modified_at,
+          CreatedBy, ModifiedBy
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ON CONFLICT(StudentId, SubjectId, ActiveExamId)
+        DO UPDATE SET
+          Grade=excluded.Grade,
+          Appeared=excluded.Appeared,
+          Remark=excluded.Remark,
+          Last_Modified_at=excluded.Last_Modified_at,
+          ModifiedBy=excluded.ModifiedBy
+      `);
 
-    insertOrIgnore('CumulativeTotalMarks', [
-      'AcademicYearId', 'ActiveExamId', 'StudentId',
-      'TotalMaxMarks', 'TotalMarksObtained', 'Percentage',
-      'Creation_at', 'Last_Modified_at'
-    ], cumulativeMarks);
+      for (const row of coScholasticMarks) {
+        stmt.run(
+          row.ActiveExamId,
+          row.StudentId,
+          row.SubjectId,
+          row.Grade,
+          row.Appeared,
+          row.Remark,
+          row.Creation_at,
+          row.Last_Modified_at,
+          row.CreatedBy,
+          row.ModifiedBy
+        );
+      }
+    }
 
+    // ---------- CUMULATIVE MARKS ----------
+    if (cumulativeMarks?.length) {
+      const stmt = db.prepare(`
+        INSERT INTO CumulativeTotalMarks (
+          AcademicYearId, ActiveExamId, StudentId,
+          TotalMaxMarks, TotalMarksObtained, Percentage,
+          Creation_at, Last_Modified_at
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        ON CONFLICT(AcademicYearId, ActiveExamId, StudentId)
+        DO UPDATE SET
+          TotalMaxMarks=excluded.TotalMaxMarks,
+          TotalMarksObtained=excluded.TotalMarksObtained,
+          Percentage=excluded.Percentage,
+          Last_Modified_at=excluded.Last_Modified_at
+      `);
+
+      for (const row of cumulativeMarks) {
+        stmt.run(
+          row.AcademicYearId,
+          row.ActiveExamId,
+          row.StudentId,
+          row.TotalMaxMarks,
+          row.TotalMarksObtained,
+          row.Percentage,
+          row.Creation_at,
+          row.Last_Modified_at
+        );
+      }
+    }
+
+    // ---------- FINAL CUMULATIVE ----------
     if (finalCumulativeMarks?.length) {
-      insertOrIgnore('FinalCumulativeTotalMarks', [
-        'AcademicYearId', 'StudentId',
-        'TotalMaxMarks', 'TotalMarksObtained', 'Percentage',
-        'Creation_at', 'Last_Modified_at'
-      ], finalCumulativeMarks);
+      const stmt = db.prepare(`
+        INSERT INTO FinalCumulativeTotalMarks (
+          AcademicYearId, StudentId,
+          TotalMaxMarks, TotalMarksObtained, Percentage,
+          Creation_at, Last_Modified_at
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+        ON CONFLICT(AcademicYearId, StudentId)
+        DO UPDATE SET
+          TotalMaxMarks=excluded.TotalMaxMarks,
+          TotalMarksObtained=excluded.TotalMarksObtained,
+          Percentage=excluded.Percentage,
+          Last_Modified_at=excluded.Last_Modified_at
+      `);
+
+      for (const row of finalCumulativeMarks) {
+        stmt.run(
+          row.AcademicYearId,
+          row.StudentId,
+          row.TotalMaxMarks,
+          row.TotalMarksObtained,
+          row.Percentage,
+          row.Creation_at,
+          row.Last_Modified_at
+        );
+      }
+    }
+
+    // ---------- REPORT CARDS / ATTENDANCE ----------
+    if (attendance?.length) {
+      const stmt = db.prepare(`
+        INSERT INTO ReportCards (
+          StudentId, AcademicYearId, ActiveExamId,
+          TotalWorkingDays, TotalPresentDays,
+          ReportCardType, TeachersRemark, FinalRemarks,
+          Creation_at, Last_Modified_at
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ON CONFLICT(StudentId, AcademicYearId, ActiveExamId, ReportCardType)
+        DO UPDATE SET
+          TotalWorkingDays=excluded.TotalWorkingDays,
+          TotalPresentDays=excluded.TotalPresentDays,
+          TeachersRemark=excluded.TeachersRemark,
+          FinalRemarks=excluded.FinalRemarks,
+          Last_Modified_at=excluded.Last_Modified_at
+      `);
+
+      for (const row of attendance) {
+        stmt.run(
+          row.StudentId,
+          row.AcademicYearId,
+          row.ActiveExamId,
+          row.TotalWorkingDays,
+          row.TotalPresentDays,
+          row.ReportCardType,
+          row.TeachersRemark,
+          row.FinalRemarks,
+          row.Creation_at,
+          row.Last_Modified_at
+        );
+      }
     }
 
     db.exec('COMMIT');
-    return { success: true, message: 'Marks data imported successfully.' };
+
+    return {
+      success: true,
+      message: 'Marks and attendance imported successfully (UPSERT applied).'
+    };
 
   } catch (err) {
+
     db.exec('ROLLBACK');
+
     console.error('Import Marks Error:', err);
-    return { success: false, message: 'Failed to import marks data.', error: err.message };
+
+    return {
+      success: false,
+      message: 'Failed to import marks data.',
+      error: err.message
+    };
   }
 });
+
+
+// ipcMain.handle('import-marks-data', async (event, { academicYearId, filePath }) => {
+//   try {
+//     if (!filePath || typeof filePath !== 'string') {
+//       return { success: false, message: 'Invalid file path.' };
+//     }
+
+//     const rawData = fs.readFileSync(filePath, 'utf-8');
+//     const jsonData = JSON.parse(rawData);
+
+//     const {
+//       metadata,
+//       data: {
+//         examId,
+//         academicYearId: fileAcademicYearId,
+//         classId,
+//         sectionId,
+//         studentIds,
+//         marks,
+//         markEntryStatus,
+//         coScholasticMarks,
+//         cumulativeMarks,
+//         finalCumulativeMarks,
+//         attendance
+//       }
+//     } = jsonData;
+
+//     // ✅ Academic year mismatch check
+//     if (academicYearId !== fileAcademicYearId) {
+//       return { success: false, message: 'Academic Year ID mismatched with the file.' };
+//     }
+
+//     db.exec('BEGIN TRANSACTION');
+//     const insertOrIgnore = (table, columns, rows) => {
+//       const keys = columns.join(',');
+//       const placeholders = columns.map(() => '?').join(',');
+//       const stmt = db.prepare(`INSERT OR IGNORE INTO ${table} (${keys}) VALUES (${placeholders})`);
+//       for (const row of rows) {
+//         const values = columns.map(col => row[col]);
+//         stmt.run(values);
+//       }
+//     };
+
+//     insertOrIgnore('Marks', [
+//       'ActiveExamId', 'StudentId', 'SubjectId',
+//       'PeriodicMaxMark', 'TerminalMaxMark', 'TotalMaxMarks',
+//       'PeriodicMarksObtained', 'TerminalMarksObtained', 'TotalMarksObtained',
+//       'SubjectResult', 'Appeared', 'Creation_at', 'Last_Modified_at',
+//       'CreatedBy', 'ModifiedBy'
+//     ], marks);
+
+//     insertOrIgnore('MarkEntryStatus', [
+//       'ActiveExamId', 'ClassId', 'SectionId', 'SubjectId',
+//       'FinishedEntry', 'Remarks', 'Creation_at', 'Last_Modified_at'
+//     ], markEntryStatus);
+
+//     insertOrIgnore('CoScholasticMarks', [
+//       'ActiveExamId', 'StudentId', 'SubjectId', 'Grade',
+//       'Appeared', 'Remark', 'Creation_at', 'Last_Modified_at',
+//       'CreatedBy', 'ModifiedBy'
+//     ], coScholasticMarks);
+
+//     insertOrIgnore('CumulativeTotalMarks', [
+//       'AcademicYearId', 'ActiveExamId', 'StudentId',
+//       'TotalMaxMarks', 'TotalMarksObtained', 'Percentage',
+//       'Creation_at', 'Last_Modified_at'
+//     ], cumulativeMarks);
+
+//     if (finalCumulativeMarks?.length) {
+//       insertOrIgnore('FinalCumulativeTotalMarks', [
+//         'AcademicYearId', 'StudentId',
+//         'TotalMaxMarks', 'TotalMarksObtained', 'Percentage',
+//         'Creation_at', 'Last_Modified_at'
+//       ], finalCumulativeMarks);
+
+//       insertOrIgnore('ReportCards', [
+//       'TotalWorkingDays', 'TotalPresentDays', 'StudentId',
+//       'TotalMaxMarks', 'TotalMarksObtained', 'Percentage',
+//       'Creation_at', 'Last_Modified_at'
+//     ], cumulativeMarks);
+//     }
+
+//     db.exec('COMMIT');
+//     return { success: true, message: 'Marks data imported successfully.' };
+
+//   } catch (err) {
+//     db.exec('ROLLBACK');
+//     console.error('Import Marks Error:', err);
+//     return { success: false, message: 'Failed to import marks data.', error: err.message };
+//   }
+// });

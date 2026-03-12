@@ -308,6 +308,10 @@ ipcMain.handle('export-marks-data', async (event, {
           SELECT * FROM FinalCumulativeTotalMarks WHERE AcademicYearId = ? AND StudentId IN (${placeholders})
         `).all(academicYearId, ...studentIds);
       }
+      const attendance = db.prepare(`
+        SELECT * FROM ReportCards WHERE AcademicYearId = ? AND StudentId IN (${placeholders})
+        `).all(academicYearId, ...studentIds);
+
 
       // 3. Construct Export Object
       const exportData = {
@@ -322,7 +326,8 @@ ipcMain.handle('export-marks-data', async (event, {
             'MarkEntryStatus',
             'CoScholasticMarks',
             'CumulativeTotalMarks',
-            ...(examType === 'annual' ? ['FinalCumulativeTotalMarks'] : [])
+            ...(examType === 'annual' ? ['FinalCumulativeTotalMarks'] : []),
+            'attendance'
           ],
           recordCounts: {
             students: studentIds.length,
@@ -330,7 +335,8 @@ ipcMain.handle('export-marks-data', async (event, {
             markEntryStatus: markEntryStatus.length,
             coScholasticMarks: coScholasticMarks.length,
             cumulativeMarks: cumulativeMarks.length,
-            finalCumulativeMarks: finalCumulativeMarks.length
+            finalCumulativeMarks: finalCumulativeMarks.length,
+            attendance: attendance.length
           }
         },
         data: {
@@ -343,7 +349,8 @@ ipcMain.handle('export-marks-data', async (event, {
           markEntryStatus,
           coScholasticMarks,
           cumulativeMarks,
-          finalCumulativeMarks: examType === 'annual' ? finalCumulativeMarks : undefined
+          finalCumulativeMarks: examType === 'annual' ? finalCumulativeMarks : undefined,
+          attendance
         }
       };
 
