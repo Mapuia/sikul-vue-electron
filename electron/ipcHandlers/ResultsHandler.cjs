@@ -676,7 +676,6 @@ ipcMain.handle('generate-results', async (event, { academicYearId, examType, res
 
       let rank = 0;
       let lastScore = null;
-      let sameRankCount = 0;
 
       const processRank = (list, giveRank = true) => {
 
@@ -684,11 +683,8 @@ ipcMain.handle('generate-results', async (event, { academicYearId, examType, res
 
           const { studentId, TotalMarksObtained, TotalMaxMarks, Percentage, resultStatus, division } = student;
 
-          if (lastScore === TotalMarksObtained) {
-            sameRankCount++;
-          } else {
-            rank += 1 + sameRankCount;
-            sameRankCount = 0;
+          if (lastScore !== TotalMarksObtained) {
+            rank++;
           }
 
           lastScore = TotalMarksObtained;
@@ -705,7 +701,6 @@ ipcMain.handle('generate-results', async (event, { academicYearId, examType, res
             resultStatus,
             resultType
           );
-
         }
       };
 
