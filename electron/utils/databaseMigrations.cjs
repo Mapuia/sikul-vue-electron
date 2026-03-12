@@ -24,12 +24,12 @@ async function runMigrations() {
       // `).run();
 
       //Check if the column finalRemark already exists in ReportCards table and if not create
-      const columnInfo = db.prepare("PRAGMA table_info(ReportCards)").all();
-      const finalRemarkColumn = columnInfo.find(col => col.name === 'FinalRemarks');
-      if (!finalRemarkColumn) {
-        console.log("Adding 'FinalRemarks' column to ReportCards table...");
-        db.prepare(`ALTER TABLE ReportCards ADD COLUMN FinalRemarks TEXT`).run();
-      } 
+      // const columnInfo = db.prepare("PRAGMA table_info(ReportCards)").all();
+      // const finalRemarkColumn = columnInfo.find(col => col.name === 'FinalRemarks');
+      // if (!finalRemarkColumn) {
+      //   console.log("Adding 'FinalRemarks' column to ReportCards table...");
+      //   db.prepare(`ALTER TABLE ReportCards ADD COLUMN FinalRemarks TEXT`).run();
+      // } 
       // else {
       //   console.log("'FinalRemarks' column already exists in ReportCards table.");
       // } 
