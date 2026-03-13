@@ -4,44 +4,111 @@ const { db } = require('../database.cjs');
 
 async function runMigrations() {
   try {
-    // Check if the column already exists
-    
-      // Start transaction
-      db.prepare('BEGIN TRANSACTION').run();
 
-      // db.prepare(`
-      // CREATE TABLE IF NOT EXISTS totalWorkingDays (
-      //   id INTEGER PRIMARY KEY AUTOINCREMENT,
-      //   academicYearId INTEGER,
-      //   classId INTEGER,
-      //   term TEXT NOT NULL CHECK(term IN ('terminal', 'annual')),
-      //   noOfWorkingDays INTEGER,
-      //   creation_At DATETIME DEFAULT CURRENT_TIMESTAMP,
-      //   modified_At DATETIME DEFAULT CURRENT_TIMESTAMP,
-      //   FOREIGN KEY (academicYearId) REFERENCES AcademicYears(Id) ON DELETE CASCADE, 
-      //   FOREIGN KEY (classId) REFERENCES Classes(Id) ON DELETE CASCADE
-      // )
-      // `).run();
+    db.prepare('BEGIN TRANSACTION').run();
 
-      //Check if the column finalRemark already exists in ReportCards table and if not create
-      // const columnInfo = db.prepare("PRAGMA table_info(ReportCards)").all();
-      // const finalRemarkColumn = columnInfo.find(col => col.name === 'FinalRemarks');
-      // if (!finalRemarkColumn) {
-      //   console.log("Adding 'FinalRemarks' column to ReportCards table...");
-      //   db.prepare(`ALTER TABLE ReportCards ADD COLUMN FinalRemarks TEXT`).run();
-      // } 
-      // else {
-      //   console.log("'FinalRemarks' column already exists in ReportCards table.");
-      // } 
+    db.exec("DELETE FROM AcademicYears WHERE Id = 1");
 
-      db.prepare('COMMIT').run();
+    const columnInfo = db.prepare("PRAGMA table_info(Marks)").all();
+    const academicYearColumn = columnInfo.find(col => col.name === 'AcademicYearId');
+
+    if (!academicYearColumn) {
+
+      console.log("Migrating Marks table to add AcademicYearId...");
+
+      // 1. Rename old table
+      db.exec("ALTER TABLE Marks RENAME TO Marks_old");
+
+      // 2. Create new Marks table
+      db.exec(`
+        CREATE TABLE Marks (
+          Id INTEGER PRIMARY KEY AUTOINCREMENT,
+          AcademicYearId INTEGER,
+          ActiveExamId INTEGER NOT NULL,
+          StudentId TEXT NOT NULL,
+          SubjectId INTEGER NOT NULL,
+          PeriodicMaxMark DECIMAL(5,2),
+          TerminalMaxMark DECIMAL(5,2),
+          TotalMaxMarks DECIMAL(5,2),
+          PeriodicMarksObtained DECIMAL(5,2),
+          TerminalMarksObtained DECIMAL(5,2),
+          TotalMarksObtained DECIMAL(5,2),
+          SubjectResult TEXT,
+          Appeared BOOLEAN,
+          Creation_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          Last_Modified_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          CreatedBy INTEGER REFERENCES Users(Id),
+          ModifiedBy INTEGER REFERENCES Users(Id),
+          FOREIGN KEY (AcademicYearId) REFERENCES AcademicYears(Id) ON DELETE CASCADE,
+          FOREIGN KEY (StudentId) REFERENCES Students(Id) ON DELETE CASCADE,
+          FOREIGN KEY (SubjectId) REFERENCES Subjects(Id) ON DELETE CASCADE,
+          FOREIGN KEY (ActiveExamId) REFERENCES ActiveExams(Id) ON DELETE CASCADE,
+          UNIQUE(StudentId, SubjectId, ActiveExamId, AcademicYearId)
+        )
+      `);
+
+      // 3. Move old data and assign AcademicYearId = 2
+      db.exec(`
+        INSERT INTO Marks (
+          Id,
+          AcademicYearId,
+          ActiveExamId,
+          StudentId,
+          SubjectId,
+          PeriodicMaxMark,
+          TerminalMaxMark,
+          TotalMaxMarks,
+          PeriodicMarksObtained,
+          TerminalMarksObtained,
+          TotalMarksObtained,
+          SubjectResult,
+          Appeared,
+          Creation_at,
+          Last_Modified_at,
+          CreatedBy,
+          ModifiedBy
+        )
+        SELECT
+          Id,
+          2,
+          ActiveExamId,
+          StudentId,
+          SubjectId,
+          PeriodicMaxMark,
+          TerminalMaxMark,
+          TotalMaxMarks,
+          PeriodicMarksObtained,
+          TerminalMarksObtained,
+          TotalMarksObtained,
+          SubjectResult,
+          Appeared,
+          Creation_at,
+          Last_Modified_at,
+          CreatedBy,
+          ModifiedBy
+        FROM Marks_old
+      `);
+
+      // 4. Drop old table
+      db.exec("DROP TABLE Marks_old");
+
+      console.log("Marks table migration completed.");
+
+    } else {
+      console.error("'AcademicYearId' column already exists in Marks table.");
+    }
+
+    db.prepare('COMMIT').run();
 
   } catch (error) {
+
     db.prepare('ROLLBACK').run();
     console.error('Migration failed:', error);
     throw error;
+
   }
 }
+
 module.exports = { runMigrations };
 
 

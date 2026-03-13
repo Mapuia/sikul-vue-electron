@@ -153,6 +153,7 @@ CREATE TABLE Admissions (
 -- Marks Table
 CREATE TABLE IF NOT EXISTS Marks (
     Id INTEGER PRIMARY KEY AUTOINCREMENT,
+    AcademiYearId INTEGER,
     ActiveExamId INTEGER NOT NULL,
     StudentId TEXT NOT NULL,
     SubjectId INTEGER NOT NULL,
@@ -168,10 +169,11 @@ CREATE TABLE IF NOT EXISTS Marks (
     Last_Modified_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     CreatedBy INTEGER REFERENCES Users(Id),
     ModifiedBy INTEGER REFERENCES Users(Id),
+    FOREIGN KEY (AcademicYearId) REFERENCES AcademicYears(Id) ON DELETE CASCADE,
     FOREIGN KEY (StudentId) REFERENCES Students(Id) ON DELETE CASCADE,
     FOREIGN KEY (SubjectId) REFERENCES Subjects(Id) ON DELETE CASCADE,
     FOREIGN KEY (ActiveExamId) REFERENCES ActiveExams(Id) ON DELETE CASCADE,
-    UNIQUE(StudentId, SubjectId, ActiveExamId)
+    UNIQUE(StudentId, SubjectId, ActiveExamId, AcademicYearId)
 );
 
 -- Mark Entry Status

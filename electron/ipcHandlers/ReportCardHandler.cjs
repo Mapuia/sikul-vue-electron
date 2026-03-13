@@ -35,14 +35,16 @@ ipcMain.handle('generate-report-card', async (event, {
         WHERE ActiveExamId = ? AND StudentId = ? AND AcademicYearId = ? AND ResultType = ?
       `).get(examId, studentId, academicYearId, resultType);
        //Create Final Remarks for the student based on their result status 
+       
         let finalRemark = '';
-        if(resultStatus !== 'Fail'){
+        if(resultStatus?.ResultStatus !== 'Fail'){
             const promotedToNextClass = classInt + 1;
             const promotedToNextClassRoman = intToRoman(promotedToNextClass); // Convert
             finalRemark = `Promoted to Class - ${promotedToNextClassRoman}`;
         } else {
-          finalRemark = 'Needs Improvement';
+          finalRemark = `Needs Improvement`;
         }
+        //console.log("Final Remark:",finalRemark)
         // Insert new report card
       db.prepare(`
         INSERT INTO ReportCards (

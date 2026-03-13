@@ -21,20 +21,18 @@
               v-model="newSubjectCode"
               @input="newSubjectCode = newSubjectCode.toUpperCase()"
               placeholder="e.g. MATH, SCI, HIST etc..."
-              
             />
           </div>
           <p class="help is-danger" v-if="addSubjectCodeErrorMessage">{{ addSubjectCodeErrorMessage }}</p>
         </div>
         <div class="field"> 
-        <label class="label">Subject Name</label>
+          <label class="label">Subject Name</label>
           <div class="control">
             <input
               class="input"
               type="text"
               v-model="newSubjectName"
               placeholder="e.g. Mathematics, Science etc..."
-              
             />
           </div>
           <p class="help is-danger" v-if="addSubjectErrorMessage">{{ addSubjectErrorMessage }}</p>
@@ -60,10 +58,9 @@
           <div class="control">
             <input
               class="input"
-              type="text"
+              type="number"
               v-model="newFullMark"
               placeholder="e.g. 100, 50 ..."
-              
             />
           </div>
           <p class="help is-danger" v-if="addFullMarkErrorMessage">{{ addFullMarkErrorMessage }}</p>
@@ -74,24 +71,21 @@
           <i class='help'>Students need to score at least 25% in core subjects to be promoted (e.g. Maths & Science)</i>
           <div class="control">            
             <input type="checkbox" v-model="newIsCore" />
-            
           </div>
           <p class="help is-danger" v-if="addIsCoreErrorMessage">{{ addIsCoreErrorMessage }}</p>
         </div>
 
-       
         <div class="field">
           <label class="label">Display Order</label>
           <div class="control">
             <input
               class="input"
-              type="text"
+              type="number"
               v-model="newDisplayOrder"
               placeholder="e.g. 1, 2..."
               required
             />
           </div>  
-
           <p class="help is-danger" v-if="addDisplayOrderErrorMessage">{{ addDisplayOrderErrorMessage }}</p>
         </div>
 
@@ -127,6 +121,7 @@
         <table class="table is-fullwidth">
           <thead>
             <tr>
+              <th>ID</th>
               <th>Subject Code</th>
               <th>Subject Name</th>
               <th>Subject Category</th>
@@ -138,6 +133,9 @@
           </thead>
           <tbody>
             <tr v-for="subject in subjects" :key="subject.Id">
+              <td >
+                {{ subject.Id }}
+              </td>
               <td v-if="editingId !== subject.Id">
                 {{ subject.SubjectCode }}
               </td>
@@ -145,7 +143,8 @@
                 <input 
                   type="text" 
                   class="input"
-                  v-model="editSubjectCode"          
+                  v-model="editSubjectCode"
+                  @input="editSubjectCode = editSubjectCode.toUpperCase()"
                 >
               </td>
               
@@ -157,10 +156,10 @@
                   type="text" 
                   class="input" 
                   v-model="editSubjectName"
-                  @input="editSubjectName = editSubjectName()"
                   required
                 />
               </td>
+              
               <td v-if="editingId !== subject.Id">
                 {{ subject.SubjectCategory }}
               </td>
@@ -187,12 +186,13 @@
               </td>
 
               <td v-if="editingId !== subject.Id">
-                <span class="tag" :class="subject.IsCore? 'is-success': 'is-dark' " >{{ subject.IsCore? "Yes": "No" }}</span>
+                <span class="tag" :class="subject.IsCore ? 'is-success' : 'is-dark'">{{ subject.IsCore ? "Yes" : "No" }}</span>
               </td>
-
               <td v-else>
-                <input type="checkbox" v-model="editIsCore" />
-                  Core subject?     
+                <label class="checkbox">
+                  <input type="checkbox" v-model="editIsCore" />
+                  Core subject?
+                </label>
               </td>
 
               <td v-if="editingId !== subject.Id">
@@ -215,7 +215,7 @@
                     v-if="editingId !== subject.Id"
                     :disabled="isSubmitting"
                   >
-                     <i class="fas fa-edit"></i>
+                    <i class="fas fa-edit"></i>
                   </button>
                   <button
                     class="button is-small is-success no-padding"
@@ -236,7 +236,6 @@
                   >
                     <i class="fas fa-times"></i>
                   </button>
-                  <!--Delete button -->
                   <button
                     class="button is-small is-danger no-padding"
                     @click="deleteSubject(subject)"
@@ -302,9 +301,13 @@ async function fetchSubjects() {
     const response = await window.electronAPI.getSubjects();
     if (response.success) {
       subjects.value = response.subjects;
-      newDisplayOrder.value = subjects.value.length + 1; // Set default display order
-      
-    }else{
+      // Set default display order for new subject
+      if (subjects.value.length > 0) {
+        newDisplayOrder.value = Math.max(...subjects.value.map(s => s.DisplayOrder || 0)) + 1;
+      } else {
+        newDisplayOrder.value = 1;
+      }
+    } else {
       errorMessage.value = response.message || 'Failed to fetch subjects.';
     }
   } catch (err) {
@@ -338,13 +341,16 @@ async function submitSubjectForm() {
     addSubjectCategoryErrorMessage.value = 'Subject Category is required.';
     return;
   }
-  if (!newFullMark.value.trim() || isNaN(newFullMark.value)) {
-    if(newSubjectCategory.value !== 'Co-Scholastic'){
+  
+  // Validate Full Mark based on category
+  if (newSubjectCategory.value !== 'Co-Scholastics') {
+    if (!newFullMark.value || isNaN(newFullMark.value) || newFullMark.value <= 0) {
       addFullMarkErrorMessage.value = 'Valid Full Mark is required.';
       return;
     }
   }
-  if (!newDisplayOrder.value) {
+  
+  if (!newDisplayOrder.value || isNaN(newDisplayOrder.value) || newDisplayOrder.value <= 0) {
     addDisplayOrderErrorMessage.value = 'Valid Display Order is required.';
     return;
   }
@@ -355,7 +361,7 @@ async function submitSubjectForm() {
       subjectCode: newSubjectCode.value.trim().toUpperCase(),
       subjectName: newSubjectName.value.trim(),
       subjectCategory: newSubjectCategory.value,
-      fullMark: parseInt(newFullMark.value) || 0,
+      fullMark: newSubjectCategory.value !== 'Co-Scholastics' ? parseFloat(newFullMark.value) : 0,
       isCore: newIsCore.value ? 1 : 0,
       displayOrder: parseInt(newDisplayOrder.value)
     };
@@ -365,12 +371,7 @@ async function submitSubjectForm() {
     if (response.success) {
       successMessage.value = 'Subject added successfully.';
       showAddSubjectForm.value = false;
-      newSubjectCode.value = '';
-      newSubjectName.value = '';
-      newSubjectCategory.value = '';
-      newFullMark.value = '';
-      newIsCore.value = false;
-      newDisplayOrder.value = '';
+      resetSubjectForm();
       await fetchSubjects();
     } else {
       errorMessage.value = response.message || 'Failed to add subject.';
@@ -393,18 +394,22 @@ function resetSubjectForm() {
   newSubjectCategory.value = '';
   newFullMark.value = '';
   newIsCore.value = false;
-  newDisplayOrder.value = '';
+  if (subjects.value.length > 0) {
+    newDisplayOrder.value = Math.max(...subjects.value.map(s => s.DisplayOrder || 0)) + 1;
+  } else {
+    newDisplayOrder.value = 1;
+  }
 }
 
 // Start editing subject
 function editSubject(subject) {
   editingId.value = subject.Id;
-  editSubjectCode.value = subject.SubjectCode;
-  editSubjectName.value = subject.SubjectName;
-  editSubjectCategory.value = subject.SubjectCategory;
-  editFullMark.value = subject.FullMark;
-  editIsCore.value = subject.IsCore === 1;
-  editDisplayOrder.value = subject.DisplayOrder;
+  editSubjectCode.value = subject.SubjectCode || '';
+  editSubjectName.value = subject.SubjectName || '';
+  editSubjectCategory.value = subject.SubjectCategory || '';
+  editFullMark.value = subject.FullMark || '';
+  editIsCore.value = subject.IsCore === 1 || subject.IsCore === true;
+  editDisplayOrder.value = subject.DisplayOrder || '';
 }
 
 // Cancel edit mode
@@ -420,6 +425,7 @@ function cancelEditSubject() {
 
 // Save edited subject
 async function saveEditSubject(subject) {
+  // Validate inputs
   if (!editSubjectCode.value.trim()) {
     errorMessage.value = 'Subject Code cannot be empty.';
     return;
@@ -432,11 +438,16 @@ async function saveEditSubject(subject) {
     errorMessage.value = 'Subject Category is required.';
     return;
   }
-  if (!editFullMark.value || isNaN(editFullMark.value)) {
-    errorMessage.value = 'Valid Full Mark is required.';
-    return;
+  
+  // Validate Full Mark based on category
+  if (editSubjectCategory.value !== 'Co-Scholastics') {
+    if (!editFullMark.value || isNaN(editFullMark.value) || editFullMark.value <= 0) {
+      errorMessage.value = 'Valid Full Mark is required.';
+      return;
+    }
   }
-  if (!editDisplayOrder.value || isNaN(editDisplayOrder.value)) {
+  
+  if (!editDisplayOrder.value || isNaN(editDisplayOrder.value) || editDisplayOrder.value <= 0) {
     errorMessage.value = 'Valid Display Order is required.';
     return;
   }
@@ -445,10 +456,10 @@ async function saveEditSubject(subject) {
   try {
     const response = await window.electronAPI.updateSubject({
       id: subject.Id,
-      subjectCode: editSubjectCode.value.trim().toUpperCase(), // Add this
+      subjectCode: editSubjectCode.value.trim().toUpperCase(),
       subjectName: editSubjectName.value.trim(),
       subjectCategory: editSubjectCategory.value,
-      fullMark: parseInt(editFullMark.value),
+      fullMark: editSubjectCategory.value !== 'Co-Scholastics' ? parseFloat(editFullMark.value) : 0,
       isCore: editIsCore.value ? 1 : 0,
       displayOrder: parseInt(editDisplayOrder.value)
     });

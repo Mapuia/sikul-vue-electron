@@ -482,19 +482,20 @@ ipcMain.handle('import-marks-data', async (event, { academicYearId, filePath }) 
 
     db.exec('BEGIN TRANSACTION');
 
-    // ---------- MARKS UPSERT ----------
+    // ---------- MARKS UPSERT WITH ACADEMICYEARID ----------
     if (marks?.length) {
       const stmt = db.prepare(`
         INSERT INTO Marks (
-          ActiveExamId, StudentId, SubjectId,
+          ActiveExamId, StudentId, SubjectId, AcademicYearId,
           PeriodicMaxMark, TerminalMaxMark, TotalMaxMarks,
           PeriodicMarksObtained, TerminalMarksObtained, TotalMarksObtained,
           SubjectResult, Appeared, Creation_at, Last_Modified_at,
           CreatedBy, ModifiedBy
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        ON CONFLICT(StudentId, SubjectId, ActiveExamId)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ON CONFLICT(StudentId, SubjectId, ActiveExamId, AcademicYearId)
         DO UPDATE SET
+          AcademicYearId=excluded.AcademicYearId,
           PeriodicMaxMark=excluded.PeriodicMaxMark,
           TerminalMaxMark=excluded.TerminalMaxMark,
           TotalMaxMarks=excluded.TotalMaxMarks,
@@ -512,6 +513,7 @@ ipcMain.handle('import-marks-data', async (event, { academicYearId, filePath }) 
           row.ActiveExamId,
           row.StudentId,
           row.SubjectId,
+          academicYearId, // Add the academicYearId from parameter
           row.PeriodicMaxMark,
           row.TerminalMaxMark,
           row.TotalMaxMarks,

@@ -76,6 +76,14 @@
                   </td>
                   <td v-if="item.resultStatus.isPublished" class="has-text-centered">
                     <button
+                      class="button is-small is-primary mr-2 "
+                      :disabled="isGenerating || item.resultGenerating"
+                      @click="generateResult(item.classId, item.sectionId)"
+                    >
+                      <span v-if="item.resultGenerating">Generating...</span>
+                      <span v-else><i class="fas fa-redo mr-2"></i>Re-Generate Result</span>
+                    </button>
+                    <button
                       class="button is-small is-warning"
                       @click="loadModalResults(item.classId, item.sectionId, item.resultStatus.isPublished)"
                     > <i class = "fas fa-eye mr-2"></i>

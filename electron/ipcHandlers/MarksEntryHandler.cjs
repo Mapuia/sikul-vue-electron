@@ -60,7 +60,7 @@ ipcMain.handle('save-marks', async (event, { marksData, subjectData }) => {
       `).get(subjectData.ClassId).TotalFullMark;
 
   if(subjectData.WithoutInternalMarks) {
-    totalMarks = 0.8 * totalMarks; // Assuming internal marks are 80% of total
+    totalMarks = 0.8 * totalMarks; 
   }
   //console.log('Check Total Marks:', totalMarks);
   // Prepare all statements outside transaction first
@@ -75,6 +75,7 @@ ipcMain.handle('save-marks', async (event, { marksData, subjectData }) => {
     // Prepare statements
     upsertMarkStmt = db.prepare(`
       INSERT INTO Marks (
+        AcademicYearId,
         ActiveExamId,
         StudentId,
         SubjectId,
@@ -89,8 +90,8 @@ ipcMain.handle('save-marks', async (event, { marksData, subjectData }) => {
         Last_Modified_at,
         CreatedBy,
         ModifiedBy       
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-      ON CONFLICT(StudentId, SubjectId, ActiveExamId) 
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ON CONFLICT(StudentId, SubjectId, ActiveExamId, AcademicYearId) 
       DO UPDATE SET
         PeriodicMaxMark = excluded.PeriodicMaxMark,
         TerminalMaxMark = excluded.TerminalMaxMark,
@@ -180,6 +181,7 @@ ipcMain.handle('save-marks', async (event, { marksData, subjectData }) => {
       // 1. Save all student marks
       for (const mark of marksData) {
         upsertMarkStmt.run(
+          subjectData.YearId,
           subjectData.ExamId,
           mark.StudentId,
           subjectData.SubjectId,
