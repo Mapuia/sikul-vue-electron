@@ -1202,8 +1202,10 @@ ipcMain.handle('get-result-summary', async (event, { academicYearId, examId, res
 });
 
 ipcMain.handle('get-section-results', async (event, { academicYearId, examId, classId, sectionId }) => {
+
+  if (sectionId === '') sectionId = 0;
   try {  
-  
+    // console.log('get-section-results', { academicYearId, examId, classId, sectionId });
     // Get class and section names for the summary
     const classInfo = db.prepare(`
       SELECT ClassName FROM Classes WHERE Id = ?
@@ -1227,7 +1229,7 @@ ipcMain.handle('get-section-results', async (event, { academicYearId, examId, cl
         r.ResultStatus,
         r.ReportCard
       FROM Students s
-      JOIN Admissions a 
+      LEFT JOIN Admissions a 
         ON s.Id = a.StudentId
       JOIN Results r 
         ON s.Id = r.StudentId 

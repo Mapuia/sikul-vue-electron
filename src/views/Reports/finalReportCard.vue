@@ -26,7 +26,7 @@
             <div class="field">
               <label class="label">Section</label>
               <div class="select is-fullwidth">
-                <select v-model="selectedSectionId" :disabled="!selectedClassId || sections.length === 0" @change="fetchResults">
+                <select v-model="selectedSectionId" :disabled="!selectedClassId || sections.length === 0">
                   <option disabled value="">-- Select Section --</option>
                   <option v-for="sec in sections" :key="sec.Id" :value="sec.Id">
                     {{ sec.SectionName }}
@@ -564,10 +564,11 @@ async function fetchClasses() {
 
 watch(selectedClassId, async (newClassId) => {
   if (newClassId) {
-    await fetchSections()
+    // await fetchSections()
+    console.log('Sections:', sections.value)
     if (sections.value.length < 2) {
       selectedSectionId.value = 0
-      fetchNoOfStudents()
+      // fetchNoOfStudents()
       await fetchClassTeacherInfo()
       await fetchResults()
     }

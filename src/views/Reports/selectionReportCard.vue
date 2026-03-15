@@ -607,6 +607,8 @@ async function generateReportCard(studentId, remark) {
   }
 }
 
+
+
 async function fetchReportCard(studentId, Name) {
 
   selectedStudentName.value = Name
