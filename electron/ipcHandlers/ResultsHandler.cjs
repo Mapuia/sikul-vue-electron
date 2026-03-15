@@ -735,12 +735,308 @@ ipcMain.handle('verify-result-status', async (event, { academicYearId, resultTyp
 //   return transaction();
 // });
 
-ipcMain.handle('generate-results', async (event, { academicYearId, examType, resultType, examId, classId, sectionId, PassingPercentage }) => {
+// ipcMain.handle('generate-results', async (event, { academicYearId, examType, resultType, examId, classId, sectionId }) => {
+//   let
+//   if (examType === 'selection') {
+//      = 35;
+//   }
 
-  if (examType === 'selection') {
-    PassingPercentage = 35;
-  }
+//   const transaction = db.transaction(() => {
 
+//     const classInfo = db.prepare(`SELECT ClassName FROM Classes WHERE Id = ?`).get(classId);
+//     if (!classInfo) throw new Error('Class not found.');
+
+//     const Class = romanToInt(classInfo.ClassName);
+
+//     try {
+
+//       let students;
+
+//       if (examType === 'annual') {
+
+//         students = db.prepare(`
+//           SELECT s.Id as studentId, s.Name, a.RollNo,
+//                  ctm.TotalMarksObtained, ctm.TotalMaxMarks, ctm.Percentage
+//           FROM FinalCumulativeTotalMarks ctm
+//           JOIN Students s ON s.Id = ctm.StudentId
+//           JOIN Admissions a ON s.Id = a.StudentId
+//           WHERE a.AcademicYearId = ?
+//           AND a.ClassId = ?
+//           AND a.SectionId = ?
+//           AND ctm.AcademicYearId = ?
+//           ORDER BY ctm.TotalMarksObtained DESC
+//         `).all(academicYearId, classId, sectionId, academicYearId);
+
+//       } else {
+
+//         students = db.prepare(`
+//           SELECT s.Id as studentId, s.Name, a.RollNo,
+//                  ctm.TotalMarksObtained, ctm.TotalMaxMarks, ctm.Percentage
+//           FROM CumulativeTotalMarks ctm
+//           JOIN Students s ON s.Id = ctm.StudentId
+//           JOIN Admissions a ON s.Id = a.StudentId
+//           WHERE a.AcademicYearId = ?
+//           AND a.ClassId = ?
+//           AND a.SectionId = ?
+//           AND ctm.ActiveExamId = ?
+//           ORDER BY ctm.TotalMarksObtained DESC
+//         `).all(academicYearId, classId, sectionId, examId);
+
+//       }
+
+//       if (!students.length) {
+//         throw new Error('No students with calculated marks found.');
+//       }
+
+//       // Get ActiveExam details to check if it's a selection exam
+//       const activeExam = db.prepare(`
+//         SELECT ae.*, e.ExamName, e.ExamType 
+//         FROM ActiveExams ae
+//         JOIN Exams e ON e.Id = ae.ExamId
+//         WHERE ae.Id = ?
+//       `).get(examId);
+
+//       const isSelectionExam = activeExam?.ExamType === 'selection';
+
+//       const insertResult = db.prepare(`
+//         INSERT OR REPLACE INTO Results (
+//           AcademicYearId, StudentId, ActiveExamId,
+//           TotalMaxMarks, TotalMarksObtained, Percentage,
+//           Division, Rank, ResultStatus, ResultType, Last_Modified_at
+//         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+//       `);
+
+//       const passStudents = [];
+//       const simplePassStudents = [];
+//       const failStudents = [];
+
+//       let failMap = new Map();
+//       let lowScoreMap = new Map();
+
+//       // -----------------------------
+//       // OPTIMIZED FINAL FAIL QUERY - UPDATED with AcademicYearId
+//       // -----------------------------
+
+//       if (resultType === 'final') {
+
+//         const failData = db.prepare(`
+//           SELECT 
+//               StudentId,
+//               SUM(isFail) AS failCount,
+//               SUM(isLowScore) AS lowScoreCount
+//           FROM (
+//               SELECT 
+//                   m.StudentId,
+//                   m.SubjectId,
+//                   SUM(m.TotalMarksObtained) AS totalObtained,
+//                   SUM(m.TotalMaxMarks) AS totalMax,
+//                   CASE 
+//                       WHEN SUM(m.TotalMarksObtained) < SUM(m.TotalMaxMarks) * 0.40 THEN 1 
+//                       ELSE 0 
+//                   END AS isFail,
+//                   CASE 
+//                       WHEN SUM(m.TotalMarksObtained) < SUM(m.TotalMaxMarks) * 0.20 THEN 1 
+//                       ELSE 0 
+//                   END AS isLowScore
+//               FROM Marks m
+//               JOIN Subjects s ON s.Id = m.SubjectId
+//               WHERE m.AcademicYearId = ?
+//               AND s.SubjectCategory != 'Co-Scholastic'
+//               GROUP BY m.StudentId, m.SubjectId
+//           ) subjectTotals
+//           GROUP BY StudentId
+//         `).all(academicYearId);
+
+//         for (const row of failData) {
+
+//           if (!failMap.has(row.StudentId)) {
+//             failMap.set(row.StudentId, 0);
+//             lowScoreMap.set(row.StudentId, 0);
+//           }
+
+//           failMap.set(row.StudentId, failMap.get(row.StudentId) + row.failCount);
+//           lowScoreMap.set(row.StudentId, lowScoreMap.get(row.StudentId) + row.lowScoreCount);
+
+//         }
+//       }
+
+//       // -----------------------------
+//       // PROCESS STUDENTS - UPDATED with AcademicYearId and Selection Exam Logic
+//       // -----------------------------
+
+//       for (const student of students) {
+
+//         let { studentId, TotalMarksObtained, TotalMaxMarks, Percentage } = student;
+
+//         // For selection exams, adjust the marks to be out of 80% of original
+//         if (isSelectionExam) {
+//           // Calculate what the marks would be if full marks were 80% of original
+//           // If original max marks were 100, now it's 80, so marks obtained need to be scaled
+//           // Example: If student got 75 out of 100, with 80 max marks, they effectively got 75 (still out of 80?)
+//           // Actually, we need to understand the requirement properly
+          
+//           // Option 1: Keep obtained marks same but reduce max marks to 80%
+//           TotalMaxMarks = Math.round(TotalMaxMarks * 0.8);
+          
+//           // Option 2: Also scale obtained marks proportionally (if needed)
+//           // TotalMarksObtained = Math.round(TotalMarksObtained * 0.8);
+          
+//           // Recalculate percentage based on adjusted values
+//           Percentage = (TotalMarksObtained / TotalMaxMarks) * 100;
+//         }
+
+//         let failCount = 0;
+//         let lowScoreCount = 0;
+
+//         if (resultType === 'final') {
+
+//           failCount = failMap.get(studentId) || 0;
+//           lowScoreCount = lowScoreMap.get(studentId) || 0;
+
+//         } else {
+
+//           const fCount = db.prepare(`
+//             SELECT COUNT(*) AS fails
+//             FROM Marks
+//             JOIN Subjects s ON s.Id = Marks.SubjectId
+//             WHERE Marks.StudentId = ?
+//             AND Marks.ActiveExamId = ?
+//             AND Marks.AcademicYearId = ?
+//             AND s.SubjectCategory != 'Co-Scholastic'
+//             AND Marks.SubjectResult = 'Fail'
+//           `).get(studentId, examId, academicYearId);
+
+//           failCount = fCount?.fails || 0;
+
+//           const lsCount = db.prepare(`
+//             SELECT COUNT(*) AS lowScores
+//             FROM Marks
+//             WHERE StudentId = ?
+//             AND ActiveExamId = ?
+//             AND AcademicYearId = ?
+//             AND TotalMarksObtained < TotalMaxMarks * 0.20
+//           `).get(studentId, examId, academicYearId);
+
+//           lowScoreCount = lsCount?.lowScores || 0;
+//         }
+
+//         let resultStatus = "Pass";
+//         let division = "N.A.";
+
+//         // if (failCount > 2 || lowScoreCount > 0 || Percentage < PassingPercentage) {
+//         if (failCount > 2 || lowScoreCount > 0) {
+
+//           resultStatus = 'Fail';
+
+//         } else {
+
+//           if (Class <= 10 && Class >= 1) {
+
+//             if (failCount !== 0 && failCount <= 2 && lowScoreCount === 0) {
+//               resultStatus = 'Simple Pass';
+//             }
+
+//           } else if (Class >= 11) {
+
+//             if (failCount === 1 && lowScoreCount === 0) {
+//               resultStatus = 'Simple Pass';
+//             }
+
+//             if (failCount > 1) {
+//               resultStatus = 'Fail';
+//             }
+//           } else {
+//             if (failCount == 1) {
+//               resultStatus = 'Fail';
+//             }
+//           }
+
+//           division = getDivision(Percentage, failCount);
+//         }
+
+//         const studentWithStatus = { ...student, studentId, TotalMarksObtained, TotalMaxMarks, Percentage, resultStatus, division };
+
+//         if (resultStatus === 'Pass') passStudents.push(studentWithStatus);
+//         else if (resultStatus === 'Simple Pass') simplePassStudents.push(studentWithStatus);
+//         else failStudents.push(studentWithStatus);
+
+//       }
+
+//       // -----------------------------
+//       // RANKING
+//       // -----------------------------
+
+//       let rank = 0;
+//       let lastScore = null;
+
+//       const processRank = (list, giveRank = true) => {
+
+//         for (const student of list) {
+
+//           const { studentId, TotalMarksObtained, TotalMaxMarks, Percentage, resultStatus, division } = student;
+
+//           if (lastScore !== TotalMarksObtained) {
+//             rank++;
+//           }
+
+//           lastScore = TotalMarksObtained;
+
+//           insertResult.run(
+//             academicYearId,
+//             studentId,
+//             examId,
+//             TotalMaxMarks,
+//             TotalMarksObtained,
+//             Percentage,
+//             division,
+//             giveRank ? rank : null,
+//             resultStatus,
+//             resultType
+//           );
+//         }
+//       };
+
+//       processRank(passStudents, true);
+//       processRank(simplePassStudents, false);
+//       processRank(failStudents, false);
+
+//       // Update ResultStatus
+//       db.prepare(`
+//         INSERT OR REPLACE INTO ResultStatus (
+//           AcademicYearId, ActiveExamId, ClassId, SectionId,
+//           ResultType, isGenerated, Last_Modified_at
+//         ) VALUES (?, ?, ?, ?, ?, 1, CURRENT_TIMESTAMP)
+//       `).run(academicYearId, examId, classId, sectionId, resultType);
+
+//       return {
+//         success: true,
+//         message: `Results generated for ${students.length} students.`
+//       };
+
+//     } catch (error) {
+
+//       console.error('Result generation failed:', error);
+
+//       return {
+//         success: false,
+//         error: error.message
+//       };
+//     }
+//   });
+
+//   return transaction();
+// });
+ipcMain.handle('generate-results', async (event, { academicYearId, examType, resultType, examId, classId, sectionId }) => {
+
+  // if (examType === 'selection') {
+  //   PassingPercentage = 35;
+  // }
+  let PassingPercentage ; 
+
+  const passPercentage = db.prepare(`SELECT PassingPercentage FROM ActiveExams WHERE Id = ?`).get(examId);
+  PassingPercentage = passPercentage?.PassingPercentage || 35;
+  // console.log('Passing Percentage:', PassingPercentage)
+  
   const transaction = db.transaction(() => {
 
     const classInfo = db.prepare(`SELECT ClassName FROM Classes WHERE Id = ?`).get(classId);
@@ -870,16 +1166,8 @@ ipcMain.handle('generate-results', async (event, { academicYearId, examType, res
 
         // For selection exams, adjust the marks to be out of 80% of original
         if (isSelectionExam) {
-          // Calculate what the marks would be if full marks were 80% of original
-          // If original max marks were 100, now it's 80, so marks obtained need to be scaled
-          // Example: If student got 75 out of 100, with 80 max marks, they effectively got 75 (still out of 80?)
-          // Actually, we need to understand the requirement properly
-          
           // Option 1: Keep obtained marks same but reduce max marks to 80%
           TotalMaxMarks = Math.round(TotalMaxMarks * 0.8);
-          
-          // Option 2: Also scale obtained marks proportionally (if needed)
-          // TotalMarksObtained = Math.round(TotalMarksObtained * 0.8);
           
           // Recalculate percentage based on adjusted values
           Percentage = (TotalMarksObtained / TotalMaxMarks) * 100;
@@ -914,6 +1202,7 @@ ipcMain.handle('generate-results', async (event, { academicYearId, examType, res
             WHERE StudentId = ?
             AND ActiveExamId = ?
             AND AcademicYearId = ?
+            AND SubjectResult = 'Fail'
             AND TotalMarksObtained < TotalMaxMarks * 0.20
           `).get(studentId, examId, academicYearId);
 
@@ -923,35 +1212,39 @@ ipcMain.handle('generate-results', async (event, { academicYearId, examType, res
         let resultStatus = "Pass";
         let division = "N.A.";
 
-        // if (failCount > 2 || lowScoreCount > 0 || Percentage < PassingPercentage) {
-        if (failCount > 2 || lowScoreCount > 0) {
-
+        // Check if student should be marked as Fail
+        // Fail if: more than 2 failures, OR any failure with less than 20% marks, OR overall percentage below passing
+        if (failCount > 2 || lowScoreCount > 0 || Percentage < PassingPercentage) {
           resultStatus = 'Fail';
-
         } else {
-
+          // Determine if it's Simple Pass based on class and fail count
           if (Class <= 10 && Class >= 1) {
-
-            if (failCount !== 0 && failCount <= 2 && lowScoreCount === 0) {
+            // For classes 1-10: Simple Pass if they have 1-2 failures but all above 20%
+            if (failCount >= 1 && failCount <= 2 && lowScoreCount === 0) {
               resultStatus = 'Simple Pass';
             }
-
+            // Otherwise remains 'Pass'
           } else if (Class >= 11) {
-
+            // For classes 11-12: Simple Pass if exactly 1 failure and above 20%
             if (failCount === 1 && lowScoreCount === 0) {
               resultStatus = 'Simple Pass';
+            } else if (failCount > 1) {
+              resultStatus = 'Fail'; // More than 1 failure in higher classes = Fail
             }
-
-            if (failCount > 1) {
-              resultStatus = 'Fail';
-            }
+            // Otherwise remains 'Pass'
           } else {
-            if (failCount == 1) {
+            // For any other class classification
+            if (failCount === 1) {
+              resultStatus = 'Simple Pass';
+            } else if (failCount > 1) {
               resultStatus = 'Fail';
             }
           }
 
-          division = getDivision(Percentage, failCount);
+          // Calculate division only for non-fail students
+          if (resultStatus !== 'Fail') {
+            division = getDivision(Percentage, failCount);
+          }
         }
 
         const studentWithStatus = { ...student, studentId, TotalMarksObtained, TotalMaxMarks, Percentage, resultStatus, division };

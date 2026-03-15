@@ -429,8 +429,8 @@ async function generateResult(classId, sectionId) {
       resultType: resultType.value,  //if examType is not terminal, result will be final
       examId: currentExamId.value,
       classId,
-      sectionId,
-      PassingPercentage: PassingPercentage.value
+      sectionId
+      // PassingPercentage: PassingPercentage.value
     })
     
     if (response.success) {
