@@ -1,13 +1,13 @@
 <template>
-  <div v-if="isPublished" class="form-container box wide">
-    <div class="has-text-centered mb-4">
-      <h1 class="title is-4">Half Yearly Examination Result, {{ CurrentYear }}</h1>
-      <h2 class="subtitle is-5" v-if="publishDate">Result Published on {{ publishDate }}</h2>
-      <h2 class="subtitle is-5">Select Class and Section to generate Report Card</h2>      
+  <div v-if="isPublished && !isLoading" class="form-container box wide">
+    <div class="has-text-centered">
+      <h1 class="title is-4">Report Card ( Half Yearly Examination) </h1>
+      <h2 class="subtitle is-6 mt-1" v-if="true">Result Published on {{ publishDate }}</h2>
     </div>
 
     <!-- Class and Section Selection -->
       <div class="box">
+        Select Class and Section to generate Report Card
         <div class="columns is-vcentered">
           <div class="column">
             <div class="field">
@@ -35,8 +35,17 @@
               </div>
             </div>
           </div>
+          <div class="column">
+            <label class="label">Generate All Report Cards</label>
+            <div class="">
+              <button :disabled="results.length <= 0" class="button is-primary is-fullwidth" @click="generateAllReportCard">
+                Generate
+              </button>
+            </div>
+          </div>
         </div>
       </div>
+
 
       <!-- Loading Indicator -->
       <div v-if="isLoading" class="has-text-centered mt-4">
@@ -47,17 +56,16 @@
       <!-- Result Display -->
       <div v-if="(!isLoading && selectedClassId && selectedSectionId === 0) || (!isLoading && selectedClassId && selectedSectionId)" class="result-container">
 
-          <div class="level mt-4">
+          <div class="level mt-2">
             <!-- Centered heading -->
             <div class="level-item has-text-left">
-              <h2 class="subtitle is-5">Detail Results</h2>
+              <h2 class="subtitle is-5 ">Half Yearly Results</h2>
             </div>
-
           </div>
 
-        <!-- Detailed Results Table -->
+        <!-- Results Table -->
          
-            <div class="mt-4" v-if="results.length > 0">
+            <div v-if="results.length > 0">
             <div class="table-container">
               
               <table class="table is-fullwidth is-striped is-bordered">
@@ -86,6 +94,13 @@
                     </td>
 
                     <td>
+                      <button v-if="result.ReportCard === 1 && canAccess(['admin'])" class="button is-small is-primary mr-2"
+                              @click="openInputModal(result.StudentId, result.Name)">
+                        <span class="icon is-small">
+                          <i class="fas fa-redo-alt"></i>
+                        </span>
+                        <span>Re-Generate</span> 
+                      </button>
                       <button v-if="result.ReportCard === 1" class="button is-small is-warning mr-2"
                               @click="fetchReportCard(result.StudentId, result.Name)">
                         <span class="icon is-small">
@@ -100,13 +115,7 @@
                         </span>
                         <span>Generate Report Card</span>
                       </button>
-                      <button v-if="result.ReportCard === 1 && canAccess(['admin'])" class="button is-small is-primary mr-2"
-                              @click="openInputModal(result.StudentId, result.Name)">
-                        <span class="icon is-small">
-                          <i class="fas fa-download"></i>
-                        </span>
-                        <span>Re-Generate</span> 
-                      </button>
+                      
                     </td>
                   </tr>
                 </tbody>
@@ -554,6 +563,34 @@ async function fetchSections() {
   }
 }
 
+//Generate All Report Card
+async function generateAllReportCard() {
+  if (!selectedClassId.value || !selectedSectionId.value) {
+    window.electronAPI.showErrorDialog('Please select a valid class and section.')
+    return
+  }
+  
+  try {
+    const results = await window.electronAPI.generateSectionReportCard({
+      examId: currentExamId.value,
+      academicYearId: CurrentYearId.value,
+      classId: selectedClassId.value,
+      sectionId: selectedSectionId.value,
+      resultType: examType.value
+    })
+    
+    if (results?.success) { 
+      await window.electronAPI.showInfoDialog('All report cards generated successfully!');
+      await fetchResults()
+      
+    } else {
+      window.electronAPI.showErrorDialog('Failed to generate report cards. Please try again.')
+    }
+  } catch (error) {
+    console.error('Error generating report:', error)
+  }
+}
+
 async function fetchResults() {
   if (!selectedClassId.value) return  
   try {
@@ -607,9 +644,10 @@ async function generateReportCard(studentId, remark) {
     const results = await window.electronAPI.generateReportCard({
       examId: currentExamId.value,
       academicYearId: CurrentYearId.value,
-      studentId,          
-      teachersRemark: remark,
-      resultType: examType.value
+      studentId,
+      resultType: examType.value,         
+      teachersRemark: remark
+      
     })
     
     if (results?.success) { 
@@ -680,7 +718,6 @@ function DisplayDate(dateString) {
 <style scoped>
 .table-container {
   overflow-x: auto;
-  margin-top: 1rem;
 }
 
 .tag {

@@ -175,6 +175,7 @@ contextBridge.exposeInMainWorld('electronAuth', {
   unpublishResults: (params) => ipcRenderer.invoke('unpublish-results', params),
 
   generateReportCard:(params) => ipcRenderer.invoke('generate-report-card', params),
+  generateSectionReportCard:(params) => ipcRenderer.invoke('generate-section-report-card', params),
   getReportCard: (params) => ipcRenderer.invoke('get-report-card', params),
   getFinalReportCard: (params) => ipcRenderer.invoke('get-final-report-card', params),
 

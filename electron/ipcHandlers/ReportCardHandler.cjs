@@ -4,32 +4,139 @@ const { ipcMain } = require('electron');
 const { db } = require('../database.cjs'); // Your database interfac
 const currentTime = new Date(new Date().getTime() + 5.5 * 60 * 60 * 1000).toISOString();
 
+//Generate Single Report Card
 ipcMain.handle('generate-report-card', async (event, {
   academicYearId,
   examId,
-  studentId,   
-  teachersRemark,
-  resultType
+  studentId,
+  resultType,
+  teachersRemark
   
    }) => {
     if (!studentId ) {
-      console.error('Missing Stident Id for report card generation');
+      console.error('Missing Student Id for report card generation');
+      return { success: false, error: 'Missing required parameters' };
+    }
+    console.log("Generating Report Card for Student:", studentId, "Result Type:", resultType, "Teachers Remark:", teachersRemark);
+    // const result = db.prepare(`
+    //   SELECT r.ResultStatus, r.Division
+    //   FROM Results r
+    //   WHERE r.StudentId = ? AND r.ActiveExamId = ? AND r.AcademicYearId = ? AND r.ResultType = ?
+    // `).get(studentId, examId, academicYearId, resultType);
+    // const teachersRemark = createTeachersRemark(result?.ResultStatus, result?.Division);
+
+    const reportCardResult = await generateReportCard(
+      academicYearId,
+      examId,
+      studentId,
+      resultType,
+      teachersRemark
+    );
+    if(!reportCardResult.success){
+      console.error('Error generating report card for student:', studentId, reportCardResult.error);
+    }
+    else{
+      return { success: true, message: 'Report card generated successfully' };
+    }
+})
+
+//helper function to create Remarks for the student
+function createTeachersRemark(resultStatus, division) {
+  let remark = '';
+  switch (resultStatus) {
+    case 'Fail':
+      remark = 'Needs Improvement';
+      break;
+    case 'Simple Pass':
+      remark = 'Try Harder';
+      break;
+    default:
+      switch (division) {
+        case 'Dist':
+          remark = 'Excellent!';
+          break;
+        case 'First':
+          remark = 'Congratulations!';
+          break;
+        case 'Second':
+          remark = 'Good';
+          break;
+        case 'Third':
+          remark = 'Good';
+          break;
+        default:
+          remark = '';
+      }
+  }
+  return remark;
+}
+
+//generate Report Card for all students in a Section
+ipcMain.handle('generate-section-report-card', async (event, {
+  academicYearId,
+  examId,
+  classId,
+  sectionId,  
+  resultType  
+   }) => {
+    if (!classId || !sectionId || !examId || !academicYearId ) {
+      console.error('Missing required parameters for report card generation');
       return { success: false, error: 'Missing required parameters' };
     }
 
-    const classInfo = db.prepare(`
-      SELECT c.ClassId, c.ClassName
-      FROM Classes c
-      JOIN Admissions a ON a.ClassId = c.Id
-      WHERE a.StudentId = ?
-      AND a.AcademicYearId = ?
-      `).get(studentId, academicYearId);
+   // Get all students in the section
+   const students = db.prepare(`
+      SELECT a.StudentId as StudentId
+      FROM Admissions a       
+      JOIN Results r ON r.StudentId = a.StudentId
+      WHERE a.ClassId = ? AND a.SectionId = ? AND a.AcademicYearId = ? AND r.ResultType = ?
+   `).all(classId, sectionId, academicYearId, resultType);
 
-      // console.log("ClassId: for working Days", classInfo);
-    const classInt = romanToInt(classInfo.ClassName);  
+    // Generate report card for each student
+    for (const student of students) {
+      // console.log("Checking Student Id:", student.StudentId);
+      const result = db.prepare(`
+        SELECT StudentId, Division, ResultStatus FROM Results
+        WHERE StudentId = ? AND ActiveExamId = ? AND ResultType = ? AND AcademicYearId = ?
+      `).get(student.StudentId, examId, resultType, academicYearId);       
+     
+      // console.log("Result Status:", result?.ResultStatus, "Division:", result?.Division);
+      const teachersRemark = createTeachersRemark(result?.ResultStatus, result?.Division);
+      // console.log("Teachers Remark:", student.StudentId,teachersRemark)
+      const reportCardResult = await generateReportCard(
+        academicYearId,
+        examId,
+        student.StudentId,
+        resultType,
+        teachersRemark
+      );
+      if(!reportCardResult.success){
+        console.error('Error generating report card for student:', student.StudentId, reportCardResult.error);
+      }
+    }
+    return {
+      success: true      
+    }
+})
+
+//function to generate report card
+async function generateReportCard(
+        academicYearId,
+        examId,
+        studentId,
+        resultType,
+        teachersRemark
+      ){
+
+    // console.log("Generating Report Card for Student:", studentId, "Result Type:", resultType);
+
+    if (!studentId ) {
+      console.error('Missing Student Id for report card generation......', studentId);
+      return { success: false, error: 'Missing required parameters' };
+    }
       
     try { 
-      //getting result status for the student
+      // getting result status for the student
       const resultStatus = db.prepare(`
         SELECT ResultStatus FROM Results
         WHERE ActiveExamId = ? AND StudentId = ? AND AcademicYearId = ? AND ResultType = ?
@@ -37,14 +144,26 @@ ipcMain.handle('generate-report-card', async (event, {
        //Create Final Remarks for the student based on their result status 
        
         let finalRemark = '';
-        if(resultStatus?.ResultStatus !== 'Fail'){
-            const promotedToNextClass = classInt + 1;
-            const promotedToNextClassRoman = intToRoman(promotedToNextClass); // Convert
-            finalRemark = `Promoted to Class - ${promotedToNextClassRoman}`;
-        } else {
-          finalRemark = `Needs Improvement`;
-        }
-        //console.log("Final Remark:",finalRemark)
+        if(resultType === 'final'){
+          const classInfo = db.prepare(`
+            SELECT c.ClassId, c.ClassName
+            FROM Classes c
+            JOIN Admissions a ON a.ClassId = c.Id
+            WHERE a.StudentId = ?
+            AND a.AcademicYearId = ?
+            `).get(studentId, academicYearId);
+
+          
+          const classInt = romanToInt(classInfo.ClassName);  
+          if(resultStatus?.ResultStatus !== 'Fail'){
+              const promotedToNextClass = classInt + 1;
+              const promotedToNextClassRoman = intToRoman(promotedToNextClass); // Convert
+              finalRemark = `Promoted to Class - ${promotedToNextClassRoman}`;
+          } else {
+            finalRemark = `Try Again`;
+          }
+        }  
+        
         // Insert new report card
       db.prepare(`
         INSERT INTO ReportCards (
@@ -71,7 +190,7 @@ ipcMain.handle('generate-report-card', async (event, {
         currentTime,
         currentTime
       );
-// console.log("Final Remark:", finalRemark, "Result Status:", resultStatus?.ResultStatus);
+
       db.prepare(`
         UPDATE Results
         SET ReportCard = 1
@@ -86,7 +205,8 @@ ipcMain.handle('generate-report-card', async (event, {
     console.error('Error generating report card:', error)
     return { success: false, error: error.message }
   }
-})
+}
+
 
 //getting data for Half Yearly Results
 ipcMain.handle('get-report-card', (event, { studentId, classId, sectionId, examId, resultType, academicYearId}) => {
@@ -418,8 +538,6 @@ ipcMain.handle('get-final-report-card', (event, { studentId, classId, sectionId,
       const AnnualNoOfStudents = studentIdsInAdmissions.filter(id => finalResultStudents.includes(id)).length;
 
 
-
-
     return {
       success: true,
       studentData,
@@ -516,16 +634,6 @@ ipcMain.handle('save-attendance', async (event, attendanceData, examData ) => {
   }
 
 });
-
-///////////////////Helper Functions/////////////////////
-// function getDivision(percentage, failCount) {
-//   if (failCount > 0) return 'N.A.'; 
-//   if (percentage >= 80) return 'Dist';
-//   if (percentage >= 60) return 'First';
-//   if (percentage >= 50) return 'Second';
-//   if (percentage >= 40) return 'Third';
-//   return 'N.A.';
-// }
 
 //Convert Roman numeral to Integer
 function romanToInt(roman) {

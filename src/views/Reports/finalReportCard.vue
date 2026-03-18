@@ -1,13 +1,14 @@
 <template>
   <div v-if="isPublished" class="form-container box wide">
-    <div class="has-text-centered mb-4">
-      <h1 class="title is-4">Final Result, {{ CurrentYear }}</h1>
-      <h2 class="subtitle is-6" v-if="true">Result Published on {{ publishDate }}</h2>
-      <p>Select Class and Section to generate Report Card</p>
+    <div class="has-text-centered ">
+      <h1 class="title is-4">Final Report Card, {{ CurrentYear }}</h1>
+      <h2 class="subtitle is-6 mt-1" v-if="true">Result Published on {{ publishDate }}</h2>
+      
     </div>
 
     <!-- Class and Section Selection -->
       <div class="box">
+        Select Class and Section to generate Report Card
         <div class="columns is-vcentered">
           <div class="column">
             <div class="field">
@@ -26,13 +27,21 @@
             <div class="field">
               <label class="label">Section</label>
               <div class="select is-fullwidth">
-                <select v-model="selectedSectionId" :disabled="!selectedClassId || sections.length === 0">
+                <select v-model="selectedSectionId" :disabled="!selectedClassId || sections.length === 0" @change="fetchResults">
                   <option disabled value="">-- Select Section --</option>
                   <option v-for="sec in sections" :key="sec.Id" :value="sec.Id">
                     {{ sec.SectionName }}
                   </option>
                 </select>
               </div>
+            </div>
+          </div>
+          <div class="column">
+            <label class="label">Generate All Report Cards</label>
+            <div class="">
+              <button :disabled="results.length <= 0" class="button is-primary is-fullwidth" @click="generateAllReportCard">
+                Generate
+              </button>
             </div>
           </div>
         </div>
@@ -86,6 +95,13 @@
                     </td>
 
                     <td>
+                      <button v-if="result.ReportCard === 1 && canAccess(['admin'])" class="button is-small is-primary mr-2"
+                              @click="openInputModal(result.StudentId, result.Name)">
+                        <span class="icon is-small">
+                          <i class="fas fa-download"></i>
+                        </span>
+                        <span>Re-Generate</span>
+                      </button>
                       <button v-if="result.ReportCard === 1" class="button is-small is-warning mr-2"
                               @click="fetchReportCard(result.StudentId, result.Name)">
                         <span class="icon is-small">
@@ -96,24 +112,18 @@
                       <button v-else class="button is-small is-primary mr-2"
                               @click="openInputModal(result.StudentId, result.Name)">
                         <span class="icon is-small">
-                          <i class="fas fa-download"></i>
+                          <i class="fas fa-redo-alt"></i>
                         </span>
                         <span>Generate Report Card</span>
                       </button>
-                      <button v-if="result.ReportCard === 1 && canAccess(['admin'])" class="button is-small is-primary mr-2"
-                              @click="openInputModal(result.StudentId, result.Name)">
-                        <span class="icon is-small">
-                          <i class="fas fa-download"></i>
-                        </span>
-                        <span>Re-Generate</span>
-                      </button>
+                      
                     </td>
                   </tr>
                 </tbody>
               </table>
             </div>  
           </div>     
-        <div v-else-if="!isLoading" class="notification is-warning mt-4">
+        <div v-else-if="!isLoading" class="notification is-danger mt-4">
           No results found for Class {{ className }}{{ sectionName? ' Section ' + sectionName : '' }}.
         </div>
       </div>
@@ -553,10 +563,12 @@ const canAccess = (requiredRoles) => {
 async function fetchClasses() {
   try {
     const response = await window.electronAPI.getClasses()
+    
     if (response.success) {
-      classes.value = response.classes
+      const allClasses = ref(response.classes)
+      classes.value = allClasses.value.filter(cls => cls.ClassName !== 'X')
     }
-  
+    
   } catch (error) {
     console.error('Error fetching classes:', error)
   }
@@ -626,6 +638,33 @@ async function fetchResults() {
     console.error('Error fetching results:', error)
   } finally {
     isLoading.value = false
+  }
+}
+
+async function generateAllReportCard() {
+  if (!selectedClassId.value || !selectedSectionId.value) {
+    window.electronAPI.showErrorDialog('Please select a valid class and section.')
+    return
+  }
+  
+  try {
+    const results = await window.electronAPI.generateSectionReportCard({
+      examId: currentExamId.value,
+      academicYearId: CurrentYearId.value,
+      classId: selectedClassId.value,
+      sectionId: selectedSectionId.value,
+      resultType: examType.value
+    })
+    
+    if (results?.success) { 
+      await window.electronAPI.showInfoDialog('All report cards generated successfully!');
+      await fetchResults()
+      
+    } else {
+      window.electronAPI.showErrorDialog('Failed to generate report cards. Please try again.')
+    }
+  } catch (error) {
+    console.error('Error generating report:', error)
   }
 }
 
@@ -752,10 +791,6 @@ function closeModal() {
   margin-top: 1rem;
 }
 
-.notification {
-  margin-bottom: 0;
-  width: 70%;
-}
 
 .tag {
   min-width: 60px;

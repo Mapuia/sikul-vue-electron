@@ -494,8 +494,7 @@ ipcMain.handle('import-marks-data', async (event, { academicYearId, filePath }) 
         )
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ON CONFLICT(StudentId, SubjectId, ActiveExamId, AcademicYearId)
-        DO UPDATE SET
-          AcademicYearId=excluded.AcademicYearId,
+        DO UPDATE SET          
           PeriodicMaxMark=excluded.PeriodicMaxMark,
           TerminalMaxMark=excluded.TerminalMaxMark,
           TotalMaxMarks=excluded.TotalMaxMarks,
@@ -513,7 +512,7 @@ ipcMain.handle('import-marks-data', async (event, { academicYearId, filePath }) 
           row.ActiveExamId,
           row.StudentId,
           row.SubjectId,
-          academicYearId, // Add the academicYearId from parameter
+          row.AcademicYearId, // Add the academicYearId from parameter
           row.PeriodicMaxMark,
           row.TerminalMaxMark,
           row.TotalMaxMarks,

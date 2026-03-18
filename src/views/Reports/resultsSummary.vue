@@ -385,28 +385,7 @@ function downloadPDF() {
   html2pdf().set(opt).from(element).save()
 }
 
-// const resultPublished = ref(false)
-// const publishDate = ref('')
-// async function checkPublishStatus() {
-//   try {
-//     // Get counts from both tables
-//     //console.log("Checking publish status for exam:", currentExamId.value, "and academic year:", CurrentYearId.value)
-//     const status = await window.electronAPI.getPublishStatus({
-//       academicYearId: CurrentYearId.value,
-//       activeExamId: currentExamId.value      
-//     })   
-//     publishDate.value = status.publishDate || ''
-//     if(publishDate.value){
-//       resultPublished.value = true
-//     }
-//     else {
-//       resultPublished.value = false
-//     }
 
-//   } catch (error) {
-//     console.error("Error checking publish status:", error)    
-//   }
-// }
 </script>
 
 <style scoped>
