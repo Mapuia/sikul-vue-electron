@@ -15,7 +15,7 @@
 
     <div class="print-page">  
 
-          <div v-if="!isLoading" class="print-container">
+      <div v-if="!isLoading" class="print-container">
             <div class="header-wrapper has-text-centered mb-4" style="position: relative;">
               <!-- Logo (Option 1: if using public folder) -->
               <img src="/sikul_logo.png" alt="School Logo" style="position: absolute; top: 0; left: 0; height: 60px;" />
@@ -97,69 +97,70 @@
             <div v-if="resultSummary.length > 0" class="summary-footer mt-4">
           <div class="columns is-vcentered" style="align-items: flex-end;">
           <!-- Column 1 -->
-          <div class="column is-flex is-flex-direction-column is-justify-content-flex-end">
-            <table class="bl-table">
-              <tbody>
-                <tr>
-                  <th >No. of Students</th>
-                  <td>{{ totals.totalStudents }}</td>
-                </tr>
-                <tr>
-                  <th style="width:200px">No. of Appeared</th>
-                  <td>{{ totals.appeared }}</td>
-                </tr>
-                <tr>
-                  <th>No. of Passed</th>
-                  <td>{{ totals.passed }}</td>
-                </tr>
-                <tr>
-                  <th>No. of Failed</th>
-                  <td>{{ totals.failed }}</td>
-                </tr>
-                <tr>
-                  <th>Passed %</th>
-                  <td>{{ totals.passedPercentage.toFixed(2) }}%</td>
-                </tr>
-                <tr>
-                  <th >Failed %</th>
-                  <td>{{ totals.failedPercentage.toFixed(2) }}%</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
+            <div class="column is-flex is-flex-direction-column is-justify-content-flex-end">
+              <table class="bl-table">
+                <tbody>
+                  <tr>
+                    <th >No. of Students</th>
+                    <td>{{ totals.totalStudents }}</td>
+                  </tr>
+                  <tr>
+                    <th style="width:200px">No. of Appeared</th>
+                    <td>{{ totals.appeared }}</td>
+                  </tr>
+                  <tr>
+                    <th>No. of Passed</th>
+                    <td>{{ totals.passed }}</td>
+                  </tr>
+                  <tr>
+                    <th>No. of Failed</th>
+                    <td>{{ totals.failed }}</td>
+                  </tr>
+                  <tr>
+                    <th>Passed %</th>
+                    <td>{{ totals.passedPercentage.toFixed(2) }}%</td>
+                  </tr>
+                  <tr>
+                    <th >Failed %</th>
+                    <td>{{ totals.failedPercentage.toFixed(2) }}%</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
 
-          <!-- Column 2 -->
-          <div class="column is-flex is-flex-direction-column is-justify-content-flex-end">
-            <table class="bl-table1">
-              <tbody>
-                <tr>
-                  <th>Distinction</th>
-                  <td>{{ totals.distinction }}</td>
-                </tr>
-                <tr>
-                  <th>I Division</th>
-                  <td>{{ totals.firstDivision }}</td>
-                </tr>
-                <tr>
-                  <th>II Division</th>
-                  <td>{{ totals.secondDivision }}</td>
-                </tr>
-                <tr>
-                  <th>III Division</th>
-                  <td>{{ totals.thirdDivision }}</td>
-                </tr>
-                <tr>
-                  <th>Simple Pass</th>
-                  <td>{{ totals.simplePass }}</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
+            <!-- Column 2 -->
+            <div class="column is-flex is-flex-direction-column is-justify-content-flex-end">
+                <table class="bl-table1">
+                  <tbody>
+                    <tr>
+                      <th>Distinction</th>
+                      <td>{{ totals.distinction }}</td>
+                    </tr>
+                    <tr>
+                      <th>I Division</th>
+                      <td>{{ totals.firstDivision }}</td>
+                    </tr>
+                    <tr>
+                      <th>II Division</th>
+                      <td>{{ totals.secondDivision }}</td>
+                    </tr>
+                    <tr>
+                      <th>III Division</th>
+                      <td>{{ totals.thirdDivision }}</td>
+                    </tr>
+                    <tr>
+                      <th>Simple Pass</th>
+                      <td>{{ totals.simplePass }}</td>
+                    </tr>
+                  </tbody>
+                </table>
+            </div>
 
-          <!-- Column 3  -->
-          <div class="column"></div>
+              <!-- Column 3  -->
+            <div class="column"> </div>
             
           </div>
+        
           <div class="columns is-vcentered is-mobile mt-6">
             <!-- Left Side -->
             <div class="column has-text-left">
@@ -182,21 +183,45 @@
               </div>
           </div>
         </div>        
-      </div>      
+      </div>
+      
+      <!-- <div class="column" style="width: 300px; margin-top:150px"> 
+        <Pie :data="chartData" :options="chartOptions" />
+      </div> -->
     </div>
+    
+      
+     
+   
 
     <div class="has-text-centered mt-4 no-print">
       <button class="button is-primary" @click="downloadPDF">Download PDF</button>
-    </div>  
+    </div>
+    
+
   </div>
   <div v-else class="container single pb-1" >
     <div class="notification is-success has-text-centered " >
       <p>{{ resultName }} Results has not been published.</p>      
     </div>    
   </div>
+  
 </template>
 
 <script setup>
+import { Pie } from 'vue-chartjs'
+import {
+  Chart as ChartJS,
+  Title,
+  Tooltip,
+  Legend,
+  ArcElement
+} from 'chart.js'
+
+ChartJS.register(Title, Tooltip, Legend, ArcElement)
+
+// Example data
+
 import { ref, watch, onMounted, computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { useAcademicYear } from '../../composables/useAcademicYear'
@@ -373,8 +398,23 @@ const groupedResults = computed(() => {
   return Object.values(groups)
 })
 
+
+const chartData = {
+  labels: ['Pass', 'Fail'],
+  datasets: [
+    {
+      data: [445, 71],
+      backgroundColor: ['#66BB6A', '#EF5350']
+    }
+  ]
+}
+
+const chartOptions = {
+  responsive: true
+}
+
 function downloadPDF() {
-  const element = document.querySelector('.print-container')
+  const element = document.querySelector('.print-page')
   const opt = {
     margin: 0.5,
     filename: `Result_Summary_${currentExamName.value}_${CurrentYear.value}.pdf`,

@@ -435,3 +435,23 @@ ipcMain.handle('delete-from-admission', async (event, studentId, academicYearId)
 
   return transaction();
 });
+
+// Get all students ID
+ipcMain.handle('get-students-Id', async (event, params) => {
+
+  // console.log('params:', params)
+  const { examId, academicYearId, classId, sectionId, resultType } = params;
+  try {
+    const students = db.prepare(`
+      SELECT a.StudentId as StudentId, s.Name as StudentName
+      FROM Admissions a
+      JOIN Results r ON a.StudentId = r.StudentId
+      JOIN Students s ON a.StudentId = s.Id
+      WHERE r.ActiveExamId = ? AND r.AcademicYearId = ? AND a.ClassId = ? AND a.SectionId = ? AND r.ResultType = ?
+    `).all(examId, academicYearId, classId, sectionId, resultType);
+    
+    return { success: true, students: students }
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+});

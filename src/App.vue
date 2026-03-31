@@ -4,6 +4,7 @@
       <Login @logged-in="handleLoginSuccess" />
     </div>
     <div v-else>
+
       <Navbar @logout="logout" />
       <router-view />
       
@@ -12,6 +13,7 @@
 </template>
 
 <script>
+
 import { defineComponent } from 'vue'
 import { useRouter } from 'vue-router'
 import Navbar from './components/Navbar.vue'

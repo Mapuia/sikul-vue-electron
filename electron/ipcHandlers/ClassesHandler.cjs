@@ -17,7 +17,7 @@ ipcMain.handle('get-classes', () => {
 //////////////////////////////////////////////////////////////////////////////////////INSERT
 ipcMain.handle('insert-class', async (event, classId, className) => {
   try {
-    const stmt = db.prepare('INSERT INTO Classes (ClassId, ClassName, Teacher) VALUES (?, ?, ?)');
+    const stmt = db.prepare('INSERT INTO Classes (ClassId, ClassName) VALUES (?, ?)');
     stmt.run(classId, className);
     return { success: true };
   } catch (err) {

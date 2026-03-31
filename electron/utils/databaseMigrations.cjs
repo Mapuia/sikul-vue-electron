@@ -3,110 +3,95 @@
 const { db } = require('../database.cjs');
 
 async function runMigrations() {
-  // try {
+  try {
+    db.prepare('BEGIN TRANSACTION').run();
 
-  //   db.prepare('BEGIN TRANSACTION').run();
+    // 🔍 Check existing unique indexes
+    const indexes = db.prepare(`PRAGMA index_list(ResultStatus)`).all();
 
-  //   db.exec("DELETE FROM AcademicYears WHERE Id = 1");
+    const hasCorrectUnique = indexes.some(idx => {
+      const indexInfo = db.prepare(`PRAGMA index_info(${idx.name})`).all();
+      const cols = indexInfo.map(c => c.name);
 
-  //   const columnInfo = db.prepare("PRAGMA table_info(Marks)").all();
-  //   const academicYearColumn = columnInfo.find(col => col.name === 'AcademicYearId');
+      return (
+        cols.includes('AcademicYearId') &&
+        cols.includes('ActiveExamId') &&
+        cols.includes('ClassId') &&
+        cols.includes('SectionId') &&
+        cols.includes('ResultType')
+      );
+    });
 
-  //   if (!academicYearColumn) {
+    if (!hasCorrectUnique) {
+      console.log('🔄 Migrating ResultStatus table...');
 
-  //     console.log("Migrating Marks table to add AcademicYearId...");
+      // 1️⃣ Rename old table
+      db.prepare(`
+        ALTER TABLE ResultStatus RENAME TO ResultStatus_old;
+      `).run();
 
-  //     // 1. Rename old table
-  //     db.exec("ALTER TABLE Marks RENAME TO Marks_old");
+      // 2️⃣ Create new table with correct UNIQUE
+      db.prepare(`
+        CREATE TABLE ResultStatus (
+          Id INTEGER PRIMARY KEY AUTOINCREMENT,
+          AcademicYearId INTEGER NOT NULL,
+          ActiveExamId INTEGER NOT NULL,
+          ClassId INTEGER NOT NULL,
+          SectionId INTEGER,
+          ResultType TEXT NOT NULL,
+          isGenerated BOOLEAN DEFAULT (1),
+          isPublished BOOLEAN DEFAULT 0,
+          Creation_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          Last_Modified_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (AcademicYearId) REFERENCES AcademicYears (Id) ON DELETE CASCADE,
+          FOREIGN KEY (ClassId) REFERENCES Classes (Id) ON DELETE CASCADE,
+          UNIQUE (AcademicYearId, ActiveExamId, ClassId, SectionId, ResultType)
+        );
+      `).run();
 
-  //     // 2. Create new Marks table
-  //     db.exec(`
-  //       CREATE TABLE Marks (
-  //         Id INTEGER PRIMARY KEY AUTOINCREMENT,
-  //         AcademicYearId INTEGER,
-  //         ActiveExamId INTEGER NOT NULL,
-  //         StudentId TEXT NOT NULL,
-  //         SubjectId INTEGER NOT NULL,
-  //         PeriodicMaxMark DECIMAL(5,2),
-  //         TerminalMaxMark DECIMAL(5,2),
-  //         TotalMaxMarks DECIMAL(5,2),
-  //         PeriodicMarksObtained DECIMAL(5,2),
-  //         TerminalMarksObtained DECIMAL(5,2),
-  //         TotalMarksObtained DECIMAL(5,2),
-  //         SubjectResult TEXT,
-  //         Appeared BOOLEAN,
-  //         Creation_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-  //         Last_Modified_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-  //         CreatedBy INTEGER REFERENCES Users(Id),
-  //         ModifiedBy INTEGER REFERENCES Users(Id),
-  //         FOREIGN KEY (AcademicYearId) REFERENCES AcademicYears(Id) ON DELETE CASCADE,
-  //         FOREIGN KEY (StudentId) REFERENCES Students(Id) ON DELETE CASCADE,
-  //         FOREIGN KEY (SubjectId) REFERENCES Subjects(Id) ON DELETE CASCADE,
-  //         FOREIGN KEY (ActiveExamId) REFERENCES ActiveExams(Id) ON DELETE CASCADE,
-  //         UNIQUE(StudentId, SubjectId, ActiveExamId, AcademicYearId)
-  //       )
-  //     `);
+      // 3️⃣ Copy data (IMPORTANT: avoid duplicates)
+      db.prepare(`
+        INSERT INTO ResultStatus (
+          Id,
+          AcademicYearId,
+          ActiveExamId,
+          ClassId,
+          SectionId,
+          ResultType,
+          isGenerated,
+          isPublished,
+          Creation_at,
+          Last_Modified_at
+        )
+        SELECT 
+          Id,
+          AcademicYearId,
+          ActiveExamId,
+          ClassId,
+          SectionId,
+          ResultType,
+          isGenerated,
+          isPublished,
+          Creation_at,
+          Last_Modified_at
+        FROM ResultStatus_old;
+      `).run();
 
-  //     // 3. Move old data and assign AcademicYearId = 2
-  //     db.exec(`
-  //       INSERT INTO Marks (
-  //         Id,
-  //         AcademicYearId,
-  //         ActiveExamId,
-  //         StudentId,
-  //         SubjectId,
-  //         PeriodicMaxMark,
-  //         TerminalMaxMark,
-  //         TotalMaxMarks,
-  //         PeriodicMarksObtained,
-  //         TerminalMarksObtained,
-  //         TotalMarksObtained,
-  //         SubjectResult,
-  //         Appeared,
-  //         Creation_at,
-  //         Last_Modified_at,
-  //         CreatedBy,
-  //         ModifiedBy
-  //       )
-  //       SELECT
-  //         Id,
-  //         2,
-  //         ActiveExamId,
-  //         StudentId,
-  //         SubjectId,
-  //         PeriodicMaxMark,
-  //         TerminalMaxMark,
-  //         TotalMaxMarks,
-  //         PeriodicMarksObtained,
-  //         TerminalMarksObtained,
-  //         TotalMarksObtained,
-  //         SubjectResult,
-  //         Appeared,
-  //         Creation_at,
-  //         Last_Modified_at,
-  //         CreatedBy,
-  //         ModifiedBy
-  //       FROM Marks_old
-  //     `);
+      // 4️⃣ Drop old table
+      db.prepare(`DROP TABLE ResultStatus_old;`).run();
 
-  //     // 4. Drop old table
-  //     db.exec("DROP TABLE Marks_old");
+      console.log('✅ Migration completed');
+    } else {
+      console.log('✅ ResultStatus already up-to-date');
+    }
 
-  //     console.log("Marks table migration completed.");
+    db.prepare('COMMIT').run();
 
-  //   } else {
-  //     console.error("'AcademicYearId' column already exists in Marks table.");
-  //   }
-
-  //   db.prepare('COMMIT').run();
-
-  // } catch (error) {
-
-  //   db.prepare('ROLLBACK').run();
-  //   console.error('Migration failed:', error);
-  //   throw error;
-
-  // }
+  } catch (error) {
+    db.prepare('ROLLBACK').run();
+    console.error('❌ ResultStatus migration failed:', error);
+    throw error;
+  }
 }
 
 module.exports = { runMigrations };

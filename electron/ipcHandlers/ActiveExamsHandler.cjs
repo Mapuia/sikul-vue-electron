@@ -219,30 +219,11 @@ ipcMain.handle('get-active-exam-by-type', async (event, examType, YearId) => {
   }
 })
 
-// ipcMain.handle('get-working-days', async (event, examId, yearId) => {
-//   try {
-
-//     // console.log("Cheking Working days for:", examId, yearId)
-//     const workingDays = db.prepare(`
-//       SELECT noOfWorkingDays
-//       FROM ActiveExams
-//       WHERE Id = ?
-//       AND AcademicYearId = ?
-//       `).get(examId, yearId).noOfWorkingDays   
-   
-//   //  console.log("working Days", workingDays)
-//     return { success: true, workingDays }
-//   } catch (error) {
-//     console.log("Error")
-//     return { success: false, error: error.message }
-//   }
-// })
-
 
 ipcMain.handle('get-exam-by-type', async (event, type, YearId) => {
   try {
     const exam = db.prepare(`
-      SELECT ae.Id as Id, e.ExamName as ExamName
+      SELECT ae.Id as Id, e.ExamName as ExamName, ae.PassingPercentage as PassingPercentage
       FROM ActiveExams ae
       JOIN Exams e ON ae.ExamId = e.Id
       WHERE e.ExamType = ? AND ae.AcademicYearId = ?
@@ -255,23 +236,30 @@ ipcMain.handle('get-exam-by-type', async (event, type, YearId) => {
   }
 })
 
+// Get Passing Percentage for exam type
+ipcMain.handle('get-passing-percentage', async (event, yearId, examType) => {
+  try {
+    const row = db.prepare(`
+      SELECT ae.PassingPercentage
+      FROM ActiveExams ae
+      JOIN Exams e ON ae.ExamId = e.Id
+      WHERE ae.AcademicYearId = ? AND e.ExamType = ?
+    `).get(yearId, examType);
 
-// ipcMain.handle('submit-working-days', async (event, data) => {
-//   //console.log("Workingdays Data", data)
-//   try {
-//     db.prepare(`
-//       UPDATE ActiveExams 
-//       SET noOfWorkingDays = ?
-//       WHERE Id = ? AND AcademicYearId = ?
-//     `).run(data.noOfWorkingDays, data.examId, data.yearId)
+    if (!row) {
+      console.warn("No passing percentage found for:", yearId, examType);
+      return { success: false, error: "No data found" };
+    }
 
-//     //console.log("Update result:", result)
-//     return { success: true }
-//   } catch (error) {
-//     //console.error("Error updating:", error.message)
-//     return { success: false, error: error.message }
-//   }
-// })
+    // console.log("Passing Percentage:", row.PassingPercentage);
+
+    return { success: true, passingPercentage: row.PassingPercentage };
+
+  } catch (error) {
+    console.error(error);
+    return { success: false, error: error.message };
+  }
+});
 
 
 

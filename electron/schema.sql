@@ -277,7 +277,7 @@ CREATE TABLE ResultStatus (
     Last_Modified_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (AcademicYearId) REFERENCES AcademicYears (Id) ON DELETE CASCADE,
     FOREIGN KEY (ClassId) REFERENCES Classes (Id) ON DELETE CASCADE,
-    UNIQUE (AcademicYearId, ActiveExamId, ClassId, SectionId)
+    UNIQUE (AcademicYearId, ActiveExamId, ClassId, SectionId, ResultType)
 );
 
 

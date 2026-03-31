@@ -140,8 +140,8 @@
                     </td>
                     <!-- Status -->
                     <td>
-                      <span class="tag" :class="statuses[student.StudentId] === 'Pass' ? 'is-success' : 'is-danger'">
-                        {{ statuses[student.StudentId] || 'N/A' }}
+                      <span class="tag" :class="status[student.StudentId] === 'Pass' ? 'is-success' : 'is-danger'">
+                        {{ status[student.StudentId] || 'N/A' }}
                       </span>
                     </td>
                     <td v-if="Result_Published"><p class = "help has-text-danger">Result Published! Can not update marks</p></td>
@@ -349,8 +349,7 @@ const {
   periodicMajorMaxMark,
   periodicMinorMaxMark,
   terminalMajorMaxMark,
-  terminalMinorMaxMark,
-  PassingPercentage,      
+  terminalMinorMaxMark, 
   loadActiveExam 
 } = useActiveExam()
 
@@ -381,9 +380,10 @@ const selectedSubjectId = ref('')
 const marksEntered = ref(false)
 
 // Marks data
+const PassingPercentage = ref('')
 const periodicMarks = ref({})
 const termMarks = ref({})
-const statuses = ref({})
+const status = ref({})
 const appeared = ref({})
 
 // Grades data
@@ -423,6 +423,7 @@ watch(() => route.query.type, (newType) => {
   getExam()
   fetchClasses() 
   resetSelections()
+  getPassingPercentage(examType.value)
 }, { immediate: true })
 
 watch(() => route.query, (newQuery) => {
@@ -493,6 +494,16 @@ onMounted(async () => {
 })
 
 // ============== DATA FETCHING FUNCTIONS ==============
+async function getPassingPercentage(examType) {
+  // console.log("examType:", examType)
+  const result = await window.electronAPI.getPassingPercentage(CurrentYearId.value, examType)
+ if(result.success){
+    PassingPercentage.value = result.passingPercentage
+    // console.log("Passing Percentage:", PassingPercentage.value)
+ }   
+ else return ''
+}
+
 async function getExam() {
   const result = await window.electronAPI.getExamByType(examType.value, CurrentYearId.value)
   currentExamId.value = result.exam.Id
@@ -504,14 +515,14 @@ async function fetchClasses() {
   if (result.success) {
     if (examType.value === 'selection') {      
       classes.value = result.classes.filter(cls => cls.ClassName === 'X')
-      console.log("Classes for Selection Test:", classes.value)
+      // console.log("Classes for Selection Test:", classes.value)
       if (classes.value.length > 0) {
         selectedClassId.value = classes.value[0].Id
       }
     } 
     if (examType.value === 'annual') {      
       classes.value = result.classes.filter(cls => cls.ClassName !== 'X')
-      console.log("Classes for Selection Test:", classes.value)
+      // console.log("Classes for Selection Test:", classes.value)
       if (classes.value.length > 0) {
         selectedClassId.value = classes.value[0].Id
       }
@@ -581,7 +592,7 @@ async function loadExistingMarks() {
     result.forEach(mark => {
       periodicMarks.value[mark.StudentId] = mark.PeriodicMarksObtained 
       termMarks.value[mark.StudentId] = mark.TerminalMarksObtained
-      statuses.value[mark.StudentId] = mark.SubjectResult || "N.A."
+      status.value[mark.StudentId] = mark.SubjectResult || "N.A."
       appeared.value[mark.StudentId] = mark.SubjectResult === 'N.A.' ? 0 : 1
     }) 
     marksEntered.value = result.length > 0
@@ -640,7 +651,7 @@ function resetStudentData() {
 function resetMarkData() {
   periodicMarks.value = {}
   termMarks.value = {}
-  statuses.value = {}
+  status.value = {}
   appeared.value = {}
 }
 
@@ -663,7 +674,7 @@ function updateStatus(studentId) {
     : (periodicMinorMaxMark.value + terminalMinorMaxMark.value))
   
   const passMark = Math.ceil(maxTotal * (PassingPercentage.value / 100))
-  statuses.value[studentId] = total >= passMark ? 'Pass' : 'Fail'
+  status.value[studentId] = total >= passMark ? 'Pass' : 'Fail'
 }
 
 // ============== MODAL FUNCTIONS ==============
@@ -754,7 +765,7 @@ async function saveMarks() {
           PeriodicMarksObtained: periodicMarksObtained,
           TerminalMarksObtained: terminalMarksObtained,
           TotalMarksObtained: totalMarksObtained,
-          SubjectResult: statuses.value[student.StudentId]
+          SubjectResult: status.value[student.StudentId]
         }
       })
 

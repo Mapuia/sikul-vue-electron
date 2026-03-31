@@ -12,6 +12,9 @@ contextBridge.exposeInMainWorld('electronAuth', {
 
   //Functional
   contextBridge.exposeInMainWorld("electronAPI", {
+  getAppVersion: () => ipcRenderer.invoke('get-app-version'),
+  selectDirectory: () => ipcRenderer.invoke('dialog:openDirectory'),
+  savePdfFile: (data) => ipcRenderer.invoke('file:savePdf', data),
   //getAvailableYears: () => ipcRenderer.invoke('get-available-years'),
   getAcademicYears: () => ipcRenderer.invoke('get-academic-years'),
   getCurrentAcademicYear: () => ipcRenderer.invoke('get-current-academic-year'),
@@ -64,6 +67,7 @@ contextBridge.exposeInMainWorld('electronAuth', {
   // submitWorkingDays: (data) => ipcRenderer.invoke('submit-working-days', data),
 
   getCurrentExam: (academicYearId) => ipcRenderer.invoke('get-current-exam', academicYearId),
+  getPassingPercentage: (yearId, examType) => ipcRenderer.invoke('get-passing-percentage', yearId, examType),
   activateExam: (Id) => ipcRenderer.invoke('activate-exam',Id),
   //getPeriodicMaxmarks: (YearId) => ipcRenderer.invoke('get-periodic-max-marks',YearId),
 
@@ -164,6 +168,7 @@ contextBridge.exposeInMainWorld('electronAuth', {
   
   // For result generation
   generateResults: (data) => ipcRenderer.invoke('generate-results', data), 
+  generateSelectionResults: (data) => ipcRenderer.invoke('generate-selection-results', data),
   verifyResultStatus: (data) => ipcRenderer.invoke('verify-result-status', data),
   getSectionResults: (data) => ipcRenderer.invoke('get-section-results', data),
   getResultSummary: (data) => ipcRenderer.invoke('get-result-summary', data),  
@@ -176,8 +181,10 @@ contextBridge.exposeInMainWorld('electronAuth', {
 
   generateReportCard:(params) => ipcRenderer.invoke('generate-report-card', params),
   generateSectionReportCard:(params) => ipcRenderer.invoke('generate-section-report-card', params),
+  getStudentsId:(params) => ipcRenderer.invoke('get-students-Id', params),
   getReportCard: (params) => ipcRenderer.invoke('get-report-card', params),
   getFinalReportCard: (params) => ipcRenderer.invoke('get-final-report-card', params),
+  // checkAllReportCardGenerated: (params) => ipcRenderer.invoke('check-all-report-card-generated', params),
 
 
   exportStudentData: (params) => ipcRenderer.invoke('export-student-data', params),

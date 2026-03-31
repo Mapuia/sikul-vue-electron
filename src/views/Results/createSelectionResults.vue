@@ -14,7 +14,7 @@
   </div> -->
   <div class="form-container full"> 
     <div>
-      <h1 class="title is-4 has-text-centered mb-4">Class X Selection Test Results. ({{ CurrentYear }})</h1>      
+      <h1 class="title is-4 has-text-centered mb-4">New Class X Selection Test Results. ({{ CurrentYear }})</h1>      
     
     </div>
 

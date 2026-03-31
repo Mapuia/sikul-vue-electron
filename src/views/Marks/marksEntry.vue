@@ -11,7 +11,7 @@
       </div>
     </div>
     <div v-else>
-      <h1 class="title has-text-centered is-4">Marks Entry for {{ currentExamName }} {{ CurrentYear }}</h1>
+      <h1 class="title has-text-centered is-4"> Marks Entry for {{ currentExamName }} {{ CurrentYear }}</h1>
       <h2 class="subtitle has-text-centered">{{ examType ? "" : 'There is something wrong. Logout and login again'}}</h2>
       <!--selected Tabs-->
       <div class="box columns mb-4" v-if="examType !== 'selection'">
@@ -124,10 +124,10 @@
                 
               </div>
               <div class="tags are-medium">
-                <span class="tag ml-2">Pass Mark ({{ examType === 'selection' ? 35: PassingPercentage }}%)</span>
+                <span class="tag ml-2">Pass Mark ({{ PassingPercentage }}%)</span>
               </div>
             </div>            
-                <label v-if="examType === 'selection'" class="checkbox"> 
+                <label v-if="examType === 'selection'" class="checkbox mb-3 is-size-5"> 
                   <input 
                     type="checkbox" 
                     v-model="withoutInternalMarks"
@@ -593,8 +593,7 @@ const {
   periodicMajorMaxMark,
   periodicMinorMaxMark,
   terminalMajorMaxMark,
-  terminalMinorMaxMark,
-  PassingPercentage,      
+  terminalMinorMaxMark,     
   loadActiveExam 
 } = useActiveExam()
 
@@ -632,6 +631,7 @@ const selectedSubjectId = ref('')
 const marksEntered = ref(false)
 
 // Marks data
+const PassingPercentage = ref('')
 const periodicMarks = ref({})
 const termMarks = ref({})
 const statuses = ref({})
@@ -648,7 +648,8 @@ watch(() => route.query.type, async (newType) => {
   await getExam()
   checkResultStatus(currentExamId.value, CurrentYearId.value)  
   fetchClasses() 
-  resetSelections()  
+  resetSelections()
+  await getPassingPercentage(examType.value)
   //fetchWorkingDays()
   selected.value = 'scholastic'
   if(newType === 'annual') {
@@ -656,6 +657,16 @@ watch(() => route.query.type, async (newType) => {
   }
     
 }, { immediate: true })
+
+async function getPassingPercentage(examType) {
+  // console.log("examType:", examType)
+  const result = await window.electronAPI.getPassingPercentage(CurrentYearId.value, examType)
+ if(result.success){
+    PassingPercentage.value = result.passingPercentage
+    // console.log("Passing Percentage:", PassingPercentage.value)
+ }   
+ else return ''
+}
 
 // ============== COMPUTED PROPERTIES ==============
 const resultName = computed(() => examType.value === 'terminal' ? 'Half Yearly' : examType.value === 'annual' ? 'Final Exam': 'Selection Test Result')
@@ -715,16 +726,11 @@ async function fetchWorkingDays(){
 // ============== LIFECYCLE HOOKS ==============
 onMounted(async () => {   
   await loadActiveExam()
-  //checkResultStatus(currentExamId.value, CurrentYearId.value)
-  //await fetchWorkingDays()    
-  //console.log("Check for ExamId", currentExamName.value)
+  
 })
 // ============== WATCHERS ==============
-// Watch route changes
 
 
-
-// Watch tab changes
 watch(selected, async (newTab) => {
   await resetSelections()
   await fetchClasses()
@@ -762,6 +768,7 @@ watch(selectedSectionId, async (sectionId) => {
     return
   }
   // await verifyResultStatus()
+  selectedSubjectId.value = ''
   await loadStudentsBySectionId()
   if(selected.value !== 'attendance') {
     studentloaded.value = false
@@ -1042,7 +1049,7 @@ function updateStatus(studentId) {
   const total = calculateTotal(studentId)
   
   if(examType.value=== 'selection'){
-    PassingPercentage.value = 35
+    // PassingPercentage.value = 35
     if(withoutInternalMarks.value) {
       periodicMajorMaxMark.value = 0
       periodicMinorMaxMark.value = 0   

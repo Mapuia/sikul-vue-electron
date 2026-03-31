@@ -7,14 +7,14 @@
     </div>
 
     <!-- Class and Section Selection -->
-      <div class="box">
+      <div class="box" >
         Select Class and Section to generate Report Card
         <div class="columns is-vcentered">
           <div class="column">
             <div class="field">
               <label class="label">Class</label>
               <div class="select is-fullwidth">
-                <select v-model="selectedClassId" @change="fetchSections">
+                <select v-model="selectedClassId" @change="fetchSections" :disabled="isLoading">
                   <option disabled value="">-- Select Class --</option>
                   <option v-for="cls in classes" :key="cls.Id" :value="cls.Id">
                     {{ cls.ClassName }}
@@ -27,7 +27,7 @@
             <div class="field">
               <label class="label">Section</label>
               <div class="select is-fullwidth">
-                <select v-model="selectedSectionId" :disabled="!selectedClassId || sections.length === 0" @change="fetchResults">
+                <select v-model="selectedSectionId" :disabled="!selectedClassId || sections.length === 0" @change="fetchResults" disabled="isLoading">
                   <option disabled value="">-- Select Section --</option>
                   <option v-for="sec in sections" :key="sec.Id" :value="sec.Id">
                     {{ sec.SectionName }}
@@ -39,7 +39,7 @@
           <div class="column">
             <label class="label">Generate All Report Cards</label>
             <div class="">
-              <button :disabled="results.length <= 0" class="button is-primary is-fullwidth" @click="generateAllReportCard">
+              <button :disabled="results.length <= 0 || isLoading" class="button is-primary is-fullwidth" @click="generateAllReportCard">
                 Generate
               </button>
             </div>
@@ -49,8 +49,8 @@
 
       <!-- Loading Indicator -->
       <div v-if="isLoading" class="has-text-centered mt-4">
-        <progress class="progress is-medium is-primary" max="100"></progress>
-        <p>Loading results...</p>
+        <!-- <progress class="progress is-medium is-primary" max="100"></progress> -->
+        <h1 class="subtitle">Downloading: {{downloadProgress.current}} of {{ downloadProgress.total }}</h1>
       </div>
 
       <!-- Result Display -->
@@ -59,7 +59,7 @@
           <div class="level mt-4">
             <!-- Centered heading -->
             <div class="level-item has-text-left">
-              <h2 class="subtitle is-5">Detail Results</h2>
+              <h2 class="subtitle is-5">Results</h2>
             </div>
 
           </div>
@@ -67,6 +67,13 @@
         <!-- Detailed Results Table -->
          
             <div class="mt-4" v-if="results.length > 0">
+              <div class="has-text-centered">
+                <p class="subtitle is-6" mb-3>Total Report Card Generated: {{ reportCardsGenerated }} of {{ results.length }} Results processed.</p>
+              
+                <button v-if="reportCardsGenerated !== 0" class="button is-primary mb-3" @click="downloadAllReportCards" :disabled="isLoading">
+                  {{ isLoading ? 'Processing...' : 'Download All Generated Report Cards' }}
+              </button> 
+            </div>
             <div class="table-container">
               
               <table class="table is-fullwidth is-striped is-bordered">
@@ -121,6 +128,11 @@
                   </tr>
                 </tbody>
               </table>
+            </div> 
+            <div class="has-text-centered">
+              <button class="button is-primary mt-5" @click="downloadAllReportCards" :disabled="isLoading">
+                {{ isLoading ? 'Processing...' : 'Download All Report Cards' }}
+              </button> 
             </div>  
           </div>     
         <div v-else-if="!isLoading" class="notification is-danger mt-4">
@@ -421,18 +433,18 @@
 </template>
 
 <script setup>
-import { ref, watch, onMounted, computed } from 'vue'
+import { ref, watch, onMounted, computed, nextTick } from 'vue'
 import { useRoute } from 'vue-router'
 import { useAcademicYear } from '../../composables/useAcademicYear'
-import { useActiveExam } from '../../composables/useActiveExam'
+// import { useActiveExam } from '../../composables/useActiveExam'
 import { useResultStatus } from '../../composables/useResultStatus'
 const { isPublished, publishDate, checkResultStatus } = useResultStatus()
 import html2pdf from 'html2pdf.js'
 
 const { CurrentYearId, CurrentYear } = useAcademicYear()
-const { Final_Published, PassingPercentage, loadActiveExam } = useActiveExam()
 
 
+const PassingPercentage = ref('')
 const route = useRoute()
 const userRole = ref('')
 const isLoading = ref(false)
@@ -449,6 +461,7 @@ const selectedClassId = ref('')
 const selectedSectionId = ref('')
 
 const results = ref([])
+const resultType = ref('final')
 
 //input Modal
 const inputModalVisible = ref(false)
@@ -459,6 +472,8 @@ const currentAttendance = ref(0)
 const currentTeachersRemark = ref('')
 const AnnualNoOfStudents = ref(0)
 const TerminalNoOfStudents = ref(0)
+
+const reportCardsGenerated = ref('')
 
 //For Report Card Fetch
 
@@ -494,6 +509,7 @@ const currentDate = ref(new Date().toLocaleDateString('en-IN', {
 async function getExam() {
   const result = await window.electronAPI.getExamByType(examType.value, CurrentYearId.value)
   currentExamId.value = result.exam.Id
+  PassingPercentage.value = result.exam.PassingPercentage
   //currentExamName.value = result.exam.ExamName
 }
 
@@ -542,13 +558,17 @@ async function fetchHeadSignatory() {
 } 
 
 onMounted(async () => {
-  await loadActiveExam()
+  await getUser()
+  await fetchClasses()  
+  await fetchHeadInfo()   
+})
+
+watch(() => route.query.type, async(newType) => {
+  await fetchResults()
+  await fetchClasses()
   await getExam()
   await checkResultStatus(currentExamId.value, CurrentYearId.value)
-  await fetchClasses()
-  await getUser()
-  await fetchHeadSignatory()
-})
+}, { immediate: true })
 
 async function getUser() {
   const user = await window.electronAuth.getCurrentUser()
@@ -576,26 +596,30 @@ async function fetchClasses() {
 
 watch(selectedClassId, async (newClassId) => {
   if (newClassId) {
-    // await fetchSections()
-    console.log('Sections:', sections.value)
-    if (sections.value.length < 2) {
+     await fetchSections()    
+    if (sections.value.length === 0) {
+      // console.log('Sections:', sections.value.length)
       selectedSectionId.value = 0
       // fetchNoOfStudents()
       await fetchClassTeacherInfo()
       await fetchResults()
+      // console.log('SectionId:', selectedSectionId.value)
     }
   } else {
     sections.value = []
-    selectedSectionId.value = ''
+    selectedSectionId.value = 0
     results.value = []
   }
 })
+
 watch(selectedSectionId, async (newSectionId) => {
   if (newSectionId) {
     await fetchResults()
     await fetchClassTeacherInfo()
   }
 })
+
+
 async function fetchSections() {
   try {
     sections.value = []
@@ -627,12 +651,16 @@ async function fetchResults() {
       academicYearId: CurrentYearId.value,
       examId: currentExamId.value,
       classId: selectedClassId.value,
-      sectionId: selectedSectionId.value
+      sectionId: selectedSectionId.value,
+      resultType: 'final'
     }); 
     //console.log ('ExamId to fetch:', currentExamId.value)  
     if (resultsResponse) {
       results.value = resultsResponse.results;
-    //  console.log ('Result Data:', results.value)
+      reportCardsGenerated.value = resultsResponse.reportCardGenerated      
+    }
+    else {
+      window.electronAPI.showErrorDialog('No Results for selected Class and Section. Please try again.')
     }
   } catch (error) {
     console.error('Error fetching results:', error)
@@ -642,18 +670,20 @@ async function fetchResults() {
 }
 
 async function generateAllReportCard() {
-  if (!selectedClassId.value || !selectedSectionId.value) {
+  // console.log('Selected Section:', selectedSectionId.value)
+  if (!selectedClassId.value ) {
     window.electronAPI.showErrorDialog('Please select a valid class and section.')
     return
   }
-  
+  // console.log('Selected Section:', selectedSectionId.value)
   try {
     const results = await window.electronAPI.generateSectionReportCard({
       examId: currentExamId.value,
       academicYearId: CurrentYearId.value,
       classId: selectedClassId.value,
       sectionId: selectedSectionId.value,
-      resultType: examType.value
+      // resultType: examType.value === 'terminal' ? 'terminal' : examType.value === 'annual' ? 'final' : 'final'
+      resultType: 'final'
     })
     
     if (results?.success) { 
@@ -764,7 +794,126 @@ async function fetchReportCard(studentId, Name) {
   }
 }
 
+//Download All PDFs
+// Add a reactive ref to show progress to the user
+const downloadProgress = ref({ current: 0, total: 0 })
 
+async function downloadAllReportCards() {
+  // 1. Fetch Student List
+  const response = await window.electronAPI.getStudentsId({
+    examId: currentExamId.value,
+    academicYearId: CurrentYearId.value,
+    classId: selectedClassId.value,
+    sectionId: selectedSectionId.value || 0,
+    resultType: 'final'
+  });
+
+  const students = response.students || [];
+  if (students.length === 0) {
+    window.electronAPI.showErrorDialog('No students found in this selection.');
+    return;
+  }
+
+  // 2. Folder Selection
+  const folderPath = await window.electronAPI.selectDirectory();
+  if (!folderPath) return;
+
+  isLoading.value = true;
+  downloadProgress.value = { current: 0, total: students.length };
+
+  try {
+    for (const student of students) {
+      downloadProgress.value.current++;
+
+      // 3. Fetch specific Student Data
+      const reports = await window.electronAPI.getFinalReportCard({
+        examId: currentExamId.value,
+        classId: selectedClassId.value,
+        sectionId: selectedSectionId.value || 0,
+        studentId: student.StudentId,
+        resultType: 'final',
+        academicYearId: CurrentYearId.value,
+        PassingPercentage: PassingPercentage.value
+      });
+
+      if (reports?.success) {
+        // 4. Update UI State immediately
+        studentData.value = reports.studentData || {};
+        marksData.value = reports.finalMarksData || [];
+
+        // result data assignment
+        resultData.value = {
+          terminal: {
+            Percentage: reports.resultData?.terminal?.Percentage || 0,
+            Division: reports.resultData?.terminal?.Division || '',
+            Rank: reports.resultData?.terminal?.Rank || '',
+            ResultStatus: reports.resultData?.terminal?.ResultStatus || ''
+          },
+          finalResult: {
+            Percentage: reports.resultData?.finalResult?.Percentage || 0,
+            Division: reports.resultData?.finalResult?.Division || '',
+            Rank: reports.resultData?.finalResult?.Rank || '',
+            ResultStatus: reports.resultData?.finalResult?.ResultStatus || ''
+          }
+        };
+
+        totalMarks.value = reports.totalMarks || {};
+        reportCardData.value = reports.attendanceData || {};
+        activities.value = reports.activities || [];
+        // modalVisible.value = true;
+        AnnualNoOfStudents.value = reports.AnnualNoOfStudents || 0;
+        TerminalNoOfStudents.value = reports.TerminalNoOfStudents || 0;
+
+        // 5. Fast Render: Wait for Vue to update the DOM
+        await nextTick();
+        
+        // A tiny 50ms delay is often enough for styles/images to settle
+        await new Promise(resolve => setTimeout(resolve, 50));
+
+        const element = document.querySelector('.print-page');
+        
+        // Safe filename handling
+        const rawName = student.StudentName || student.Name || reports.studentData?.Name || 'Student';
+        const fileName = `Final_Report_${rawName.trim().replace(/\s+/g, '_')}.pdf`;
+
+        // 6. Optimized PDF Settings (Speed focus)
+        const opt = {
+          margin: 0.1,
+          filename: fileName,
+          image: { type: 'jpeg', quality: 0.95 },
+          html2canvas: { 
+            scale: 1.5, // 1.5 is the "sweet spot" for speed vs quality
+            useCORS: true, 
+            logging: false,
+            letterRendering: true 
+          },
+          jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' }
+        };
+
+        // 7. Generate Blob -> ArrayBuffer -> Save
+        const pdfBlob = await html2pdf().set(opt).from(element).output('blob');
+        const buffer = await pdfBlob.arrayBuffer();
+        
+        await window.electronAPI.savePdfFile({
+          folderPath,
+          fileName,
+          buffer: buffer
+        });
+      }
+    }
+
+    window.electronAPI.showInfoDialog(`Successfully saved ${students.length} report cards.`, 'Success');
+    
+  } catch (error) {
+    console.error('Bulk Export Error:', error);
+    window.electronAPI.showErrorDialog('Export failed: ' + error.message);
+  } finally {
+    isLoading.value = false;
+    downloadProgress.value = { current: 0, total: 0 };
+  }
+}
+
+//Download Single PDF
 function downloadPDF() {
   
   const element = document.querySelector('.print-page') // or any specific container you want

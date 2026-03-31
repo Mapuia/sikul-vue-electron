@@ -48,6 +48,7 @@ ipcMain.handle('get-academic-years', () => {
 
 /////////////////////////////////////////////////////////////////////////////////////////////Add Academic Year
 ipcMain.handle('add-academic-year', async (event, { yearName, startDate, endDate }) => {
+  let PassingPercentage = 40;
   try {
     //console.log("ACademicYear Handler:", yearName, startDate, endDate)
     const insertAcademicYear = db.transaction(() => {
@@ -88,6 +89,10 @@ ipcMain.handle('add-academic-year', async (event, { yearName, startDate, endDate
         } else {
           majorMaxMark = 80;
           minorMaxMark = 20;
+        }        
+
+        if (exam.ExamType.toLowerCase() === "selection") {
+          PassingPercentage = 35;
         }
 
         insertActiveExam.run(
@@ -95,7 +100,7 @@ ipcMain.handle('add-academic-year', async (event, { yearName, startDate, endDate
           exam.Id,
           majorMaxMark,
           minorMaxMark,
-          40,  // PassingPercentage
+          PassingPercentage,  //
           0,   // IsActive
           0,
           currentTime,

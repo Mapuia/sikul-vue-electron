@@ -3,8 +3,9 @@ const path = require('path');
 const db = require('./database.cjs');
 const authService = require('./ipcHandlers/auth.cjs');
 const { runMigrations } = require('./utils/databaseMigrations.cjs');
+const fs = require('fs');
 
-runMigrations();
+// runMigrations();
 
 let mainWindow;
 let splash;
@@ -189,6 +190,17 @@ ipcMain.handle('show-error-dialog', async (_, message) => {
     message,
   });
 });
+
+// Save bulk PDF files
+ipcMain.handle('dialog:openDirectory', async () => {
+  const { canceled, filePaths } = await dialog.showOpenDialog({
+    properties: ['openDirectory']
+  });
+  if (canceled) return null;
+  return filePaths[0];
+});
+
+
 // Quit handling with cleanup
 let isSafeToQuit = false;
 
@@ -225,4 +237,8 @@ app.on('activate', () => {
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit();
+});
+
+ipcMain.handle('get-app-version', () => {
+  return app.getVersion(); // This automatically pulls from your package.json
 });

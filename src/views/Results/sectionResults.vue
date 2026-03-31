@@ -3,10 +3,9 @@
   <div class="form-container box wide">
     <div class="has-text-centered mb-4">
       <h1 class="title is-4">{{ resultName }}, {{ CurrentYear }}</h1>
-      <h2 class="subtitle is-5" v-if="examType !== 'selection'">Select Class and Section</h2>
+      <h2 class="subtitle is-5" v-if="resultType !== 'selection' && resultType !== 'provisional'">Select Class and Section</h2>
     </div>
 
-    <div v-if="examType">
     <!-- Class and Section Selection -->
       <div class="box">
         <div class="columns is-vcentered">
@@ -47,13 +46,6 @@
 
       <!-- Result Display -->
       <div v-if="results && resultSummary" class="result-container">
-        <div class="level mt-4">
-            <!-- Centered heading -->
-            <div class="level-item has-text-left">
-              <h2 class="subtitle is-5">Quick Results</h2>
-            </div>
-        </div>
-
         <!-- Detailed Results Table -->
         <div v-if=" selectedClassId && results.length > 0" class="print-container"> 
           <div class="print-page"> 
@@ -195,7 +187,7 @@
         </div>
          
       </div>
-    </div>
+    
   </div>
   <!-- <div v-else class="form-container wide pb-1" >
     <div class="notification is-warning has-text-centered " >
@@ -233,6 +225,9 @@ const selectedClassId = ref('')
 const selectedSectionId = ref('')
 const noSections = ref(false)
 const results = ref([])
+const resultType = ref('')
+
+
 
 const resultPublished = ref(false) // later, this must be changed
 const publishDate = ref('')
@@ -253,22 +248,41 @@ const currentDate = ref(new Date().toLocaleDateString('en-IN', {
 }))
 
 watch(() => route.query.type, (newType) => {
-  examType.value = newType
-  resultName.value = newType === 'terminal'? 'Half Yearly Exam Results' : newType === 'annual' ? 'Final Exam Results' : 'Selection Test Results'
-  console.log("Exam Type:", examType.value)
+  resultType.value = newType
+  if(newType === 'final'){
+    examType.value = 'annual'
+  }
+  else if(newType === 'provisional'){
+    examType.value = 'selection'
+  }
+  else{
+    examType.value = newType
+  }
+  switch (resultType.value) {
+    case 'selection' :
+        // Only show Class X for selection tests
+       resultName.value = 'Selection Test Results'
+       break;
+    case 'provisional':
+        // Only show Class X for selection tests
+       resultName.value = 'Selection Test Final Results'
+       break;
+    case 'final':
+        // Exclude Class X for annual exams
+       resultName.value = 'Final (Annual) Results'
+       break;
+    case 'terminal':
+        // Exclude Class X for annual exams
+       resultName.value = 'Half Yearly Exam Results'
+       break;
+  }
+  
   getExam()  
   selectedClassId.value = ''
   selectedSectionId.value = ''
   checkPublishStatus()
 }, { immediate: true })
 
-watch(examType, async (newType) => {
-  if (newType) {    
-    selectedClassId.value = ''
-    selectedSectionId.value = ''     
-  }
-  await fetchClasses()
-}, { immediate: true })
 
 async function getExam() {
   const result = await window.electronAPI.getExamByType(examType.value, CurrentYearId.value)
@@ -336,32 +350,35 @@ async function checkPublishStatus() {
 async function fetchClasses() {
   const result = await window.electronAPI.getClasses();
   if (result.success) {
-    switch (examType.value) {
-      case 'selection':
+    switch (resultType.value) {
+      case 'selection' :
         // Only show Class X for selection tests
         classes.value = result.classes.filter(cls => cls.ClassName === 'X');
         if (classes.value.length > 0) {
           selectedClassId.value = classes.value[0].Id;
-          console.log("Selection a ni tur a ni", examType.value, classes.value);
         }
         break;
-        
-      case 'annual':
+      case 'provisional':
+        // Only show Class X for selection tests
+        classes.value = result.classes.filter(cls => cls.ClassName === 'X');
+        if (classes.value.length > 0) {
+          selectedClassId.value = classes.value[0].Id;
+        }
+        break;  
+      case 'final':
         // Exclude Class X for annual exams
         classes.value = result.classes.filter(cls => cls.ClassName !== 'X');
-       console.log("Annual a ni tur a ni", examType.value, classes.value);
-        break;
-        
+
+        break;        
       
       default:
         // Show all classes for terminal exams (or any other type)
         classes.value = result.classes;
-        //console.log("Terminal a ni tur a ni", examType.value, classes.value);
+
         break;
     }
   }
 }
-
 
 watch(selectedClassId, async (newClassId) => {
   if (newClassId) {
@@ -406,7 +423,7 @@ async function fetchSections() {
 
 async function fetchResults() {
   if (!selectedClassId.value ) return
-  
+
   try {
     isLoading.value = true
     results.value = []
@@ -417,7 +434,8 @@ async function fetchResults() {
       academicYearId: CurrentYearId.value,
       examId: currentExamId.value,
       classId: selectedClassId.value,
-      sectionId: selectedSectionId.value
+      sectionId: selectedSectionId.value,
+      resultType: resultType.value ///provisional results
     });
     
     if (resultsResponse) {

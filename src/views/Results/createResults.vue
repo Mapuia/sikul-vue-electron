@@ -51,7 +51,7 @@
         <!-- Marks Entry Status Table -->
         <section class="box column mr-5 ">
           <h1 class="subtitle is-5 mb-1">Marks Entry Status</h1>
-          <p class="mb-3">Only the classes with marks entered is displayed here.</p>
+          <p class="mb-3">Classes without marks entry are not displayed.</p>
           <div class="table-container">
             <table class="table is-fullwidth is-striped is-hoverable">
               <thead>
@@ -82,13 +82,7 @@
                     >
                       <span v-if="item.resultGenerating">Generating...</span>
                       <span v-else><i class="fas fa-redo mr-2"></i>Re-Generate Result</span>
-                    </button>
-                    <button
-                      class="button is-small is-warning"
-                      @click="loadModalResults(item.classId, item.sectionId, item.resultStatus.isPublished)"
-                    > <i class = "fas fa-eye mr-2"></i>
-                      View Results
-                    </button>                    
+                    </button>                                      
                   </td>
                   
                   <td v-if="!item.resultStatus.isPublished">
@@ -108,15 +102,20 @@
                       @click="generateResult(item.classId, item.sectionId)"
                     >
                       <span v-if="item.resultGenerating">Generating...</span>
-                      <span v-else><i class="fas fa-redo mr-2"></i>Re-Generate Result</span>
+                      <span v-else><i class="fas fa-redo mr-2"></i>Re-Generate</span>
                     </button>
                     <button
-                      class="button is-small is-info"
-                      @click="loadModalResults(item.classId, item.sectionId)"
+                      class="button is-small is-info mr-2"
+                      @click="loadModalResults(item.classId, item.sectionId, false)"
                     ><i class = "fas fa-eye mr-2 mt-1"></i>
                       View Results
-                    </button>
-                    
+                    </button>                  
+                    <button v-if="resultType === 'selection'"
+                      class="button is-small is-info mr-2"
+                      @click="loadModalResults(item.classId, item.sectionId, true)"
+                    ><i class = "fas fa-eye mr-2 mt-1"></i>
+                      Final Selection
+                    </button>   
                   </td>
                   <td v-else-if="!item.resultStatus.isPublished && item.finishedSubjects === item.totalSubjects" class="has-text-centered">                                      
                     <button
@@ -163,7 +162,7 @@
         <div class="modal-background" @click="closeModal"></div>
         <div class="modal-card">
           <header class="modal-card-head has-text-left">
-            <h1 class="modal-card-title">{{ resultName }} for  
+            <h1 class="modal-card-title">{{ restype === 'provisional' ? 'Provisional Results' : resultName }} for  
               CLASS - {{ modalClassName }} {{ modalSectionName ? '(' + modalSectionName + ')': '' }} ({{ CurrentYear }})</h1>
             <h2>Status: {{ modalPublished ? 'Published' : 'Not Published' }}</h2>
             <button class="delete ml-2" aria-label="close" @click="closeModal"></button>
@@ -247,6 +246,7 @@ const modalSectionId = ref('')
 const modalPublished = ref(false)
 const currentDate = ref('')
 const userRole = ref('')
+const restype = ref('')
 
 onMounted(async () => {
   await loadActiveExam()
@@ -263,15 +263,12 @@ watch(() => route.query.type, async(newType) => {
   await getExam()  
   setResultName(newType)
   fetchMarkEntryStatus()
-
 }, { immediate: true })
-
 
 async function getExam() {
   const result = await window.electronAPI.getExamByType(examType.value, CurrentYearId.value)
   currentExamId.value = result.exam.Id
   currentExamName.value = result.exam.ExamName
-  // checkResultStatus(currentExamId.value, CurrentYearId.value) 
 }
 
 async function getUser() {
@@ -288,38 +285,9 @@ const canAccess = (requiredRoles) => {
 const filteredClassSectionStatus = computed(() => {
   return classSectionStatus.value.filter(item => item.finishedSubjects !== 0);
 })
-//console.log("Filtered Class Section Status:", filteredClassSectionStatus.value)
 
-
-// async function checkPublishStatus() {
-//   try {
-//     // Get counts from both tables
-//     const status = await window.electronAPI.getPublishStatus({
-//       academicYearId: CurrentYearId.value,
-//       activeExamId: currentExamId.value      
-//     })
-//     // markEntryCount.value = status.markEntryCount
-//     // resultStatusCount.value = status.resultStatusCount
-//     publishDate.value = status.publishDate || ''
-//     if(publishDate.value){
-//       resultPublished.value = true
-//     }
-//     else {
-//       resultPublished.value = false
-//     }
-
-//   } catch (error) {
-//     console.error("Error checking publish status:", error)    
-//   }
-// }
 
 async function publishResult() {
- // if (!canPublish.value) {
- //   window.electronAPI.showInfoDialog("Cannot publish results - not all results are generated")
- //   return
- // }
- // As per the request by school admin, allow publishing even if not all results are generated
-
   isLoading.value = true
   try {
     const response = await window.electronAPI.publishResults({
@@ -354,7 +322,6 @@ function unPublishResults(){
             activeExamId: currentExamId.value
           })
           if (response.success) {
-          //  location.reload('/result/create?type=' + examType.value) //reload the page
             window.electronAPI.showInfoDialog("Results unpublished successfully.")
             checkResultStatus(currentExamId.value, CurrentYearId.value)
             fetchMarkEntryStatus()
@@ -379,7 +346,6 @@ function goToMarkEntry(examType) {
   })  
 }
 
-
 async function fetchMarkEntryStatus() {
   try {
     const response = await window.electronAPI.getmarkEntryStatus(currentExamId.value, examType.value)
@@ -397,7 +363,7 @@ async function fetchMarkEntryStatus() {
           })
         }))
       )
-      console.log("isPublished:", isPublished.value)
+  
       if( examType.value === 'selection'){
         classSectionStatus.value = verifiedStatus.filter(item => item.className === 'X')
       }   else {
@@ -422,27 +388,51 @@ async function generateResult(classId, sectionId) {
     if (index !== -1) {
       classSectionStatus.value[index].resultGenerating = true
     }
-    //console.log("Passing Percentage in API:", PassingPercentage.value)
-    const response = await window.electronAPI.generateResults({
-      academicYearId: CurrentYearId.value,
-      examType: examType.value,
-      resultType: resultType.value,  //if examType is not terminal, result will be final
-      examId: currentExamId.value,
-      classId,
-      sectionId
-      // PassingPercentage: PassingPercentage.value
-    })
-    
-    if (response.success) {
-      isGenerating.value = false
-      classSectionStatus.value[index].resultGenerating = false
-      await loadModalResults(classId, sectionId, isPublished.value)
-      modalVisible.value = true
-      isGenerating.value = false
-      fetchMarkEntryStatus()      
-      showSuccess('Results generated successfully')
-    }
-    //console.log('Failed to generate result')
+   
+    if(resultType.value === 'selection' ){      
+      const response = await window.electronAPI.generateSelectionResults({
+        academicYearId: CurrentYearId.value,
+        examType: examType.value,
+        resultType: resultType.value,
+        examId: currentExamId.value,
+        classId,
+        sectionId  
+      })
+      if (response.success) {
+        isGenerating.value = false
+        classSectionStatus.value[index].resultGenerating = false
+        modalVisible.value = false
+        isGenerating.value = false
+        fetchMarkEntryStatus()      
+        showSuccess('Results generated successfully')
+      }
+      else {
+        showError('Failed to generate result', response.message || "Unknown error")
+      }
+    } else {
+      const response = await window.electronAPI.generateResults({
+        academicYearId: CurrentYearId.value,
+        examType: examType.value,
+        resultType: resultType.value,  //if examType is not terminal, result will be final
+        examId: currentExamId.value,
+        classId,
+        sectionId
+        // PassingPercentage: PassingPercentage.value
+      })
+      if (response.success) {
+        isGenerating.value = false
+        classSectionStatus.value[index].resultGenerating = false
+        await loadModalResults(classId, sectionId, false)
+        modalVisible.value = true
+        isGenerating.value = false
+        fetchMarkEntryStatus()      
+        showSuccess('Results generated successfully')
+        }
+        else {
+          showError('Failed to generate result', response.message || "Unknown error")
+        }
+      }
+
   } catch (error) {
     console.error('Generation error:', error)
     showError('Error during result generation')
@@ -450,14 +440,20 @@ async function generateResult(classId, sectionId) {
 }
 
 //Load Results for Modal
-async function loadModalResults(classId, sectionId, isPublished) {
+async function loadModalResults(classId, sectionId, provisional) {
   modalVisible.value = true 
+  if(provisional){
+    resultType.value = 'provisional'
+  } else {
+    resultType.value = resultType.value
+  }
   //console.log('Loading results for:', modalClassName.value, modalSectionName.value)
   const secResult = await window.electronAPI.getSectionResults({
     academicYearId: CurrentYearId.value,    
     examId: currentExamId.value,
     classId,
-    sectionId
+    sectionId,
+    resultType: resultType.value
   })
   
   if (secResult) {
@@ -468,8 +464,9 @@ async function loadModalResults(classId, sectionId, isPublished) {
     modalClassId.value = classId
     modalSectionId.value = sectionId
     modalPublished.value = isPublished
-    //console.log('Modal Summary:', modalSummary)
-    //console.log('modalResults.value:', modalResults.value)
+    if(provisional){
+      resultType.value = 'selection'
+    }
   } else {
     modalResults.value = []
     console.error('Failed to load section results:', result.message)

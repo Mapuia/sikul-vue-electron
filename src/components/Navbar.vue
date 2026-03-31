@@ -55,7 +55,7 @@
                   <router-link class="navbar-item" to="/marks/marks-entry?type=annual" @click="closeDropdown">Marks Entry</router-link>
                   <router-link class="navbar-item" to="/marks/view?type=annual" @click="closeDropdown">View Marks</router-link>
                   <router-link v-if="canAccess(['admin','teacher'])" class="navbar-item" to="/result/create?type=annual" @click="closeDropdown">Generate Result</router-link>
-                  <router-link class="navbar-item" to="/result/section?type=annual" @click="closeDropdown">Section Result</router-link>
+                  <router-link class="navbar-item" to="/result/section?type=final" @click="closeDropdown">Section Result</router-link>
                 </div>
               </div>
               <!-- Class X Selection Submenu -->
@@ -66,7 +66,7 @@
                   <router-link class="navbar-item" to="/marks/view?type=selection" @click="closeDropdown">View Marks</router-link>
                   <router-link v-if="canAccess(['admin','teacher'])" class="navbar-item" to="/result/create/selectiontest?type=selection" @click="closeDropdown">Generate Result</router-link>
                   <router-link class="navbar-item" to="/result/section?type=selection" @click="closeDropdown">Selection Result</router-link>
-                                    
+                  <router-link class="navbar-item" to="/result/section?type=provisional" @click="closeDropdown">Selection Final Result</router-link>
                 </div>
               </div>
             </div>
@@ -104,7 +104,8 @@
                   <router-link class="navbar-item" to="/result/report-card/halfyearly" @click="closeDropdown">Half Yearly</router-link>
                   <!-- <router-link class="navbar-item" to="/result/report-card/annual" @click="closeDropdown">Annual</router-link> -->
                   <router-link class="navbar-item" to="/result/report-card/final" @click="closeDropdown">Final</router-link>
-                  <router-link class="navbar-item" to="/result/report-card/selection" @click="closeDropdown">Selection</router-link>
+                  <router-link class="navbar-item" to="/result/report-card/selection?type=selection" @click="closeDropdown">Selection</router-link>
+                  <router-link class="navbar-item" to="/result/report-card/selection?type=provisional" @click="closeDropdown">Provisional</router-link>
                 </div>
               </div>
 
@@ -116,6 +117,7 @@
                   <router-link class="navbar-item" to="/report/section-summary?type=annual" @click="closeDropdown">Annual</router-link>
                   <router-link class="navbar-item" to="/report/section-summary?type=final" @click="closeDropdown">Final</router-link>
                   <router-link class="navbar-item" to="/report/section-summary?type=selection" @click="closeDropdown">Selection</router-link>
+                  <router-link class="navbar-item" to="/report/section-summary?type=provisional" @click="closeDropdown">Provisional</router-link>
                 </div>
               </div>
 

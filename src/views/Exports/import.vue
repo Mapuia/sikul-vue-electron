@@ -49,7 +49,7 @@
             </td>
           </tr>
           <tr>
-            <td class="has-text-weight-semibold">Import Half Yearly Examination Marks</td>
+            <td class="has-text-weight-semibold">Import Half Yearly/Selection Examination Marks</td>
             <td class="has-text-right">
               <button class="button is-primary is-small" @click="importHalfYearlyData">
                 <i class="fas fa-file-import mr-2"></i>Import
