@@ -54,8 +54,10 @@ function createMainWindow() {
   }
 
   mainWindow.webContents.on('did-finish-load', () => {
-    if (splash && !splash.isDestroyed()) splash.close();
-    mainWindow.show();
+    if (splash && !splash.isDestroyed()) splash.close();       
+      // mainWindow.setMenu(null); //enable it for production
+      mainWindow.maximize(); // <--- Makes it fill the available desktop space
+      mainWindow.show();
   });
 }
 
@@ -241,4 +243,65 @@ app.on('window-all-closed', () => {
 
 ipcMain.handle('get-app-version', () => {
   return app.getVersion(); // This automatically pulls from your package.json
+});
+
+ipcMain.handle('generate-pdf', async (event, fileName) => {
+  const win = BrowserWindow.fromWebContents(event.sender);
+
+  try {
+    // 1. Generate the PDF data from the window
+    const pdfData = await win.webContents.printToPDF({
+      printBackground: false,     // Critical for your table colors
+      pageSize: 'A4',
+      margins: {
+        marginType: 'default'    // Or 'none' if you handled margins in CSS
+      },
+      landscape: false
+    });
+
+    // 2. Open the Save Dialog
+    const { filePath } = await dialog.showSaveDialog(win, {
+      title: 'Save PDF',
+      defaultPath: path.join(process.env.USERPROFILE || process.env.HOME, fileName),
+      filters: [{ name: 'PDF Files', extensions: ['pdf'] }]
+    });
+
+    // 3. Write the file if the user didn't cancel
+    if (filePath) {
+      fs.writeFileSync(filePath, pdfData);
+      return { success: true, path: filePath };
+    }
+    return { success: false, message: 'Cancelled' };
+
+  } catch (error) {
+    console.error('PDF Generation Error:', error);
+    return { success: false, message: error.message };
+  }
+});
+
+ipcMain.handle('generate-summary-pdf', async (event, options) => {
+  const win = BrowserWindow.fromWebContents(event.sender);
+  
+  try {
+    // Captures the current window state using Electron's PDF engine
+    const data = await win.webContents.printToPDF({
+      printBackground: true,
+      landscape: options.landscape || false,
+      pageSize: 'A4',
+      margins: { top: 0, bottom: 0, left: 0, right: 0 }
+    });
+
+    const { filePath } = await dialog.showSaveDialog({
+      defaultPath: options.fileName,
+      filters: [{ name: 'PDF Files', extensions: ['pdf'] }]
+    });
+
+    if (filePath) {
+      fs.writeFileSync(filePath, data);
+      return { success: true };
+    }
+    return { success: false, message: 'Save cancelled' };
+  } catch (error) {
+    return { success: false, message: error.message };
+  }
 });

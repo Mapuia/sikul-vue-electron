@@ -1,7 +1,7 @@
 <template>
   <div class="page-wrapper is-flex is-flex-direction-column is-justify-content-space-between">
     <!-- Centered Content -->
-    <section class="section is-flex-grow-1 is-flex is-flex-direction-column is-justify-content-center is-align-items-center has-text-centered">
+    <section class="no-print section is-flex-grow-1 is-flex is-flex-direction-column is-justify-content-center is-align-items-center has-text-centered">
       <figure class="image is-96x96 mb-4">
         <img src="../assets/sikul_logo.png" alt="School Logo" />
       </figure>

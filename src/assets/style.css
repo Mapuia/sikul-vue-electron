@@ -222,5 +222,17 @@ button:focus-visible {
 .print-subtitle{
   color: black;
 }
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  #printable-report { 
+    box-shadow: none !important; 
+    border: none !important; 
+    margin: 0 !important; 
+    padding: 0 !important; 
+    width: 100% !important;
+  }
+}
 
 

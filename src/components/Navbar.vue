@@ -1,5 +1,5 @@
 <template>
-  <nav class="navbar is-light is-fixed-top" role="navigation" aria-label="main navigation">
+  <nav class="navbar is-light is-fixed-top no-print" role="navigation" aria-label="main navigation ">
     <div class="navbar-container">
       <div>
         <router-link to="/home">

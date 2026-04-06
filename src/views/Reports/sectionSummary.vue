@@ -1,17 +1,15 @@
 <template>
   <div class="form-container full mt-5 mb-1">
-    <div v-if="isPublished">
+    <div v-if="isPublished" class="no-print">
       <div class="has-text-centered mb-2">
         <h1 class="title is-4 mb-1"> Section Summary - {{ resultName }}</h1>
         <h2 class="title is-4 mt-1 mb-1">({{ CurrentYear }})</h2>
       </div>
 
-      <!-- Filters: Class / Section -->
-      <div class="form-container single ">
+      <div class="form-container single mt-5">
         <div class="columns is-vcentered">
           <div class="column">
             <div class="field">
-              <!-- <label class="label">Class</label> -->
               <div class="select is-fullwidth">
                 <select v-model="selectedClassId">
                   <option disabled value="">-- Select Class --</option>
@@ -25,7 +23,6 @@
 
           <div v-if="selectedClassId" class="column">
             <div class="field">
-              <!-- <label class="label">Section</label> -->
               <div class="select is-fullwidth">
                 <select v-model="selectedSectionId" :disabled="!selectedClassId || sections.length === 0">
                   <option disabled value="">-- Select Section --</option>
@@ -40,159 +37,141 @@
         </div>
       </div>
 
-        <!-- Loading -->
-        <div v-if="isLoading" class="has-text-centered mt-4">
-          <progress class="progress is-medium is-primary" max="100"></progress>
-          <p>Loading results details...</p>
-        </div>
+      <div v-if="isLoading" class="has-text-centered mt-4 no-print">
+        <progress class="progress is-medium is-primary" max="100"></progress>
+        <p>Loading results details...</p>
+      </div>
 
-        <!-- Results -->
-        <div v-if="!isLoading && hasSelection" class="result-container">
-          <div class="box">
-            <!-- <div class="buttons is-centered mb-3">
-              <button class="button is-primary" @click="downloadPDF">
-                <span class="icon is-small"><i class="fas fa-file-pdf"></i></span>
-                <span>Download PDF</span>
-              </button>
-            </div> -->
-            <div class="print-container">
-              <div class="print-page">
-                <div class="has-text-centered is-flex is-flex-direction-column is-align-items-center">
-                  <h2 class="title is-4 mb-2">{{ resultName }} Summary</h2>
-                  <h2 class="title is-4 mb-1">
-                    Class {{ className }}
-                    <span v-if="sectionName">({{ sectionName }})</span>
-                  </h2>
-                  <p class="mb-1">(Page - {{ currentPage }})</p>
-                </div>
+      <div v-if="!isLoading && hasSelection" class="result-container no-print" >
+        <div class="box">
+          <div class="has-text-centered is-flex is-flex-direction-column is-align-items-center">
+            <h2 class="title is-4 mb-2">{{ resultName }} Summary</h2>
+            <h2 class="title is-4 mb-1">Class {{ className }} <span v-if="sectionName">({{ sectionName }})</span></h2>
+            <p class="mb-1">(Screen View - Page {{ currentPage }} of {{ totalPages }})</p>
+          </div>
 
-                <table class="table is-fullwidth is-bordered">
-                  <thead>
-                    <tr>
-                      <th>Roll No</th>
-                      <th style="width: 200px;">Name</th>
-                      <th style="width: 100px;">Exams</th>
-                      <th v-for="subject in subjects" :key="subject.Id">{{ subject.SubjectName }}</th>
-                      <th>Total</th>
-                      <th>%</th>
-                      <th>Div</th>
-                      <th>Pos</th>
-                      <th>Result</th>
-                    </tr>
-                  </thead>
+          <table class="table is-fullwidth is-bordered is-narrow">
+            <thead>
+              <tr>
+                <th>Roll</th>
+                <th>Name</th>
+                <th>Exams</th>
+                <th v-for="subject in subjects" :key="subject.Id">{{ subject.SubjectName }}</th>
+                <th>Total</th>
+                <th>%</th>
+                <th>Result</th>
+              </tr>
+            </thead>
+            <tbody>
+              <template v-for="student in paginatedStudents" :key="student.StudentId || student.Id">
+                <tr v-for="(exam, examIndex) in examOrder" :key="examIndex">
+                  <td v-if="examIndex === 0" :rowspan="3">{{ student.RollNo }}</td>
+                  <td v-if="examIndex === 0" :rowspan="3">{{ student.Name }}</td>
+                  <td>{{ exam }}</td>
+                  <td v-for="subject in subjects" :key="subject.Id">
+                    {{ student.marks?.[subject.Id]?.[examKey(exam)] ?? '-' }}
+                  </td>
+                  <td v-if="examIndex === 0" :rowspan="3">{{ student.totalMarks ?? '-' }}</td>
+                  <td v-if="examIndex === 0" :rowspan="3">{{ student.Percentage ?? '-' }}</td>
+                  <td v-if="examIndex === 0" :rowspan="3">{{ student.Result ?? '-' }}</td>
+                </tr>
+              </template>
+            </tbody>
+          </table>
 
-                  <tbody>
-                    <template v-for="student in paginatedStudents" :key="student.StudentId || student.Id">
-                      <tr v-for="(exam, examIndex) in examOrder" :key="exam + '-' + (student.StudentId || student.Id) + '-' + examIndex">
-                        <td class="smaller-cell" v-if="examIndex === 0" :rowspan="3">{{ student.RollNo }}</td>
-                        <td v-if="examIndex === 0" :rowspan="3">{{ student.Name }}</td>
+          <nav class="pagination is-centered" role="navigation">
+            <button class="pagination-previous" :disabled="currentPage === 1" @click="currentPage--">Previous</button>
+            <button class="pagination-next" :disabled="currentPage === totalPages" @click="currentPage++">Next</button>
+          </nav>
 
-                        <td>{{ exam }}</td>
-
-                        <td v-for="subject in subjects" :key="subject.Id" class="smaller-cell">
-                          <span v-if="student.marks && student.marks[subject.Id]">
-                            {{ student.marks[subject.Id][examKey(exam)] ?? '-' }}
-                          </span>
-                          <span v-else>-</span>
-                        </td>
-
-                        <td class="smaller-cell" v-if="examIndex === 0" :rowspan="3">{{ student.totalMarks ?? '-' }}</td>
-                        <td class="smaller-cell" v-if="examIndex === 0" :rowspan="3">{{ student.Percentage ?? '-' }}</td>
-                        <td class="smaller-cell" v-if="examIndex === 0" :rowspan="3">{{ student.Division ?? '-' }}</td>
-                        <td class="smaller-cell" v-if="examIndex === 0" :rowspan="3">{{ student.Position ?? '-' }}</td>
-                        <td class="smaller-cell" v-if="examIndex === 0" :rowspan="3">{{ student.Result ?? '-' }}</td>
-                      </tr>
-                    </template>
-
-                    <tr v-if="!studentMarks || studentMarks.length === 0">
-                      <td :colspan="9 + subjects.length" class="has-text-centered">No students found.</td>
-                    </tr>
-                  </tbody>
-
-                </table>
-              </div>     
-                          
-            </div>
-            <!-- Pagination Controls -->
-             <nav class="pagination is-centered" role="navigation" aria-label="pagination">
-                <button class="pagination-previous" :disabled="currentPage === 1" @click="prevPage">Previous</button>
-                <button class="pagination-next" :disabled="currentPage === totalPages" @click="nextPage">Next</button>
-
-                <ul class="pagination-list">
-                  <li><span class="pagination-link is-current">{{ currentPage }}</span></li>
-                  <li><span>of {{ totalPages }}</span></li>
-                </ul>
-              </nav>
-              <div class="buttons is-centered mt-3">
-                <button class="button is-primary" @click="downloadPDF">
-                  <span class="icon is-small"><i class="fas fa-file-pdf"></i></span>
-                  <span>Download PDF</span>
-                </button>
-              </div>
-            
+          <div class="buttons is-centered mt-3">
+            <button class="button is-primary" @click="generateElectronPDF" :disabled="studentMarks.length === 0">
+              <span class="icon is-small"><i class="fas fa-file-pdf"></i></span>
+              <span>Download PDF</span>
+            </button>
           </div>
         </div>
-      
-    </div> 
-    <!--Enf of ispublished-->
+      </div>
+    </div>    
 
-   <div v-else class="is-flex is-justify-content-center is-align-items-center" style="height: 600px;">
+    <div v-else class="is-flex is-justify-content-center is-align-items-center no-print" style="height: 600px;">
       <div class="notification is-danger is-5 has-text-centered px-6 py-5">
         <strong>Result not Published: </strong> Result Summary is not available.
       </div>
     </div>
-    <!-- <div v-else class="notification is-danger">
-      <button class="delete" @click="closeNotification"></button>
-      <strong>Result Summary is not available:</strong> Result not Published.
-    </div> -->
+    <div id="full-export-container" class="print-only ">
+      <template v-for="(group, gIdx) in studentGroups" :key="gIdx">
+        <div class="print-page landscape">
+          <div class="has-text-centered mb-1">
+            <h1 class="title is-5 mb-1">RESULT SUMMARY - {{ resultName }} ({{ CurrentYear }}) </h1>
+            <h2 class="title is-5 mb-1">Class {{ className }} <span v-if="sectionName">({{ sectionName }})</span></h2>
+            <p class="is-size-7">Page {{ gIdx + 1 }} of {{ studentGroups.length }}</p>
+          </div>
+
+          <table class="table is-fullwidth is-bordered export-table">
+            <thead>
+              <tr>
+                <th style="width: 40px;">Roll</th>
+                <th style="width: 180px;">Student Name</th>
+                <th style="width: 80px;">Exams</th>
+                <th v-for="subject in subjects" :key="'h-'+subject.Id">{{ subject.SubjectName }}</th>
+                <th>Total</th>
+                <th>%</th>
+                <th>Div</th>
+                <th>Pos</th>
+                <th>Result</th>
+              </tr>
+            </thead>
+            <tbody>
+              <template v-for="student in group" :key="'st-'+student.Id">
+                <tr v-for="(exam, examIndex) in examOrder" :key="examIndex">
+                  <td class="smaller-cell" v-if="examIndex === 0" :rowspan="3">{{ student.RollNo }}</td>
+                  <td class="smaller-cell has-text-weight-bold" v-if="examIndex === 0" :rowspan="3">{{ student.Name }}</td>
+                  <td class="exam-label">{{ exam }}</td>
+                  <td v-for="subject in subjects" :key="'m-'+subject.Id" class="smaller-cell">
+                    {{ student.marks?.[subject.Id]?.[examKey(exam)] ?? '-' }}
+                  </td>
+                  <td class="smaller-cell" v-if="examIndex === 0" :rowspan="3">{{ student.totalMarks ?? '-' }}</td>
+                  <td class="smaller-cell" v-if="examIndex === 0" :rowspan="3">{{ student.Percentage ?? '-' }}</td>
+                  <td class="smaller-cell" v-if="examIndex === 0" :rowspan="3">{{ student.Division ?? '-' }}</td>
+                  <td class="smaller-cell" v-if="examIndex === 0" :rowspan="3">{{ student.Position ?? '-' }}</td>
+                  <td class="smaller-cell" v-if="examIndex === 0" :rowspan="3">{{ student.Result ?? '-' }}</td>
+                </tr>
+              </template>
+            </tbody>
+          </table>
+        </div>
+        <div class="page-break"></div>
+      </template>
+    </div>
   </div>
-  <!-- End of the MAIN form-container -->
 </template>
 
 <script setup>
 import { ref, computed, watch, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { useAcademicYear } from '../../composables/useAcademicYear'
-const { CurrentYearId, CurrentYear } = useAcademicYear()
 import { useActiveExam } from '../../composables/useActiveExam'
-const { loadActiveExam } = useActiveExam()
 import { useCurrentExam } from '../../composables/useCurrentExam'
-const { currentExamId, currentExamName, getExamByType } = useCurrentExam()
 import { useResultStatus } from '../../composables/useResultStatus'
-const { isPublished, publishDate, checkResultStatus } = useResultStatus()
 import { useClassesSections } from '../../composables/useClassesSections'
-const { classes, sections, loadClasses, loadSections } = useClassesSections()
 import { useResultNames } from '../../composables/useResultNames'
+
+const { CurrentYearId, CurrentYear } = useAcademicYear()
+const { currentExamId, currentExamName, getExamByType } = useCurrentExam()
+const { isPublished, checkResultStatus } = useResultStatus()
+const { classes, sections, loadClasses, loadSections } = useClassesSections()
 const { resultName, setResultName } = useResultNames()
-// import { useSubjectsForClass } from '../../composables/useSubjectsForClass'
-// const { subjects, loadSubjectsForClass } = useSubjectsForClass()
-import html2pdf from 'html2pdf.js'
 
-// --- state ---
 const route = useRoute()
-
-
-
-// const resultPublished = ref(false)
-// const publishDate = ref('')
 const isLoading = ref(false)
-
-// const classes = ref([])
-// const sections = ref([])
 const subjects = ref([])
 const studentMarks = ref([])
-
 const selectedClassId = ref('')
 const selectedSectionId = ref('')
-
 const examType = ref(route.query.type)
-// console.log('Exam Type:', examType.value)
-// console.log('Current Exam ID:', currentExamId.value)
-// console.log('Current Exam Name:', currentExamName.value)
-// console.log('Academic Year ID:', CurrentYearId.value)
-//const currentExamId = ref('')
-//const currentExamName = ref('')
-// const resultType = ref('')
+const currentPage = ref(1)
+const perPage = 9
 
 let examOrder = []
 let examKeyMap = {}
@@ -200,8 +179,8 @@ let examKeyMap = {}
 function initializeExamConfig() {
   switch(examType.value) {
     case 'terminal':
-        examOrder = ['Periodic', 'Half Yearly', 'Total']
-        examKeyMap = { Periodic: 'periodic', 'Half Yearly': 'terminal', Total: 'total' }
+      examOrder = ['Periodic', 'Half Yearly', 'Total']
+      examKeyMap = { Periodic: 'periodic', 'Half Yearly': 'terminal', Total: 'total' }
       break
     case 'annual':
       examOrder = ['Periodic', 'Annual', 'Total']
@@ -215,102 +194,40 @@ function initializeExamConfig() {
       examOrder = ['Internal', 'Selection Test', 'Total']
       examKeyMap = { Internal: 'periodic', 'Selection Test': 'terminal', Total: 'total' }
       break
-    default:
-      
-      break
   }
 }
 
-// switch(examType.value) {
-//   case 'terminal':
-//       examOrder = ['Periodic', 'Half Yearly', 'Total']
-//       examKeyMap = { Periodic: 'periodic', 'Half Yearly': 'terminal', Total: 'total' }
-//     break
-//   case 'annual':
-//     examOrder = ['Periodic', 'Annual', 'Total']
-//     examKeyMap = { Periodic: 'periodic', 'Annual': 'terminal', Total: 'total' }
-//     break
-//   case 'final':
-//     examOrder = ['Periodic', 'Term', 'Total']
-//     examKeyMap = { Periodic: 'periodic', 'Term': 'terminal', Total: 'total' }
-//     break  
-//   case 'selection':
-//     examOrder = ['Internal', 'Selection Test', 'Total']
-//     examKeyMap = { Internal: 'periodic', 'Selection Test': 'terminal', Total: 'total' }
-//     break
-//   default:
-    
-//     break
-// }
+// Group students into 10 per page for the PDF
+const studentGroups = computed(() => {
+  const groups = []
+  for (let i = 0; i < studentMarks.value.length; i += 10) {
+    groups.push(studentMarks.value.slice(i, i + 10))
+  }
+  return groups
+})
 
-//  examOrder = ['Periodic', 'Half Yearly', 'Total']
-//  examKeyMap = { Periodic: 'periodic', 'Half Yearly': 'terminal', Total: 'total' }
-
-// --- computed ---
 const hasSelection = computed(() => !!selectedClassId.value && (selectedSectionId.value !== '' && selectedSectionId.value !== null))
 const className = computed(() => classes.value.find(c => c.Id === selectedClassId.value)?.ClassName ?? '')
 const sectionName = computed(() => sections.value.find(s => s.Id === selectedSectionId.value)?.SectionName ?? '')
+const totalPages = computed(() => Math.ceil(studentMarks.value.length / perPage))
+const paginatedStudents = computed(() => {
+  const start = (currentPage.value - 1) * perPage
+  return studentMarks.value.slice(start, start + perPage)
+})
 
-// --- helpers ---
 function examKey(examLabel) { return examKeyMap[examLabel] || examLabel.toLowerCase() }
-
-function DisplayDate(dateString) {
-  if (!dateString) return ''
-  const d = new Date(dateString)
-  if (isNaN(d.getTime())) return ''
-  return d.toLocaleDateString('en-IN', { year: 'numeric', month: 'long', day: 'numeric' })
-}
-
-function showError(message) {
-  window.electronAPI.showErrorDialog(`Error: ${message}`)
-}
-
-// console.log('IS Published:', isPublished.value)
-
-// --- API calls ---
-// async function fetchClasses() {
-//   try {
-//     const res = await window.electronAPI.getClasses()
-//     if (res.success) classes.value = res.classes || []
-//   } catch (err) { console.error('fetchClasses', err) }
-// }
-
-// async function fetchSectionsForClass(classId) {
-//   try {
-//     const response = await window.electronAPI.getSectionsByClassId(classId)
-//     if (response.success) {
-//       sections.value = response.sections || []
-//       if (sections.value.length === 0) selectedSectionId.value = 0
-//     }
-//   } catch (err) { console.error('fetchSectionsForClass', err) }
-// }
 
 async function fetchSubjectsForClass(classId) {
   try {
     const res = await window.electronAPI.getSubjectsByClassIdforSummary(classId)
     if (res.success) subjects.value = res.subjects || []
-  } catch (err) { console.error('fetchSubjectsForClass', err) }
+  } catch (err) { console.error(err) }
 }
 
-// --- Pagination ---
-const currentPage = ref(1)
-const perPage = 9
-
-const totalPages = computed(() => Math.ceil(studentMarks.value.length / perPage))
-
-const paginatedStudents = computed(() => {
-  const start = (currentPage.value - 1) * perPage
-  const end = start + perPage
-  return studentMarks.value.slice(start, end)
-})
-
-//Fetch Results Summary
 async function fetchResultsSummary() {
   if (!selectedClassId.value) return
   isLoading.value = true
-  // console.log("Exam type for Summary:", examType.value)
   try {   
-    
     const params = {
       classId: selectedClassId.value,
       sectionId: selectedSectionId.value,
@@ -321,261 +238,145 @@ async function fetchResultsSummary() {
     const response = await window.electronAPI.getSectionResultsSummary(params)
     if (response.success) {
       studentMarks.value = response.studentMarks || []
-      currentPage.value = 1 // reset to first page on new fetch
-    } else {
-      studentMarks.value = []
-      showError(response.message || 'Failed to fetch results summary.')
+      currentPage.value = 1
+    }
+  } finally { isLoading.value = false }
+}
+
+async function generateElectronPDF() {
+  if (studentMarks.value.length === 0) return
+  isLoading.value = true
+  try {
+    const fileName = `Summary_Class_${className.value}_${sectionName.value}.pdf`
+    // Signal Electron Main process to print the current window
+    const response = await window.electronAPI.generateSummaryPDF({ 
+      fileName,
+      landscape: true 
+    })
+    if (!response.success && response.message !== 'Save cancelled') {
+      alert("Error: " + response.message)
     }
   } catch (err) {
-    console.error('fetchResultsSummary', err)
-    studentMarks.value = []
+    console.error(err)
   } finally {
     isLoading.value = false
   }
 }
-//For Pagination
-function nextPage() {
-  if (currentPage.value < totalPages.value) currentPage.value++
-}
-function prevPage() {
-  if (currentPage.value > 1) currentPage.value--
-}
 
-
-// --- user & lifecycle ---
 onMounted(async () => {
-  // loadClasses()
-  await initializeClasses()
+  await loadClasses()
+  if(examType.value === 'selection'){
+    classes.value = classes.value.filter(c => c.ClassName === 'X')
+    selectedClassId.value = classes.value[0]?.Id || ''
+  } else {
+    classes.value = classes.value.filter(c => c.ClassName !== 'X')
+  }
   await getExamByType(examType.value, CurrentYearId.value)
   await checkResultStatus(currentExamId.value, CurrentYearId.value)
-  // await setResultName(examType.value)
-  //await getExam()
-  //await fetchClasses()
-  //await checkPublishStatus()
-  //await statusMessage()
   setResultName(examType.value)
   initializeExamConfig()
 })
 
-async function initializeClasses() {
-  await loadClasses()
-  if(examType.value === 'selection'){
-      classes.value = classes.value.filter(c => c.ClassName === 'X')
-      selectedClassId.value = classes.value[0]?.Id || ''
-    }
-  if(examType.value === 'annual' || examType.value === 'final'){
-      // resultType = 'final'
-      classes.value = classes.value.filter(c => c.ClassName !== 'X')
-    }
-  }    
-
-// async function statusMessage(){
-//   if(!resultPublished.value){
-//     alert('Result is not published yet, Result Summary is not available now.')
-//     return
-//   }  
-// }
-watch(() => selectedClassId.value, async (newClass) => {
-  if (!newClass) {
-    sections.value = []
-    subjects.value = []
-    studentMarks.value = []
-    selectedSectionId.value = '' 
-    return
-  }
-  await loadSections(newClass)
-  await fetchSubjectsForClass(newClass)
-  // If there are no sections, keep sectionId = 0 (meaning 'all') and fetch
+watch(() => selectedClassId.value, async (newVal) => {
+  if (!newVal) return
+  await loadSections(newVal)
+  await fetchSubjectsForClass(newVal)
   if (sections.value.length === 0) selectedSectionId.value = 0
 })
 
-watch(() => selectedSectionId.value, async (newSection) => {
-  if (newSection === '' || newSection === null) return
-  await fetchResultsSummary()
+watch(() => selectedSectionId.value, async (newVal) => {
+  if (newVal !== '' && newVal !== null) await fetchResultsSummary()
 })
-
-// async function setResultName(type) {
-//   if(type === 'terminal'){
-//     resultName.value = 'Half Yearly Exam'
-//   }
-//   if(type === 'annual'){
-//     resultName.value = 'Annual Exam'
-//   }
-//   if(type === 'final'){
-//     resultName.value = 'Final Result'
-//   }
-// }
-
-watch(
-  () => route.query.type,          // Watch only the 'type' query param
-  async (newType, oldType) => {
-    if (!newType || newType === oldType) return
-
-    examType.value = newType
-    await setResultName(examType.value)
-    
-    // console.log('Result Name changed to:', resultName.value)
-    // Re-fetch current exam info for this new type
-    await getExamByType(examType.value, CurrentYearId.value)
-
-    // Re-check publish status for the new exam
-    await checkResultStatus(currentExamId.value, CurrentYearId.value)
-
-    // If a class & section are already selected, refresh the summary
-    if (selectedClassId.value && selectedSectionId.value !== '' && selectedSectionId.value !== null) {
-      await fetchResultsSummary()
-    }
-    initializeClasses()
-    initializeExamConfig()
-    //Examtype is 'selection', classes should have Class X only
-    
-  }
-)
-
-
-//NEED TO WATCH ROUTE CHANGE
-
-// watch(route, async (newType) => {
-//   // const newType = newRoute.query.type
-//   examType.value = newType.query.type || ''
-
-//   // await checkPublishStatus()
-// })
-
-function downloadPDF() {  
-  const element = document.querySelector('.print-page') // or any specific container you want
-  const opt = {
-    margin:       0.5,
-    filename:     `Section-wise_Summary_for_Class-${ className.value }_${ sectionName.value }_Page_${ currentPage.value }.pdf`,
-    image:        { type: 'jpeg', quality: 1.0 },
-    html2canvas:  { scale: 2 },
-    jsPDF:        { unit: 'in', format: 'a4', orientation: 'landscape' }
-  }
-
-  html2pdf().set(opt).from(element).save()
-}
-
-///--------------------------------------------------USED NO MORE--------------------------------------------------
-// async function fetchResultsSummary() {
-//   if (!selectedClassId.value) return
-//   isLoading.value = true
-//   try {
-//     const params = {
-//       classId: selectedClassId.value,
-//       sectionId: selectedSectionId.value,
-//       examId: currentExamId.value,
-//       academicYearId: CurrentYearId.value
-//     }
-//     const response = await window.electronAPI.getSectionResultsSummary(params)
-//     if (response.success) {
-//       studentMarks.value = response.studentMarks || []
-//     } else {
-//       studentMarks.value = []
-//       showError(response.message || 'Failed to fetch results summary.')
-//     }
-//   } catch (err) {
-//     console.error('fetchResultsSummary', err)
-//     studentMarks.value = []
-//   } finally {
-//     isLoading.value = false
-//   }
-// }
-// const examTypeTemp = ref('')
-// async function getExamByType() {
-//   try {
-//     if(examType.value === 'final'){
-//       examTypeTemp.value = 'annual'
-//     }else{
-//       examTypeTemp.value = examType.value
-//     }  
-//     const result = await window.electronAPI.getExamByType(examTypeTemp.value, CurrentYearId.value)
-//     currentExamId.value = result?.exam?.Id || ''
-//     currentExamName.value = result?.exam?.ExamName || ''
-//     console.log('Exam and ID', currentExamId.value)
-//   } catch (err) {
-//     console.error('getExamByType', err)
-//   }
-// }
-
-// async function checkPublishStatus() {
-//   if (!currentExamId.value) return
-//   try {
-//     const status = await window.electronAPI.getPublishStatus({ academicYearId: CurrentYearId.value, activeExamId: currentExamId.value })
-//     publishDate.value = status?.publishDate || ''
-//     resultPublished.value = !!publishDate.value
-//     // console.log('Publish Status:', resultPublished.value, publishDate.value ? DisplayDate(publishDate.value) : '')
-//   } catch (err) {
-//     console.error('checkPublishStatus', err)
-//     resultPublished.value = false
-//   }
-// }
-
-function closeNotification() {
-  // you can modify to change UI state or route away
-  // resultPublished.value = false
-}
 </script>
 
-
 <style scoped>
+/* Screen behavior */
+.no-print { display: block; }
+.print-only { display: none; 
+margin-top: 0 !important;}
 
-.avoid-break {
-  page-break-inside: avoid;
-  break-inside: avoid;
-}
-
-.print-container{
-  padding: 1rem 0;
-}
-
-.print-title{
-  font-size: 14pt;
-  font-family: 'Oswald';
-  font-weight: 600;
-}
-.print-subtitle{
-  font-size: 11pt;
-  font-family: 'Oswald';
-  font-weight: 500;
-}
-
-.smaller-cell {
-  font-size: 11px;
-  text-align: center;
-  color: black;
-}
-
-table{
-  font-size: 9pt;
-  border: 1px solid black;
-}
-
-.table td{
-  max-height: 5px;
-  padding: 0 0.5rem;
+/* Table styling for better fit */
+.table td, .table th {
+  padding: 0.25rem;
   vertical-align: middle;
-  border: 1px solid black;
-}
-.table th{
-  font-weight: bold;
-  text-align: center;
-  border: 1px solid black;
-}
-
-.center{
-  text-align: center;
+  font-size: 0.85rem;
 }
 
 @media print {
-  .no-print {
-    display: none !important;
+  /* Hide the UI, show the export container */
+  .no-print { display: none !important; }
+  .print-only { display: block !important; width: 100%; }
+
+  @page {
+    size: A4 landscape;
+    margin: 5mm;
+    margin-top: 10mm !important; /* Adjust this to control top spacing */
+  }
+
+  .landscape {
+    width: 280mm; /* Fit to A4 Landscape */
+    /* margin: 0 auto; */
+    margin-left: -20mm;
+    margin-top: 0 !important; /* Remove default top margin */
+  }
+
+  .page-break {
+    page-break-after: always;
+    height: 0;
+  }
+
+  .export-table {
+    width: 100% !important;
+    font-size: 8pt !important;
+    border-collapse: collapse !important;
+    table-layout: fixed; /* Prevents overflow */
+  }
+
+  .export-table th, .export-table td {
+    border: 1px solid black !important;
+    padding: 1px 2px !important;
+    line-height: 1.1;
+    overflow: hidden;
+  }
+
+  .smaller-cell { text-align: center; }
+  .exam-label { font-size: 7.5pt; white-space: nowrap; }
+  html, body {
+    margin: 0 !important;
+    padding: 0 !important;
+    height: auto !important;
+  }
+
+  /* 2. Target the main wrapper of your page to remove top spacing */
+  .form-container.full, 
+  .mt-5 {
+    margin-top: 0 !important;
+    padding-top: 0 !important;
+  }
+
+  /* 3. Ensure the Print-Only container starts exactly at the top of the page */
+  #full-export-container {
+    display: block !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* 4. This is the container for EACH page (the 10-student block) */
+  .landscape-layout {
+    width: 297mm;
+    height: 210mm;
+    /* ADJUST THIS: This controls the gap on EVERY page */
+    padding-top: 10mm !important; 
+    padding-left: 10mm !important;
+    padding-right: 10mm !important;
+    box-sizing: border-box;
+    page-break-after: always;
+  }
+
+  /* 5. Clean up the header to ensure no extra bottom margin pushes the table down */
+  .export-header {
+    margin-top: 0 !important;
+    margin-bottom: 10px !important;
   }
 }
-
-.watermark {
-  position: relative;
-}
-
-
-
 </style>

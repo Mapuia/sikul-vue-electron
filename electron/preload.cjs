@@ -12,9 +12,11 @@ contextBridge.exposeInMainWorld('electronAuth', {
 
   //Functional
   contextBridge.exposeInMainWorld("electronAPI", {
+    generateSummaryPDF: (options) => ipcRenderer.invoke('generate-summary-pdf', options),
   getAppVersion: () => ipcRenderer.invoke('get-app-version'),
   selectDirectory: () => ipcRenderer.invoke('dialog:openDirectory'),
   savePdfFile: (data) => ipcRenderer.invoke('file:savePdf', data),
+  generatePDF: (fileName) => ipcRenderer.invoke('generate-pdf', fileName),
   //getAvailableYears: () => ipcRenderer.invoke('get-available-years'),
   getAcademicYears: () => ipcRenderer.invoke('get-academic-years'),
   getCurrentAcademicYear: () => ipcRenderer.invoke('get-current-academic-year'),
